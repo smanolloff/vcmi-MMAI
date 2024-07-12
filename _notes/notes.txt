@@ -1,3 +1,5 @@
+=== Developer notes ===
+
 ==== Adding a new version of BAI ===
 
 Example: create v3
