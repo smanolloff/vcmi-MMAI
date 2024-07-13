@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "Global.h"
 #include "battle/CPlayerBattleCallback.h"
 #include "battle/IBattleState.h"
 #include "networkPacks/PacksForClientBattle.h"
@@ -168,22 +169,23 @@ namespace MMAI::BAI::V3 {
             ASSERT(cdefender, "defender cannot be NULL");
             // logAi->debug("Attack: %s -> %s (%d dmg, %d died)", attacker->getName(), defender->getName(), elem.damageAmount, elem.killedAmount);
 
-            if (cattacker && cattacker->unitSlot() == SlotID::ARROW_TOWERS_SLOT)
-                cattacker = nullptr;
+            // there may have been no room for defender in the obs
+            auto defender = battlefield->stackmapping.find(cdefender) != battlefield->stackmapping.end()
+                ? battlefield->stackmapping.at(cdefender)
+                : nullptr;
 
-            // TODO: can defender be an arrow tower (e.g. when catapult attacks)?
-            auto defender = battlefield->stackmapping.at(cdefender);
-            auto attacker = cattacker ? battlefield->stackmapping.at(cattacker) : nullptr;
+            auto attacker = battlefield->stackmapping.find(cattacker) != battlefield->stackmapping.end()
+                ? battlefield->stackmapping.at(cattacker)
+                : nullptr;
 
             attackLogs.push_back(std::make_shared<AttackLog>(
                 // XXX: attacker can be NULL when an effect does dmg (eg. Acid)
-                // XXX: attacker can be NULL if it can't fit in obs
+                // XXX: attacker and/or defender can be NULL they can't fit in obs
                 attacker,
-                // XXX: defender can be NULL if it can't fit in obs
                 defender,
                 elem.damageAmount,
                 elem.killedAmount,
-                elem.killedAmount * defender->cstack->unitType()->getAIValue()
+                elem.killedAmount * cdefender->unitType()->getAIValue()
             ));
         }
     }
