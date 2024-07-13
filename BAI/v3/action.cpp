@@ -50,13 +50,12 @@ namespace MMAI::BAI::V3 {
 
         if (ha == HexAction::MOVE || ha == HexAction::SHOOT)
             return nullptr;
+            // throw std::runtime_error("MOVE and SHOOT are not AMOVE actions");
 
-        if (ha == HexAction::MOVE || ha == HexAction::SHOOT)
-            throw std::runtime_error("MOVE and SHOOT are not AMOVE actions");
 
         auto &bh = hex->bhex;
 
-        auto edir = AMOVE_TO_EDIR.at(ha);
+        auto edir = AMOVE_TO_EDIR.at(EI(ha));
         auto nbh = bh.cloneInDirection(edir);
 
         switch (ha) {

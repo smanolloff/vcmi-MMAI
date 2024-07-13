@@ -272,7 +272,7 @@ namespace MMAI::BAI::V3 {
             case HexAction::AMOVE_BL:
             case HexAction::AMOVE_L:
             case HexAction::AMOVE_TL: {
-                auto &edir = AMOVE_TO_EDIR.at(action->hexaction);
+                auto &edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
                 auto nbh = bhex.cloneInDirection(edir, false); // neighbouring bhex
                 ASSERT(nbh.isAvailable(), "mask allowed attack to an unavailable hex #" + std::to_string(nbh.hex));
                 auto estack = battle->battleGetStackByPos(nbh);
@@ -287,7 +287,7 @@ namespace MMAI::BAI::V3 {
             case HexAction::AMOVE_2L:
             case HexAction::AMOVE_2TL: {
                 ASSERT(acstack->doubleWide(), "got AMOVE_2 action for a single-hex stack");
-                auto &edir = AMOVE_TO_EDIR.at(action->hexaction);
+                auto &edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
                 auto obh = acstack->occupiedHex(bhex);
                 auto nbh = obh.cloneInDirection(edir, false); // neighbouring bhex
                 ASSERT(nbh.isAvailable(), "mask allowed attack to an unavailable hex #" + std::to_string(nbh.hex));
@@ -362,7 +362,7 @@ namespace MMAI::BAI::V3 {
                 auto nbh = BattleHex{};
 
                 if (action->hexaction < HexAction::AMOVE_2TR) {
-                    auto edir = AMOVE_TO_EDIR.at(action->hexaction);
+                    auto edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
                     nbh = bhex.cloneInDirection(edir, false);
                 } else {
                     if (!acstack->doubleWide()) {
@@ -371,7 +371,7 @@ namespace MMAI::BAI::V3 {
                         break;
                     }
 
-                    auto edir = AMOVE_TO_EDIR.at(action->hexaction);
+                    auto edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
                     nbh = acstack->occupiedHex().cloneInDirection(edir, false);
                 }
 

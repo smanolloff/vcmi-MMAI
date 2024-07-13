@@ -32,21 +32,33 @@ namespace MMAI::BAI::V3 {
 
     using HexAction = Schema::V3::HexAction;
 
-    static auto AMOVE_TO_EDIR = std::map<HexAction, BattleHex::EDir>{
-        {HexAction::AMOVE_TR,       BattleHex::TOP_RIGHT},
-        {HexAction::AMOVE_R,        BattleHex::RIGHT},
-        {HexAction::AMOVE_BR,       BattleHex::BOTTOM_RIGHT},
-        {HexAction::AMOVE_BL,       BattleHex::BOTTOM_LEFT},
-        {HexAction::AMOVE_L,        BattleHex::LEFT},
-        {HexAction::AMOVE_TL,       BattleHex::TOP_LEFT},
-        {HexAction::AMOVE_2TR,      BattleHex::TOP_RIGHT},
-        {HexAction::AMOVE_2R,       BattleHex::RIGHT},
-        {HexAction::AMOVE_2BR,      BattleHex::BOTTOM_RIGHT},
-        {HexAction::AMOVE_2BL,      BattleHex::BOTTOM_LEFT},
-        {HexAction::AMOVE_2L,       BattleHex::LEFT},
-        {HexAction::AMOVE_2TL,      BattleHex::TOP_LEFT},
-    };
+    static_assert(EI(HexAction::AMOVE_TR) == 0);
+    static_assert(EI(HexAction::AMOVE_R) == 1);
+    static_assert(EI(HexAction::AMOVE_BR) == 2);
+    static_assert(EI(HexAction::AMOVE_BL) == 3);
+    static_assert(EI(HexAction::AMOVE_L) == 4);
+    static_assert(EI(HexAction::AMOVE_TL) == 5);
+    static_assert(EI(HexAction::AMOVE_2TR) == 6);
+    static_assert(EI(HexAction::AMOVE_2R) == 7);
+    static_assert(EI(HexAction::AMOVE_2BR) == 8);
+    static_assert(EI(HexAction::AMOVE_2BL) == 9);
+    static_assert(EI(HexAction::AMOVE_2L) == 10);
+    static_assert(EI(HexAction::AMOVE_2TL) == 11);
 
+    constexpr auto AMOVE_TO_EDIR = std::array<BattleHex::EDir, 12> {
+        BattleHex::TOP_RIGHT,
+        BattleHex::RIGHT,
+        BattleHex::BOTTOM_RIGHT,
+        BattleHex::BOTTOM_LEFT,
+        BattleHex::LEFT,
+        BattleHex::TOP_LEFT,
+        BattleHex::TOP_RIGHT,
+        BattleHex::RIGHT,
+        BattleHex::BOTTOM_RIGHT,
+        BattleHex::BOTTOM_LEFT,
+        BattleHex::LEFT,
+        BattleHex::TOP_LEFT,
+    };
 
     static_assert(EI(NonHexAction::count) == Schema::V3::N_NONHEX_ACTIONS);
     static_assert(EI(HexAction::_count) == Schema::V3::N_HEX_ACTIONS);
