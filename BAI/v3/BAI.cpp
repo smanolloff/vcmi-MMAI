@@ -56,6 +56,7 @@ namespace MMAI::BAI::V3 {
         // info("getNonRenderAciton called with result type: " + std::to_string(result->type));
         auto s = state.get();
         auto action = f_getAction(s);
+        debug("Got action: " + std::to_string(action));
         while (action == Schema::ACTION_RENDER_ANSI) {
             if (state->supdata->ansiRender.empty()) {
                 state->supdata->ansiRender = renderANSI();

@@ -268,8 +268,13 @@ namespace MMAI::BAI::V3 {
           }
         }
 
-        if (nomorale) setattr(A::MORALE, 0);
-        if (noluck) setattr(A::LUCK, 0);
+        nomorale
+            ? setattr(A::MORALE, 0)
+            : setattr(A::MORALE, std::clamp<int>(attr(A::MORALE), -3, 3));
+
+        noluck
+            ? setattr(A::LUCK, 0)
+            : setattr(A::LUCK, std::clamp<int>(attr(A::LUCK), -3, 3));
 
         shots = cstack->shots.available();
 
