@@ -1,3 +1,4 @@
+#include "Global.h"
 #include "StdInc.h"
 #include "lib/AI_Base.h"
 #include "summoner.h"
@@ -298,7 +299,14 @@ namespace MMAI::BAI::Scripted {
 
         side = Side;
         battle = cb->getBattle(battleID);
-        hero = battle->battleGetMyHero();
+        hero = dynamic_cast<const CGHeroInstance*>(side ? army2 : army1);
+
+        if(!hero) THROW_FORMAT("could not obtain army hero for side %d", side);
+
+        // tempOwner is changed server-side to enable army swaps
+        // => update tempOwner here as well (each side is responsible to do that)
+        // This prevents issues like battle->playerToSide() returning the wrong side
+        const_cast<CGHeroInstance*>(hero)->tempOwner = PlayerColor(side);
 
         auto spells = std::array<SpellID, 4> {
             SpellID::SUMMON_AIR_ELEMENTAL,
@@ -316,7 +324,7 @@ namespace MMAI::BAI::Scripted {
             if (spellToCast->canBeCast(battle.get(), spells::Mode::HERO, hero)) {
                 // can get lower if enemy magic dampers die, which could (very rarely)
                 // result in 1 more cast, but better to avoid checking it on each turn
-                spellCost = battle->battleGetSpellCost(spellToCast, battle->battleGetMyHero());
+                spellCost = battle->battleGetSpellCost(spellToCast, hero);
                 print("Can cast " + spellToCast->identifier);
             } else {
                 print("Can NOT cast " + spellToCast->identifier);
