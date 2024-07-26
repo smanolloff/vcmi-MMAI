@@ -15,6 +15,7 @@
 // =============================================================================
 
 #include "Global.h"
+#include "battle/CBattleInfoEssentials.h"
 #include "lib/AI_Base.h"
 #include "battle/BattleAction.h"
 
@@ -168,6 +169,14 @@ namespace MMAI::BAI::V3 {
                     return ba;
                 }
             }
+        } else if (astack->creatureId() == CreatureID::ARROW_TOWERS) {
+            auto allstacks = battle->battleGetStacks(CBattleInfoEssentials::ONLY_ENEMY);
+            auto target = std::max_element(allstacks.begin(), allstacks.end(), [](const CStack* a, const CStack* b) {
+                return a->unitType()->getAIValue() < b->unitType()->getAIValue();
+            });
+
+            ASSERT(target != allstacks.end(), "Could not find an enemy stack to attack. Falling back to a defend.");
+            return std::make_shared<BattleAction>(BattleAction::makeShotAttack(astack, *target));
         }
 
         return nullptr;

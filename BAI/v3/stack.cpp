@@ -41,10 +41,13 @@ namespace MMAI::BAI::V3 {
         auto qpos = (qit == q.end()) ? 100 : qit - q.begin();
 
         auto [x, y] = Hex::CalcXY(cstack->getPosition());
-        auto nomorale = false;
-        auto noluck = false;
         auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
         auto noretal = false;
+
+        auto minmorale = -3;
+        auto maxmorale = 3;
+        auto minluck = 0;  // int32_t maxBadLuck = - (int32_t) VLC->settings()->getVector(EGameSettings::COMBAT_BAD_LUCK_DICE).size();
+        auto maxluck = 3;
 
         // XXX: config/creatures/<faction>.json is misleading
         //      (for example, no creature has NO_MELEE_PENALTY bonus there)
@@ -53,12 +56,23 @@ namespace MMAI::BAI::V3 {
         for (auto &bonus : *bonuses) {
             switch (bonus->type) {
             /* 100% */
-            break; case BonusType::LUCK: addattr(A::LUCK, bonus->val);
-            break; case BonusType::NO_LUCK: noluck = true;
+            break; case BonusType::LUCK: {
+                if (bonus->valType == BonusValueType::INDEPENDENT_MAX)
+                    minluck = bonus->val;
+                else
+                    addattr(A::LUCK, bonus->val);
+            }
 
             /* 86% (127 creatures) */
-            break; case BonusType::MORALE: addattr(A::MORALE, bonus->val);
-            break; case BonusType::NO_MORALE: nomorale = true;
+            break; case BonusType::MORALE: {
+                if (bonus->valType == BonusValueType::INDEPENDENT_MAX)
+                    minmorale = bonus->val;  // e.g. minotaur
+                else
+                    addattr(A::MORALE, bonus->val);
+            }
+
+            break; case BonusType::NO_LUCK: minluck = maxluck = 0;
+            break; case BonusType::NO_MORALE: minmorale = maxmorale = 0;
 
             /* 28% (42 creatures) */
             break; case BonusType::FLYING: setattr(A::FLYING, 1);
@@ -69,9 +83,9 @@ namespace MMAI::BAI::V3 {
             /* 10% (15 creatures) undead */
             /* +4% (6 creatures) unliving */
             /* +all war machines */
-            break; case BonusType::UNDEAD: setattr(A::NON_LIVING, 2); nomorale = true;
-            break; case BonusType::NON_LIVING: setattr(A::NON_LIVING, 1); nomorale = true;
-            break; case BonusType::SIEGE_WEAPON: setattr(A::NON_LIVING, 2); nomorale = true;
+            break; case BonusType::UNDEAD: setattr(A::NON_LIVING, 2); minmorale = maxmorale = 0;
+            break; case BonusType::NON_LIVING: setattr(A::NON_LIVING, 1); minmorale = maxmorale = 0;
+            break; case BonusType::SIEGE_WEAPON: setattr(A::NON_LIVING, 2); minmorale = maxmorale = 0;
 
             /* 8.8% (13 creatures) */
             break; case BonusType::BLOCKS_RETALIATION: setattr(A::BLOCKS_RETALIATION, 1);
@@ -268,13 +282,8 @@ namespace MMAI::BAI::V3 {
           }
         }
 
-        nomorale
-            ? setattr(A::MORALE, 0)
-            : setattr(A::MORALE, std::clamp<int>(attr(A::MORALE), -3, 3));
-
-        noluck
-            ? setattr(A::LUCK, 0)
-            : setattr(A::LUCK, std::clamp<int>(attr(A::LUCK), -3, 3));
+        setattr(A::MORALE, std::clamp<int>(attr(A::MORALE), minmorale, maxmorale));
+        setattr(A::LUCK, std::clamp<int>(attr(A::LUCK), minluck, maxluck));
 
         shots = cstack->shots.available();
 

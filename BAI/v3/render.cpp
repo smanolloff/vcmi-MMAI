@@ -182,12 +182,27 @@ namespace MMAI::BAI::V3 {
                 return estack && estack->coversPos(bh);
             });
 
-            auto haveEstack = (it != estacks.end());
+            auto estack = it == estacks.end() ? nullptr : *it;
 
+            // find id of `estack`
+            // can't use std::distance, as estacks can contain nullptrs
+            // for regular slots (0..6)
+            int eindex = -1;
+            for (auto &stack : estacks) {
+                if (stack && estack) ++eindex;
+                if (stack == estack) break;
+            }
+
+            // XXX: the estack on `bh` might be "hidden" from the state
+            //      in which case the mask for shooting will be 0 although
+            //      there IS a stack to shoot on this hex
             if (v) {
-                expect(canshoot && haveEstack, "%s: =%d but canshoot=%d and haveEstack=%d", attrname, v, canshoot, haveEstack);
+                expect(canshoot && (eindex < MAX_STACKS_PER_SIDE), "%s: =%d but canshoot=%d and eindex=%d", attrname, v, canshoot, eindex);
             } else {
-                expect(!canshoot || !haveEstack, "%s: =%d but canshoot=%d and haveEstack=%d", attrname, v, canshoot, haveEstack);
+                // stack must be unable to shoot
+                // OR there must be no target at hex
+                // OR the target at hex must be "hidden"
+                expect(!canshoot || eindex == -1 || eindex >= MAX_STACKS_PER_SIDE, "%s: =%d but canshoot=%d and eindex=%d", attrname, v, canshoot, eindex);
             }
         };
 
@@ -272,9 +287,19 @@ namespace MMAI::BAI::V3 {
                 return stack && stack->coversPos(nbh);
             });
 
+            auto estack = it == estacks.end() ? nullptr : *it;
+
+            // find id of `estack`
+            // can't use std::distance, as estacks can contain nullptrs
+            // for regular slots (0..6)
+            int eindex = -1;
+            for (auto &stack : estacks) {
+                if (stack && estack) ++eindex;
+                if (stack == estack) break;
+            }
+
             if (mv) {
-                expect(it != estacks.end(), "%s: =%d (bhex %d, nbhex %d), but there's no stack on nbhex", attrname, bh.hex, nbh.hex);
-                auto estack = *it;
+                expect(eindex < MAX_STACKS_PER_SIDE, "%s: =%d (bhex %d, nbhex %d), but nbhex stack has eindex=%d", attrname, bh.hex, nbh.hex, eindex);
                 // must not pass "nbh" for defender position, as it could be its rear hex
                 expect(cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =1 (bhex %d, nbhex %d), but VCMI says isMeleeAttackPossible=0", attrname, bh.hex, nbh.hex);
             }
@@ -455,7 +480,7 @@ namespace MMAI::BAI::V3 {
 
                     // First see if the extra stack a "designated" extra STACK_ID
                     // Check a)
-                    int extraSeqNumber = std::distance(extras.begin(), it); // 1-based
+                    int extraSeqNumber = std::distance(extras.begin(), it);
                     if (extraSeqNumber < MAX_STACKS_PER_SIDE - 7) {
                         // stack is within the first 3 "extra" stacks
                         // => it will be assigned STACK_ID of 7..9 (or 17..19 for R side)
@@ -476,15 +501,11 @@ namespace MMAI::BAI::V3 {
                     auto nFreeRegularIdsNeeded = (extraSeqNumber+1) - (MAX_STACKS_PER_SIDE - 7);
                     if (nFreeRegularIds >= nFreeRegularIdsNeeded) {
                         // the extra stack was assigned a regular ID
-                        expect(v % MAX_STACKS_PER_SIDE < 7,
-                            "HEX.STACK_ID: v=%d, but expected v%%%d to be <7 (extraSeqNumber=%d, nFreeRegularIds=%d)",
-                            v, MAX_STACKS_PER_SIDE, extraSeqNumber, nFreeRegularIds
-                        );
-
                         auto idForSide = v % MAX_STACKS_PER_SIDE;
-                        expect(idForSide < regularIds.size(),
-                            "HEX.STACK_ID: v=%d, i.e. idForSide=%d (a regular id), but there are only %d stacks with regular ids.",
-                            v, idForSide, regularIds.size()
+
+                        expect(idForSide < 7,
+                            "HEX.STACK_ID: v=%d, i.e. idForSide=%d, but expected idForSide < 7 (extraSeqNumber=%d, nFreeRegularIds=%d)",
+                            v, idForSide, extraSeqNumber, nFreeRegularIds
                         );
 
                         // the ID our extra stack uses must NOT be used by a regular stack
@@ -640,8 +661,9 @@ namespace MMAI::BAI::V3 {
                             expect(cstack != astack, "STACK.QUEUE_POS: =%d but is same as astack", v);
                     break; case SA::RETALIATIONS_LEFT:
                         // not verifying unlimited retals, just check 0
-                        if (v == 0)
-                            expect(!cstack->ableToRetaliate(), "STACK.RETALIATIONS_LEFT: =0 but ableToRetaliate=true");
+                        // XXX: if stack is inactive (e.g. blinded), retals left may go negative
+                        if (v <= 0)
+                            expect(!cstack->ableToRetaliate(), "STACK.RETALIATIONS_LEFT: =%d but ableToRetaliate=true", v);
                         else
                             expect(cstack->ableToRetaliate(), "STACK.RETALIATIONS_LEFT: =%d but ableToRetaliate=false", v);
                     break; case SA::IS_WIDE:
@@ -722,6 +744,7 @@ namespace MMAI::BAI::V3 {
         std::string bluecol = "\033[34m"; // blue
         std::string darkcol = "\033[90m";
         std::string activemod = "\033[107m\033[7m"; // bold+reversed
+        std::string ukncol = "\033[7m"; // white
 
         std::vector<std::stringstream> lines;
 
@@ -734,21 +757,24 @@ namespace MMAI::BAI::V3 {
         //
         for (auto &alog : supdata->getAttackLogs()) {
             auto row = std::stringstream();
-            auto attcol = redcol;
-            auto defcol = bluecol;
+            auto attcol = ukncol;
+            auto attalias = '?';
+            auto defcol = ukncol;
+            auto defalias = '?';
 
-            if (alog->getDefender()->getAttr(SA::SIDE) == 0) {
-                attcol = bluecol;
-                defcol = redcol;
+            if (alog->getAttacker()) {
+                attcol = (alog->getAttacker()->getAttr(SA::SIDE) == 0) ? redcol : bluecol;
+                attalias = alog->getAttacker()->getAlias();
             }
 
-            if (alog->getAttacker())
-                row << attcol << "#" << alog->getAttacker()->getAlias() << nocol;
-            else
-                row << "\033[7m" << "FX" << nocol;
+            if (alog->getDefender()) {
+                defcol = (alog->getDefender()->getAttr(SA::SIDE) == 0) ? redcol : bluecol;
+                defalias = alog->getDefender()->getAlias();
+            }
 
+            row << attcol << "#" << attalias << nocol;
             row << " attacks ";
-            row << defcol << "#" << alog->getDefender()->getAlias() << nocol;
+            row << defcol << "#" << defalias << nocol;
             row << " for " << alog->getDamageDealt() << " dmg";
             row << " (kills: " << alog->getUnitsKilled() << ", value: " << alog->getValueKilled() << ")";
 
@@ -780,14 +806,14 @@ namespace MMAI::BAI::V3 {
 
         //     ₀▏₁▏₂▏₃▏₄▏₅▏₆▏₇▏₈▏₉▏₀▏₁▏₂▏₃▏₄
         //  ┃▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔┃          Player: RED
-        // ₀┨  0▏0▏○▏○▏✶▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○ ┠₀    Last action: 
+        // ₀┨  0▏0▏○▏○▏✶▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○ ┠₀    Last action:
         // ₁┨ ○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○  ┠₁      DMG dealt: 0
         // ₂┨  1▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○ ┠₂   Units killed: 0
         // ₃┨ ✶▕○▕▦▕▦▕▦▕▦▕▦▕○▕○▕○▕○▕○▕○▕○▕○  ┠₃   Value killed: 0
         // ₄┨  2▏2▏○▏○▏○▏○▏▦▏▦▏▦▏○▏○▏○▏○▏○▏○ ┠₄   DMG received: 0
         // ₅┨ 3▕3▕○▕○▕○▕○▕○▕○▕○▕▦▕○▕○▕○▕3▕3  ┠₅     Units lost: 0
         // ₆┨  4▏4▏○▏○▏○▏○▏○▏○▏✶▏▦▏▦▏○▏○▏○▏○ ┠₆     Value lost: 0
-        // ₇┨ ○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕▦▕○▕○▕○  ┠₇  Battle result: 
+        // ₇┨ ○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕▦▕○▕○▕○  ┠₇  Battle result:
         // ₈┨  5▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○ ┠₈
         // ₉┨ ○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○▕○  ┠₉
         // ₀┨  6▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏○▏✶▏○ ┠₀

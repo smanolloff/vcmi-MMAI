@@ -123,9 +123,10 @@ namespace MMAI::BAI::V3 {
         if (stack) {
             std::string targetcolor = "\033[31m";  // red
             if (color == "red") targetcolor = "\033[34m"; // blue
-            stackstr = targetcolor + "#" + std::to_string(stack->getAlias()) + "\033[0m";
+            stackstr = targetcolor + "#" + std::string(1, stack->getAlias()) + "\033[0m";
         } else {
-            stackstr =  "?";
+            std::string targetcolor = "\033[7m";  // white
+            stackstr = targetcolor + "#?" + "\033[0m";
         }
 
         switch (HexAction(ha)) {

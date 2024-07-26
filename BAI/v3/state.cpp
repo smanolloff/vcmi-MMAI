@@ -64,6 +64,15 @@ namespace MMAI::BAI::V3 {
 
         for (auto &al : attackLogs) {
             // note: in VCMI there is no excess dmg if stack is killed
+
+            // XXX: defender can be nullptr if excluded from obs
+            //      In this case, we must ignore the log as well as we can't
+            //      tell if this was damage received or dealt
+            //      (even if attacker is friendly, the defender might still be
+            //       friendly, i.e. dragon breath friendly fire)
+            if (al->defender == nullptr)
+                continue;
+
             if (al->defender->attr(SA::SIDE) == side) {
                 dmgReceived += al->dmg;
                 unitsLost += al->units;
