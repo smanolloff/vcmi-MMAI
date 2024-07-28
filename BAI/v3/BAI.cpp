@@ -210,7 +210,7 @@ namespace MMAI::BAI::V3 {
             allactions.push_back(a);
 
             if (a == Schema::ACTION_RESET) {
-                // FIXME: retreat may be impossible, a _real_ reset should be implemented
+                // XXX: retreat is always allowed for ML, limited by action mask only
                 info("Received ACTION_RESET, converting to ACTION_RETREAT in order to reset battle");
                 a = Schema::ACTION_RETREAT;
                 resetting = true;
