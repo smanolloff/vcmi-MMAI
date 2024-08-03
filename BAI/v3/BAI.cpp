@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "BAI/v3/hexaction.h"
 #include "Global.h"
 #include "battle/CBattleInfoEssentials.h"
 #include "lib/AI_Base.h"
@@ -243,9 +244,15 @@ namespace MMAI::BAI::V3 {
         if (!state->action->hex) {
             switch(NonHexAction(state->action->action)) {
             break; case NonHexAction::RETREAT:
+                // TODO: handle cases where mask does not allow retreat
                 res = std::make_shared<BattleAction>(BattleAction::makeRetreat(battle->battleGetMySide()));
             break; case NonHexAction::WAIT:
-                ASSERT(!acstack->waitedThisTurn, "stack already waited this turn");
+                if (acstack->waitedThisTurn) {
+                    ASSERT(!state->actmask.at(EI(NonHexAction::WAIT)), "mask allowed wait when stack has already waited");
+                    state->supdata->errcode = ErrorCode::ALREADY_WAITED;
+                    error("Action error: ALREADY_WAITED");
+                    return res;
+                }
                 res = std::make_shared<BattleAction>(BattleAction::makeWait(acstack));
             break; default:
                 THROW_FORMAT("Unexpected non-hex action: %d", state->action->action);

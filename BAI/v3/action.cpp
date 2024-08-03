@@ -114,7 +114,7 @@ namespace MMAI::BAI::V3 {
         std::shared_ptr<const Stack> stack = nullptr;
         std::string stackstr;
 
-        if (EI(ha) == EI(HexAction::SHOOT)) {
+        if (ha == HexAction::SHOOT || ha == HexAction::MOVE) {
             stack = hex->stack;
         } else if (aMoveTargetHex) {
             stack = aMoveTargetHex->stack;

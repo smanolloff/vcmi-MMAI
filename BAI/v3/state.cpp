@@ -107,6 +107,7 @@ namespace MMAI::BAI::V3 {
 
         for (int i=0; i<EI(NonHexAction::count); i++) {
             switch (NonHexAction(i)) {
+            // TODO: handle cases where retreat is not allowed (shackles of war, no hero, etc.)
             break; case NonHexAction::RETREAT: actmask.push_back(true);
             break; case NonHexAction::WAIT: actmask.push_back(battlefield->astack && !battlefield->astack->cstack->waitedThisTurn);
             break; default:
