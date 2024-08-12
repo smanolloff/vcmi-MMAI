@@ -1,5 +1,6 @@
 #include "Global.h"
 #include "StdInc.h"
+#include "battle/AICombatOptions.h"
 #include "lib/AI_Base.h"
 #include "summoner.h"
 #include "lib/CStack.h"
@@ -33,7 +34,7 @@ namespace MMAI::BAI::Scripted {
         }
     }
 
-    void Summoner::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB)
+    void Summoner::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions _aiCombatOptions)
     {
         print("init called, saving ptr to IBattleCallback");
         env = ENV;
@@ -43,11 +44,6 @@ namespace MMAI::BAI::Scripted {
         wasUnlockingGs = CB->unlockGsWhenWaiting;
         CB->waitTillRealize = false;
         CB->unlockGsWhenWaiting = false;
-    }
-
-    void Summoner::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences autocombatPreferences)
-    {
-        initBattleInterface(ENV, CB);
     }
 
     void Summoner::actionFinished(const BattleID & battleID, const BattleAction &action)

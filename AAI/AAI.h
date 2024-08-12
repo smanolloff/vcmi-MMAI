@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "battle/AICombatOptions.h"
 #include "lib/AI_Base.h"
 
 namespace MMAI::AAI {
@@ -75,8 +76,7 @@ namespace MMAI::AAI {
         void heroSecondarySkillChanged(const CGHeroInstance * hero, int which, int val) override;
         void heroVisit(const CGHeroInstance * visitor, const CGObjectInstance * visitedObj, bool start) override;
         void heroVisitsTown(const CGHeroInstance * hero, const CGTownInstance * town) override;
-        void initGameInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CCallback> CB) override;
-        void initGameInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CCallback> CB, std::any baggage) override;
+        void initGameInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CCallback> CB, AICombatOptions aiCombatOptions) override;
         void loadGame(BinaryDeserializer & h) override; //loading
         void newObject(const CGObjectInstance * obj) override;
         void objectPropertyChanged(const SetObjectProperty * sop) override;

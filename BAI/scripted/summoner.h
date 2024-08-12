@@ -3,6 +3,7 @@
 #include "../../lib/battle/BattleHex.h"
 #include "../../lib/battle/ReachabilityInfo.h"
 #include "../../lib/CGameInterface.h"
+#include "battle/AICombatOptions.h"
 #include "battle/CPlayerBattleCallback.h"
 #include "mapObjects/CGHeroInstance.h"
 
@@ -23,8 +24,7 @@ namespace MMAI::BAI::Scripted {
         Summoner();
         ~Summoner();
 
-        void initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB) override;
-        void initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences autocombatPreferences) override;
+        void initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions) override;
 
         void actionFinished(const BattleID & battleID, const BattleAction &action) override;//occurs AFTER every action taken by any stack or by the hero
         void actionStarted(const BattleID & battleID, const BattleAction &action) override;//occurs BEFORE every action taken by any stack or by the hero

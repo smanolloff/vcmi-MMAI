@@ -83,11 +83,17 @@ namespace MMAI::Schema {
     // - libconnector's getAction (when VCMI is started as a Gym env)
     //   (VcmiEnv->PyConnector->Connector::initBaggage())
     // - a dummy getAction (when VCMI is started as a standalone program)
-    using F_GetAction = std::function<Action(const IState*)>;
+    using F_GetAction = std::function<int(const IState*)>;
 
     // An F_GetValue type function is called only for assessing the
     // current state (i.e. how "good" is this situation according to the model)
     using F_GetValue = std::function<double(const IState*)>;
+
+    class IModel {
+    public:
+        virtual int getAction(const IState*) const = 0;
+        virtual double getValue(const IState*) const = 0;
+    };
 
     // The CB functions above are bundled into Baggage struct
     // to be seamlessly transported through VCMI code as a std::any object,

@@ -99,7 +99,7 @@ namespace MMAI::AAI {
 
         auto ainame = getBattleAIName();
         battleAI = CDynLibHandler::getNewBattleAI(ainame);
-        battleAI->initBattleInterface(env, cbc, baggage, color);
+        battleAI->initBattleInterface(env, cbc, aiCombatOptions);
         battleAI->battleStart(bid, army1, army2, tile, hero1, hero2, side_, replayAllowed);
     }
 
@@ -136,26 +136,21 @@ namespace MMAI::AAI {
         return std::nullopt;
     }
 
-    void AAI::initGameInterface(std::shared_ptr<Environment> env, std::shared_ptr<CCallback> CB) {
-        error("*** initGameInterface -- BUT NO BAGGAGE ***");
-        initGameInterface(env, CB, std::any{});
-    }
-
-    void AAI::initGameInterface(std::shared_ptr<Environment> env, std::shared_ptr<CCallback> CB, std::any baggage_) {
+    void AAI::initGameInterface(std::shared_ptr<Environment> env, std::shared_ptr<CCallback> CB, AICombatOptions aiCombatOptions_) {
         info("*** initGameInterface ***");
 
+        aiCombatOptions = aiCombatOptions_;
         color = CB->getPlayerID()->toString();
-        baggage = baggage_;
 
-        ASSERT(baggage_.has_value(), "baggage has no value");
-        ASSERT(baggage_.type() == typeid(Schema::Baggage*), "baggage of unexpected type");
-        auto baggage__ = std::any_cast<Schema::Baggage*>(baggage);
-        ASSERT(baggage__, "baggage contains a nullptr");
+        ASSERT(aiCombatOptions.other.has_value(), "aiCombatOptions.other has no value");
+        ASSERT(aiCombatOptions.other.type() == typeid(Schema::Baggage*), "aiCombatOptions.other of unexpected type");
+        auto baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
+        ASSERT(baggage, "baggage contains a nullptr");
 
         if (color == "red") {
-            battleAiName = baggage__->battleAINameRed;
+            battleAiName = baggage->battleAINameRed;
         } else if (color == "blue") {
-            battleAiName = baggage__->battleAINameBlue;
+            battleAiName = baggage->battleAINameBlue;
         } else {
             // Maps and everything basically assumes red human player attacking blue human player
             // Swapping armies and sides still uses only RED and BLUE as players

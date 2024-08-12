@@ -18,6 +18,7 @@
 #include <filesystem>
 #include "BAI/router.h"
 #include "BAI/base.h"
+#include "CCallback.h"
 #include "common.h"
 #include "scripted/summoner.h"
 
@@ -33,35 +34,30 @@ namespace MMAI::BAI {
         info("--- destructor ---");
     }
 
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, std::any baggage_, std::string color_) {
-        info("*** initBattleInterface -- WITH baggage ***");
-        colorname = color_;
-        ASSERT(baggage_.has_value(), "baggage has no value");
-        ASSERT(baggage_.type() == typeid(Schema::Baggage*), "baggage of unexpected type");
-        auto baggage = std::any_cast<Schema::Baggage*>(baggage_);
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions) {
+        info("*** initBattleInterface ***");
+        colorname = CB->getPlayerID()->toString();
 
+        auto &any = aiCombatOptions.other;
+        ASSERT(any.has_value(), "aiCombatOptions.other has no value");
+
+        auto &t = typeid(Schema::Baggage*);
+        ASSERT(any.type() == t, boost::str(
+            boost::format("Bad std::any payload type for aiCombatOptions.other: want: %s/%u, have: %s/%u") \
+            % boost::core::demangle(t.name()) % t.hash_code() \
+            % boost::core::demangle(any.type().name()) % any.type().hash_code()
+        ));
+
+        auto baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
         auto version = colorname == "red" ? baggage->versionRed : baggage->versionBlue;
 
         switch (version) {
         break; case MMAI_RESERVED_VERSION_SUMMONER:
             bai = std::make_unique<Scripted::Summoner>();
-            bai->initBattleInterface(ENV, CB);
+            bai->initBattleInterface(ENV, CB, aiCombatOptions);
         break; default:
             bai = Base::Create(colorname, baggage, ENV, CB);
         }
-    }
-
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB) {
-        info("*** initBattleInterface -- BUT NO BAGGAGE ***");
-        throw std::runtime_error("Baggage is required for all calls to Router::initBattleInterface");
-    }
-
-    void Router::initBattleInterface(
-        std::shared_ptr<Environment> ENV,
-        std::shared_ptr<CBattleCallback> CB,
-        AutocombatPreferences autocombatPreferences
-    ) {
-        initBattleInterface(ENV, CB);
     }
 
     /*

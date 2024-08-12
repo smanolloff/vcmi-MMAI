@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "battle/AICombatOptions.h"
 #include "battle/CPlayerBattleCallback.h"
 #include "lib/AI_Base.h"
 #include "base.h"
@@ -32,9 +33,7 @@ namespace MMAI::BAI {
          * Handled locally (not delegated)
          */
 
-        void initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB) override;
-        void initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences autocombatPreferences) override;
-        void initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, std::any baggage, std::string colorstr) override;
+        void initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions) override;
 
         /*
          * Delegated to BAI
