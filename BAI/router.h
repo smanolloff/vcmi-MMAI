@@ -27,7 +27,12 @@ namespace MMAI::BAI {
         Router();
         ~Router() override;
 
-        std::unique_ptr<CBattleGameInterface> bai;  // calls will be delegated to this object
+        std::shared_ptr<Environment> env;
+        std::shared_ptr<CBattleCallback> cb;
+
+        AICombatOptions aiCombatOptions;
+        Schema::Baggage* baggage;
+        std::shared_ptr<CBattleGameInterface> bai;  // calls will be delegated to this object
 
         /*
          * Handled locally (not delegated)

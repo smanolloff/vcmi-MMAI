@@ -16,10 +16,13 @@
 
 #include <stdexcept>
 #include <filesystem>
+#include "AI/BattleAI/BattleAI.h"
+#include "AI/StupidAI/StupidAI.h"
 #include "BAI/router.h"
 #include "BAI/base.h"
 #include "CCallback.h"
 #include "common.h"
+#include "schema/base.h"
 #include "scripted/summoner.h"
 
 namespace MMAI::BAI {
@@ -34,9 +37,13 @@ namespace MMAI::BAI {
         info("--- destructor ---");
     }
 
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions) {
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions_) {
         info("*** initBattleInterface ***");
-        colorname = CB->getPlayerID()->toString();
+        env = ENV;
+        cb = CB;
+
+        colorname = cb->getPlayerID()->toString();
+        aiCombatOptions = aiCombatOptions_;
 
         auto &any = aiCombatOptions.other;
         ASSERT(any.has_value(), "aiCombatOptions.other has no value");
@@ -48,16 +55,8 @@ namespace MMAI::BAI {
             % boost::core::demangle(any.type().name()) % any.type().hash_code()
         ));
 
-        auto baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
-        auto version = colorname == "red" ? baggage->versionRed : baggage->versionBlue;
-
-        switch (version) {
-        break; case MMAI_RESERVED_VERSION_SUMMONER:
-            bai = std::make_unique<Scripted::Summoner>();
-            bai->initBattleInterface(ENV, CB, aiCombatOptions);
-        break; default:
-            bai = Base::Create(colorname, baggage, ENV, CB);
-        }
+        baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
+        bai.reset();
     }
 
     /*
@@ -125,6 +124,36 @@ namespace MMAI::BAI {
     }
 
     void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool side, bool replayAllowed) {
+        Schema::IModel* model;
+
+        if (!baggage->devMode) {
+            // any other than MMAI_MODEL should never occur outside dev mode
+            ASSERT(baggage->modelLeft->getName() == "MMAI_MODEL", "bad name for modelLeft: want: MMAI_MODEL, have: " + baggage->modelLeft->getName());
+            model = side ? baggage->modelRight : baggage->modelLeft;
+        } else {
+            // dev mode assumes no neutral players
+            ASSERT(cb->getPlayerID()->hasValue(), "cb->getPlayerID()->hasValue() is false");
+
+            // in dev mode, player 0/red is always the left/attacker
+            // Using player ID instead of side, as sides may have been swapped
+            // (the models must *not* get swapped in this case)
+            model = cb->getPlayerID()->num ? baggage->modelRight : baggage->modelLeft;
+        }
+
+        if (model->getName() == "StupidAI") {
+            bai = CDynLibHandler::getNewBattleAI("StupidAI");
+            bai->initBattleInterface(env, cb, aiCombatOptions);
+        } else if (model->getName() == "BattleAI") {
+            bai = CDynLibHandler::getNewBattleAI("BattleAI");
+            bai->initBattleInterface(env, cb, aiCombatOptions);
+        } else if (model->getName() == MMAI_RESERVED_NAME_SUMMONER) {
+            bai = std::make_shared<Scripted::Summoner>();
+            bai->initBattleInterface(env, cb, aiCombatOptions);
+        } else {
+            // XXX: must not call initBattleInterface here
+            bai = Base::Create(model, env, cb);
+        }
+
         bai->battleStart(bid, army1, army2, tile, hero1, hero2, side, replayAllowed);
     }
 

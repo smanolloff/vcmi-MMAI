@@ -57,7 +57,7 @@ namespace MMAI::BAI::V3 {
     Schema::Action BAI::getNonRenderAction() {
         // info("getNonRenderAciton called with result type: " + std::to_string(result->type));
         auto s = state.get();
-        auto action = f_getAction(s);
+        auto action = model->getAction(s);
         debug("Got action: " + std::to_string(action));
         while (action == Schema::ACTION_RENDER_ANSI) {
             if (state->supdata->ansiRender.empty()) {
@@ -66,7 +66,7 @@ namespace MMAI::BAI::V3 {
             }
 
             // info("getNonRenderAciton (loop) called with result type: " + std::to_string(res.type));
-            action = f_getAction(state.get());
+            action = model->getAction(state.get());
         }
         state->supdata->ansiRender.clear();
         state->supdata->type = Schema::V3::ISupplementaryData::Type::REGULAR;

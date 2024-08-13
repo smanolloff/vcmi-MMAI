@@ -28,23 +28,21 @@
 
 namespace MMAI::BAI {
     // static
-    std::unique_ptr<Base> Base::Create(
-        const std::string colorname,
-        const Schema::Baggage* baggage,
+    std::shared_ptr<Base> Base::Create(
+        Schema::IModel* model,
         const std::shared_ptr<Environment> env,
         const std::shared_ptr<CBattleCallback> cb
     ) {
-        std::unique_ptr<Base> res;
-
-        auto version = colorname == "red" ? baggage->versionRed : baggage->versionBlue;
+        std::shared_ptr<Base> res;
+        auto version = model->getVersion();
 
         switch (version) {
         break; case 1:
-            res = std::make_unique<V1::BAI>(version, colorname, baggage, env, cb);
+            res = std::make_shared<V1::BAI>(model, version, env, cb);
         break; case 2:
-            res = std::make_unique<V2::BAI>(version, colorname, baggage, env, cb);
+            res = std::make_shared<V2::BAI>(model, version, env, cb);
         break; case 3:
-            res = std::make_unique<V3::BAI>(version, colorname, baggage, env, cb);
+            res = std::make_shared<V3::BAI>(model, version, env, cb);
         break; default:
             throw std::runtime_error("Unsupported schema version: " + std::to_string(version));
         }
@@ -54,17 +52,16 @@ namespace MMAI::BAI {
     }
 
     Base::Base(
-        const int version_,
-        const std::string colorname_,
-        const Schema::Baggage* baggage_,
-        const std::shared_ptr<Environment> env_,
-        const std::shared_ptr<CBattleCallback> cb_
-    ) : version(version_)
-      , name("BAI-v" + std::to_string(version_))
-      , colorname(colorname_)
-      , baggage(baggage_)
-      , env(env_)
-      , cb(cb_)
+        Schema::IModel* model,
+        const int version,
+        const std::shared_ptr<Environment> env,
+        const std::shared_ptr<CBattleCallback> cb
+    ) : model(model)
+      , version(version)
+      , env(env)
+      , cb(cb)
+      , name("BAI-v" + std::to_string(version))
+      , colorname(cb->getPlayerID()->toString())
     {
         std::ostringstream oss;
         oss << this; // Store this memory address
@@ -74,19 +71,6 @@ namespace MMAI::BAI {
         // Not sure if this is needed
         cb->waitTillRealize = false;
         cb->unlockGsWhenWaiting = false;
-
-        if (colorname == "red") {
-            f_getAction = baggage->f_getActionRed;
-            f_getValue = baggage->f_getValueRed;
-            debug("using f_getActionRed");
-        } else if (colorname == "blue") {
-            f_getAction = baggage->f_getActionBlue;
-            f_getValue = baggage->f_getValueBlue;
-            debug("using f_getActionBlue");
-        } else {
-            error("expected red or blue, got: " + colorname);
-            throw std::runtime_error("unexpected color");
-        }
     }
 
     /*

@@ -25,20 +25,18 @@ namespace MMAI::BAI {
     class Base : public CBattleGameInterface {
     public:
         // Factory method for versioned derived BAI (e.g. BAI::V1)
-        static std::unique_ptr<Base> Create(
-            const std::string colorname,
-            const Schema::Baggage* baggage,
+        static std::shared_ptr<Base> Create(
+            Schema::IModel* model,
             const std::shared_ptr<Environment> env,
             const std::shared_ptr<CBattleCallback> cb
         );
 
         Base() = delete;
         Base(
-            const int version_,
-            const std::string colorname_,
-            const Schema::Baggage* baggage_,
-            const std::shared_ptr<Environment> env_,
-            const std::shared_ptr<CBattleCallback> cb_
+            Schema::IModel* model,
+            const int version,
+            const std::shared_ptr<Environment> env,
+            const std::shared_ptr<CBattleCallback> cb
         );
 
 
@@ -88,11 +86,9 @@ namespace MMAI::BAI {
     protected:
         const std::shared_ptr<Environment> env;
         const std::shared_ptr<CBattleCallback> cb;
-        const Schema::Baggage* baggage;
+        Schema::IModel* model;
 
         std::string addrstr = "?";
-        Schema::F_GetAction f_getAction;
-        Schema::F_GetValue f_getValue;
 
         /*
          * Templates defined in the header

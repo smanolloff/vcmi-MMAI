@@ -49,12 +49,7 @@ namespace MMAI::AAI {
 
     std::string AAI::getBattleAIName() const {
         debug("*** getBattleAIName ***");
-
-        ASSERT(!battleAiName.empty(), "battleAIName is not initialized yet");
-        ASSERT(battleAiName != "-", "battleAIName should not be called on player " + color);
-
-        debug("getBattleAIName: " + battleAiName);
-        return battleAiName;
+        return "MMAI";
     }
 
     /*
@@ -98,7 +93,7 @@ namespace MMAI::AAI {
         assert(cbc);
 
         auto ainame = getBattleAIName();
-        battleAI = CDynLibHandler::getNewBattleAI(ainame);
+        battleAI = CDynLibHandler::getNewBattleAI("MMAI");
         battleAI->initBattleInterface(env, cbc, aiCombatOptions);
         battleAI->battleStart(bid, army1, army2, tile, hero1, hero2, side_, replayAllowed);
     }
@@ -141,27 +136,6 @@ namespace MMAI::AAI {
 
         aiCombatOptions = aiCombatOptions_;
         color = CB->getPlayerID()->toString();
-
-        ASSERT(aiCombatOptions.other.has_value(), "aiCombatOptions.other has no value");
-        ASSERT(aiCombatOptions.other.type() == typeid(Schema::Baggage*), "aiCombatOptions.other of unexpected type");
-        auto baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
-        ASSERT(baggage, "baggage contains a nullptr");
-
-        if (color == "red") {
-            battleAiName = baggage->battleAINameRed;
-        } else if (color == "blue") {
-            battleAiName = baggage->battleAINameBlue;
-        } else {
-            // Maps and everything basically assumes red human player attacking blue human player
-            // Swapping armies and sides still uses only RED and BLUE as players
-            // Other players should never be asked to lead a battle
-            // However, mlclient sets settings["server"]["playerAI"] = "MMAI"
-            // => all players get initialized with MMAI::AAI
-            // We must make sure the getBattleAI never gets called on them
-            battleAiName = "-";
-        }
-
-        debug("(init) battleAiName: " + battleAiName);
 
         cb = CB;
         cbc = CB;

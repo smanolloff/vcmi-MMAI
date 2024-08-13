@@ -131,11 +131,8 @@ namespace MMAI::AAI {
         void battleUnitsChanged(const BattleID &bid, const std::vector<UnitChanges> &units) override;
         void yourTacticPhase(const BattleID &bid, int distance) override;
     private:
-        std::any baggage;
-
         std::string color = "?";
         std::string addrstr = "?";
-        std::string battleAiName;
 
         bool side;
 

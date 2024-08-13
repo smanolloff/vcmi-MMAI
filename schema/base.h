@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <boost/core/demangle.hpp>
+#include <boost/format.hpp>
+
 #include <any>
 #include <functional>
 #include <vector>
@@ -44,12 +47,12 @@
 #endif
 
 #ifdef MMAI_DLL
-#  define MMAI_LINKAGE MMAI_EXPORT
+#  define MMAI_DLL_LINKAGE MMAI_EXPORT
 #else
-#  define MMAI_LINKAGE MMAI_IMPORT
+#  define MMAI_DLL_LINKAGE MMAI_IMPORT
 #endif
 
-#define MMAI_RESERVED_VERSION_SUMMONER -1
+#define MMAI_RESERVED_NAME_SUMMONER "MMAI_SCRIPT_SUMMONER"
 
 namespace MMAI::Schema {
     #define EI(enum_value) static_cast<int>(enum_value)
@@ -71,56 +74,47 @@ namespace MMAI::Schema {
         virtual const BattlefieldState& getBattlefieldState() const = 0;
 
         // Supplementary data may differ across versions => expose it as std::any
-        // XXX: ensure the real data type has MMAI_LINKAGE to prevent std::any_cast errors
+        // XXX: ensure the real data type has MMAI_DLL_LINKAGE to prevent std::any_cast errors
         virtual const std::any getSupplementaryData() const = 0;
 
         virtual int version() const = 0;
         virtual ~IState() = default;
     };
 
-    // An F_GetAction type function is called by BAI on each "activeStack()" call.
-    // Such a function is usually:
-    // - libconnector's getAction (when VCMI is started as a Gym env)
-    //   (VcmiEnv->PyConnector->Connector::initBaggage())
-    // - a dummy getAction (when VCMI is started as a standalone program)
-    using F_GetAction = std::function<int(const IState*)>;
-
-    // An F_GetValue type function is called only for assessing the
-    // current state (i.e. how "good" is this situation according to the model)
-    using F_GetValue = std::function<double(const IState*)>;
-
-    class IModel {
-    public:
-        virtual int getAction(const IState*) const = 0;
-        virtual double getValue(const IState*) const = 0;
-    };
-
     // The CB functions above are bundled into Baggage struct
     // to be seamlessly transported through VCMI code as a std::any object,
     // then cast back to `Baggage` in the AI constructor.
     // Linkage needed due to ensure std::any_cast sees the proper symbol
-    struct MMAI_LINKAGE Baggage {
-        Baggage() = delete;
-        Baggage(std::string map_, F_GetAction f, int version)
-        : map(map_)
-        , f_getActionRed(f)
-        , f_getActionBlue(f)
-        , versionRed(version)
-        , versionBlue(version)
-        {}
+    class IModel {
+    public:
+        virtual std::string getName() = 0;
+        virtual int getVersion() = 0;
+        virtual int getAction(const IState*) = 0;
+        virtual double getValue(const IState*) = 0;
 
-        const std::string map;
-
-        // Set during vcmi_init(...) to "MMAI", "BattleAI" or "StupidAI"
-        std::string battleAINameRed;
-        std::string battleAINameBlue;
-
-        // Optionally set during vcmi_init(...) if loading a pre-trained model
-        F_GetAction f_getActionRed;
-        F_GetAction f_getActionBlue;
-        F_GetValue f_getValueRed;
-        F_GetValue f_getValueBlue;
-        int versionRed = 1;
-        int versionBlue = 1;
+        virtual ~IModel() = default;
     };
+
+    struct MMAI_DLL_LINKAGE Baggage {
+        IModel* modelLeft;
+        IModel* modelRight;
+
+        // Models will be assigned based on player color
+        // (used if training a single model on both sides)
+        bool devMode = false;
+    };
+
+    inline std::string AnyCastError(const std::any any, const std::type_info &t) {
+        if (!any.has_value()) {
+            return "no value";
+        } else if (any.type() != t) {
+            return boost::str(
+                boost::format("type mismatch: want: %s/%u, have: %s/%u") \
+                % boost::core::demangle(t.name()) % t.hash_code() \
+                % boost::core::demangle(any.type().name()) % any.type().hash_code()
+            );
+        } else {
+            return "";
+        }
+    }
 }
