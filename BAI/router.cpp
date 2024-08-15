@@ -123,13 +123,13 @@ namespace MMAI::BAI {
         bai->battleStacksEffectsSet(bid, sse);
     }
 
-    void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool side, bool replayAllowed) {
+    void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         Schema::IModel* model;
 
         if (!baggage->devMode) {
             // any other than MMAI_MODEL should never occur outside dev mode
             ASSERT(baggage->modelLeft->getName() == "MMAI_MODEL", "bad name for modelLeft: want: MMAI_MODEL, have: " + baggage->modelLeft->getName());
-            model = side ? baggage->modelRight : baggage->modelLeft;
+            model = side == BattleSide::DEFENDER ? baggage->modelRight : baggage->modelLeft;
         } else {
             // dev mode assumes no neutral players
             ASSERT(cb->getPlayerID()->hasValue(), "cb->getPlayerID()->hasValue() is false");

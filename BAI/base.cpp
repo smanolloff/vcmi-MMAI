@@ -157,7 +157,7 @@ namespace MMAI::BAI {
             res += "\n\t* castByHero=" + std::to_string(sc->castByHero);
             res += "\n\t* casterStack=" + (caster ? caster->getDescription() : "");
             res += "\n\t* activeCast=" + std::to_string(sc->activeCast);
-            res += "\n\t* side=" + std::to_string(sc->side);
+            res += "\n\t* side=" + std::to_string(EI(sc->side));
             res += "\n\t* tile=" + std::to_string(sc->tile);
 
             res += "\n\t* affected:";
@@ -242,15 +242,15 @@ namespace MMAI::BAI {
         });
     }
 
-    void Base::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool side, bool replayAllowed) {
+    void Base::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         debug("*** battleStart ***");
 
         // XXX: hero->tempOwner is changed server-side to enable army swaps
         // => update it client-side as well (left and right must both do this)
         // This prevents issues like battle->playerToSide() returning the wrong side
-        auto hero = dynamic_cast<const CGHeroInstance*>(side ? army2 : army1);
-        if(!hero) THROW_FORMAT("could not obtain army hero for side %d", side);
-        const_cast<CGHeroInstance*>(hero)->tempOwner = PlayerColor(side);
+        auto hero = dynamic_cast<const CGHeroInstance*>(side == BattleSide::DEFENDER ? army2 : army1);
+        if(!hero) THROW_FORMAT("could not obtain army hero for side %d", EI(side));
+        ML(const_cast<CGHeroInstance*>(hero)->tempOwner = PlayerColor(EI(side)));
     }
 
     // XXX: positive morale triggers an effect

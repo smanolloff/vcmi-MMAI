@@ -120,10 +120,10 @@ namespace MMAI::BAI::V3 {
             setattr(A::STACK_ID, stack->attr(SA::ID));
 
         if (astackinfo) {
-            setStateMask(accessibility, obstacles, astackinfo->stack->attr(SA::SIDE));
+            setStateMask(accessibility, obstacles, BattleSide(astackinfo->stack->attr(SA::SIDE)));
             setActionMask(astackinfo, hexstacks);
         } else {
-            setStateMask(accessibility, obstacles, 0);
+            setStateMask(accessibility, obstacles, BattleSide::ATTACKER);
         }
 
         finalize();
@@ -157,7 +157,7 @@ namespace MMAI::BAI::V3 {
     void Hex::setStateMask(
         const EAccessibility accessibility,
         const std::vector<std::shared_ptr<const CObstacleInstance>> &obstacles,
-        bool side
+        BattleSide side
     ) {
         // First process obstacles
         // XXX: set only non-PASSABLE flags
@@ -194,8 +194,8 @@ namespace MMAI::BAI::V3 {
                     //      to cast the spell in this case (e.g. if there is a
                     //      terrain-native stack in the enemy army).
                     statemask |= (side == casterside)
-                        ? (side ? S_DAMAGING_L : S_DAMAGING_R)
-                        : (side ? S_DAMAGING_R : S_DAMAGING_L);
+                        ? (side == BattleSide::DEFENDER ? S_DAMAGING_L : S_DAMAGING_R)
+                        : (side == BattleSide::DEFENDER ? S_DAMAGING_R : S_DAMAGING_L);
                 }
             break; default:
                 THROW_FORMAT("Unexpected obstacle type: %d", EI(obstacle->obstacleType));
@@ -219,7 +219,7 @@ namespace MMAI::BAI::V3 {
             statemask &= ~S_PASSABLE;
         break; case EAccessibility::GATE:
             // See BattleProcessor::updateGateState() for gate states
-            // See CBattleInfoCallback::getAccesibility() for accessibility on gate
+            // See CBattleInfoCallback::getAccessibility() for accessibility on gate
             //
             // TL; DR:
             // -> GATE means closed, non-blocked gate
@@ -232,7 +232,7 @@ namespace MMAI::BAI::V3 {
             //
             // However, in case of GATE accessibility, we still need
             // to set the PASSABLE flag accordingly.
-            side
+            side == BattleSide::DEFENDER
                 ? statemask.set(EI(S::PASSABLE))
                 : statemask.reset(EI(S::PASSABLE));
         break; case EAccessibility::UNAVAILABLE:
@@ -285,13 +285,13 @@ namespace MMAI::BAI::V3 {
                     actmask.set(i);
                 } else if (hexaction <= HexAction::AMOVE_2BR) {
                     // only wide R stacks can perform 2TR/2R/2BR attacks
-                    if (a_cstack->unitSide() == 1 && a_cstack->doubleWide()) {
+                    if (a_cstack->unitSide() == BattleSide::DEFENDER && a_cstack->doubleWide()) {
                         ASSERT(CStack::isMeleeAttackPossible(a_cstack, n_cstack, bhex), "vcmi says melee attack is IMPOSSIBLE [2]");
                         actmask.set(i);
                     }
                 } else {
                     // only wide L stacks can perform 2TL/2L/2BL attacks
-                    if (a_cstack->unitSide() == 0 && a_cstack->doubleWide()) {
+                    if (a_cstack->unitSide() == BattleSide::ATTACKER && a_cstack->doubleWide()) {
                         ASSERT(CStack::isMeleeAttackPossible(a_cstack, n_cstack, bhex), "vcmi says melee attack is IMPOSSIBLE");
                         actmask.set(i);
                     }

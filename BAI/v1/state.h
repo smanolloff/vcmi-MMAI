@@ -61,7 +61,7 @@ namespace MMAI::BAI::V1 {
         std::unique_ptr<Action> action = nullptr;
         const std::string colorname;
         const CPlayerBattleCallback* battle; // survives discard()
-        const BattlePerspective::BattlePerspective side;
+        const BattleSide side;
         const int initialSide0ArmyValue;
         const int initialSide1ArmyValue;
         bool isMorale = false;

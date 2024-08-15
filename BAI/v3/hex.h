@@ -86,7 +86,7 @@ namespace MMAI::BAI::V3 {
         void setStateMask(
             const EAccessibility accessibility,
             const std::vector<std::shared_ptr<const CObstacleInstance>> &obstacles,
-            bool side
+            BattleSide side
         );
 
         void setActionMask(

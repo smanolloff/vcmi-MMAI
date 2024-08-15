@@ -295,7 +295,7 @@ namespace MMAI::BAI::V3 {
             break; case A::ID:                  v = id;
             break; case A::Y_COORD:             v = y;
             break; case A::X_COORD:             v = x;
-            break; case A::SIDE:                v = cstack->unitSide();
+            break; case A::SIDE:                v = EI(cstack->unitSide());
             break; case A::QUANTITY:            v = cstack->getCount();
             break; case A::ATTACK:              v = cstack->getAttack(shots > 0);
             break; case A::DEFENSE:             v = cstack->getDefense(false);

@@ -178,7 +178,7 @@ namespace MMAI::BAI::V1 {
         auto inf = cstack->hasBonusOfType(BonusType::UNLIMITED_RETALIATIONS);
         setattr(A::STACK_RETALIATIONS_LEFT,     inf ? 2 : cstack->counterAttacks.available());
 
-        setattr(A::STACK_SIDE,                  cstack->unitSide());
+        setattr(A::STACK_SIDE,                  EI(cstack->unitSide()));
         setattr(A::STACK_SLOT,                  cstack->unitSlot());
         setattr(A::STACK_CREATURE_TYPE,         cstack->creatureId());
         setattr(A::STACK_AI_VALUE_TENTH,        cstack->creatureId().toCreature()->getAIValue() / 10);

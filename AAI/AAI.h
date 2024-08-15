@@ -37,7 +37,8 @@ namespace MMAI::AAI {
          * Hybrid call-ins (conecrning both AAI and BAI)
          */
 
-        void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool side, bool replayAllowed) override;
+        void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) override;
+
         void battleEnd(const BattleID &bid, const BattleResult *br, QueryID queryID) override;
 
         /*
@@ -58,7 +59,7 @@ namespace MMAI::AAI {
         void battleStartBefore(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2) override;
         void beforeObjectPropertyChanged(const SetObjectProperty * sop) override;
         void buildChanged(const CGTownInstance * town, BuildingID buildingID, int what) override;
-        void bulkArtMovementStart(size_t numOfArts) override;
+        void bulkArtMovementStart(size_t numOfArts, size_t possibleAssemblyNumOfArts) override;
         void centerView(int3 pos, int focusTime) override;
         void commanderGotLevel(const CCommanderInstance * commander, std::vector<ui32> skills, QueryID queryID) override; //TODO
         void finish() override;
@@ -77,7 +78,6 @@ namespace MMAI::AAI {
         void heroVisit(const CGHeroInstance * visitor, const CGObjectInstance * visitedObj, bool start) override;
         void heroVisitsTown(const CGHeroInstance * hero, const CGTownInstance * town) override;
         void initGameInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CCallback> CB, AICombatOptions aiCombatOptions) override;
-        void loadGame(BinaryDeserializer & h) override; //loading
         void newObject(const CGObjectInstance * obj) override;
         void objectPropertyChanged(const SetObjectProperty * sop) override;
         void objectRemoved(const CGObjectInstance * obj, const PlayerColor &initiator) override;
@@ -88,7 +88,6 @@ namespace MMAI::AAI {
         void receivedResource() override;
         void requestRealized(PackageApplied * pa) override;
         void requestSent(const CPackForServer * pack, int requestID) override;
-        void saveGame(BinarySerializer & h) override; //saving
         void showBlockingDialog(const std::string &text, const std::vector<Component> &components, QueryID askID, const int soundID, bool selection, bool cancel, bool safeToAutoaccept) override; //Show a dialog, player must take decision. If selection then he has to choose between one of given components, if cancel he is allowed to not choose. After making choice, CCallback::selectionMade should be called with number of selected component (1 - n) or 0 for cancel (if allowed) and askID.
         void showGarrisonDialog(const CArmedInstance * up, const CGHeroInstance * down, bool removableUnits, QueryID queryID) override; //all stacks operations between these objects become allowed, interface has to call onEnd when done
         void showHillFortWindow(const CGObjectInstance * object, const CGHeroInstance * visitor) override;
@@ -134,7 +133,7 @@ namespace MMAI::AAI {
         std::string color = "?";
         std::string addrstr = "?";
 
-        bool side;
+        BattleSide side;
 
         void error(const std::string &text) const;
         void warn(const std::string &text) const;

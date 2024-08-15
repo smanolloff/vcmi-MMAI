@@ -64,7 +64,7 @@ namespace MMAI::BAI::V3 {
         const std::pair<int, int> initialArmyValues;
         const std::string colorname;
         const CPlayerBattleCallback* const battle; // survives discard()
-        const BattlePerspective::BattlePerspective side;
+        const BattleSide side;
         std::shared_ptr<const Battlefield> battlefield;
         bool isMorale = false;
 

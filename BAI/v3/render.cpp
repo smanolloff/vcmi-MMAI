@@ -80,15 +80,15 @@ namespace MMAI::BAI::V3 {
 
             if (cstack->unitSlot() < 0) {
                 if (cstack->unitSlot() == SlotID::SUMMONED_SLOT_PLACEHOLDER)
-                    cstack->unitSide()
+                    cstack->unitSide() == BattleSide::DEFENDER
                         ? r_CStacksSummons.push_back(cstack)
                         : l_CStacksSummons.push_back(cstack);
                 else if (cstack->unitSlot() == SlotID::WAR_MACHINES_SLOT)
-                    cstack->unitSide()
+                    cstack->unitSide() == BattleSide::DEFENDER
                         ? r_CStacksMachines.push_back(cstack)
                         : l_CStacksMachines.push_back(cstack);
             } else {
-                cstack->unitSide()
+                cstack->unitSide() == BattleSide::DEFENDER
                     ? r_CStacks.at(cstack->unitSlot()) = cstack
                     : l_CStacks.at(cstack->unitSlot()) = cstack;
             }
@@ -177,7 +177,7 @@ namespace MMAI::BAI::V3 {
         // values are 0 or 1 and this check requires a valid target
         auto ensureShootability = [=](BattleHex bh, int v, const CStack* cstack, const char* attrname) {
             auto canshoot = battle->battleCanShoot(cstack);
-            auto estacks = getAllStacksForSide(!cstack->unitSide());
+            auto estacks = getAllStacksForSide(!EI(cstack->unitSide()));
             auto it = std::find_if(estacks.begin(), estacks.end(), [&bh](auto estack) {
                 return estack && estack->coversPos(bh);
             });
@@ -282,7 +282,7 @@ namespace MMAI::BAI::V3 {
               break;
             }
 
-            auto estacks = getAllStacksForSide(!cstack->unitSide());
+            auto estacks = getAllStacksForSide(!EI(cstack->unitSide()));
             auto it = std::find_if(estacks.begin(), estacks.end(), [&nbh](auto stack) {
                 return stack && stack->coversPos(nbh);
             });
@@ -347,7 +347,7 @@ namespace MMAI::BAI::V3 {
             auto bh = hex->bhex;
             expect(bh == BattleHex(x+1, y), "hex->bhex mismatch");
 
-            auto ainfo = battle->getAccesibility();
+            auto ainfo = battle->getAccessibility();
             auto aa = ainfo.at(bh);
 
             for (int i=0; i < EI(HexAttribute::_count); i++) {
@@ -369,11 +369,11 @@ namespace MMAI::BAI::V3 {
                     };
 
                     auto mask = HexStateMask(v);
-                    bool side = astack ? astack->unitSide() : 0; // XXX: Hex defaults to 0 if there is no astack
+                    BattleSide side = astack ? astack->unitSide() : BattleSide::ATTACKER; // XXX: Hex defaults to 0 if there is no astack
 
                     if (mask.test(EI(HexState::PASSABLE))) {
                         expect(
-                            aa == EAccessibility::ACCESSIBLE || (side && aa == EAccessibility::GATE),
+                            aa == EAccessibility::ACCESSIBLE || (EI(side) && aa == EAccessibility::GATE),
                             "HEX.STATE_MASK: PASSABLE bit is set, but accessibility is %d (side: %d)", EI(aa), side
                         );
                     } else {
@@ -400,7 +400,7 @@ namespace MMAI::BAI::V3 {
                             if (s == SpellID::FIRE_WALL) return true;
                             if (s != SpellID::LAND_MINE) return false;
                             auto so = dynamic_cast<const SpellCreatedObstacle *>(o);
-                            return (side == so->casterSide) ? side : !side;
+                            return (side == so->casterSide) ? bool(side) : !bool(side);
                         });
                         expect(damaging, "HEX.STATE_MASK: DAMAGING bit is set, but no obstacle triggers a damaging effect");
                     }
@@ -413,7 +413,7 @@ namespace MMAI::BAI::V3 {
                             if (s == SpellID::FIRE_WALL) return true;
                             if (s != SpellID::LAND_MINE) return false;
                             auto so = dynamic_cast<const SpellCreatedObstacle *>(o);
-                            return (side == so->casterSide) ? !side : side;
+                            return (side == so->casterSide) ? !bool(side) : bool(side);
                         });
                         expect(damaging, "HEX.STATE_MASK: DAMAGING bit is set, but no obstacle triggers a damaging effect");
                     }
@@ -428,7 +428,7 @@ namespace MMAI::BAI::V3 {
                         // NULL action mask happens if there are too many stacks
                         // and the active stack is one of the ignored stacks
                         // XXX: cstack may be null here (this may be a blank hex)
-                        auto stacks = battle->battleGetMySide() ? r_CStacksAll : l_CStacksAll;
+                        auto stacks = battle->battleGetMySide() == BattleSide::DEFENDER ? r_CStacksAll : l_CStacksAll;
                         expect(stacks.size() > MAX_STACKS_PER_SIDE, "HEX.ACTION_MASK: is null and hex->stack is null, but n_stacks is %d", stacks.size());
                     } else if (ended) {
                         expect(v == 0, "HEX.ACTION_MASK: battle ended, but action mask is %d", v);
@@ -450,7 +450,7 @@ namespace MMAI::BAI::V3 {
 
                     if (slot >= 0) {
                         // regular stack -- STACK_ID is 0..6 (or 10..16 for R side)
-                        auto id = side ? slot + MAX_STACKS_PER_SIDE : slot;
+                        auto id = side == BattleSide::DEFENDER ? slot + MAX_STACKS_PER_SIDE : slot;
                         expect(v == id, "HEX.STACK_ID: =%d, but cstack->unitSlot()=%d and side=%d", v, slot, side);
                         break;
                     }
@@ -461,7 +461,7 @@ namespace MMAI::BAI::V3 {
                         "unexpected unitSlot: %d", slot
                     );
 
-                    auto extras = side ? r_CStacksExtra : l_CStacksExtra;
+                    auto extras = side == BattleSide::DEFENDER ? r_CStacksExtra : l_CStacksExtra;
                     auto it = std::find(extras.begin(), extras.end(), cstack);
                     if (it == extras.end()) {
                         THROW_FORMAT("HEX.STACK_ID: cstack is an extra stack (unitSlot()=%d), but did not find it among the extra stacks", slot);
@@ -485,14 +485,14 @@ namespace MMAI::BAI::V3 {
                         // stack is within the first 3 "extra" stacks
                         // => it will be assigned STACK_ID of 7..9 (or 17..19 for R side)
                         int idForSide = 7 + extraSeqNumber;
-                        int globalID = side ? 10 + idForSide : idForSide;
+                        int globalID = side == BattleSide::DEFENDER ? 10 + idForSide : idForSide;
                         expect(v == globalID, "HEX.STACK_ID: v=%d, but expected %d (extraSeqNumber=%d)", v, globalID, extraSeqNumber);
                         break;
                     }
 
                     // The extra stack is at least 4th or later in line
                     // => Check b)
-                    auto regulars = cstack->unitSide() ? r_CStacks : l_CStacks;
+                    auto regulars = cstack->unitSide() == BattleSide::DEFENDER ? r_CStacks : l_CStacks;
                     auto regularIds = std::vector<int> {};
                     for (auto s : regulars) if (s) regularIds.push_back(s->unitSlot());
 
@@ -628,7 +628,7 @@ namespace MMAI::BAI::V3 {
                     break; case SA::X_COORD:
                         expect(v == x, "STACK.X_COORD: %d != %d", v, x);
                     break; case SA::SIDE:
-                        ensureStackValueMatch(a, v, cstack->unitSide(), "STACK.SIDE");
+                        ensureStackValueMatch(a, v, EI(cstack->unitSide()), "STACK.SIDE");
                     break; case SA::QUANTITY:
                         ensureStackValueMatch(a, v, std::min(cstack->getCount(), vmax), "STACK.QUANTITY");
                     break; case SA::ATTACK:

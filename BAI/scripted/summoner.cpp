@@ -16,7 +16,7 @@
 
 namespace MMAI::BAI::Scripted {
     Summoner::Summoner()
-        : side(-1)
+        : side(BattleSide::INVALID)
         , wasWaitingForRealize(false)
         , wasUnlockingGs(false)
     {
@@ -118,7 +118,7 @@ namespace MMAI::BAI::Scripted {
             spellcast.spell = spellToCast->id;
             // spellcast.setTarget();
             spellcast.side = side;
-            spellcast.stackNumber = side ? -2 : -1;
+            spellcast.stackNumber = side == BattleSide::DEFENDER ? -2 : -1;
 
             print("Casting spell with cost " + std::to_string(spellCost) + " / " + std::to_string(hero->mana));
             cb->battleMakeSpellAction(battleID, spellcast);
@@ -289,20 +289,20 @@ namespace MMAI::BAI::Scripted {
         print("battleStacksEffectsSet called");
     }
 
-    void Summoner::battleStart(const BattleID & battleID, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool Side, bool replayAllowed)
+    void Summoner::battleStart(const BattleID & battleID, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide Side, bool replayAllowed)
     {
         print("battleStart called bid=" + std::to_string(static_cast<int>(battleID)));
 
         side = Side;
         battle = cb->getBattle(battleID);
-        hero = dynamic_cast<const CGHeroInstance*>(side ? army2 : army1);
+        hero = dynamic_cast<const CGHeroInstance*>(side == BattleSide::DEFENDER ? army2 : army1);
 
-        if(!hero) THROW_FORMAT("could not obtain army hero for side %d", side);
+        if(!hero) THROW_FORMAT("could not obtain army hero for side %d", int(side));
 
         // tempOwner is changed server-side to enable army swaps
         // => update tempOwner here as well (each side is responsible to do that)
         // This prevents issues like battle->playerToSide() returning the wrong side
-        const_cast<CGHeroInstance*>(hero)->tempOwner = PlayerColor(side);
+        ML(const_cast<CGHeroInstance*>(hero)->tempOwner = PlayerColor(int(side)));
 
         auto spells = std::array<SpellID, 4> {
             SpellID::SUMMON_AIR_ELEMENTAL,

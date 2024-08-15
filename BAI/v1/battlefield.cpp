@@ -361,7 +361,7 @@ namespace MMAI::BAI::V1 {
     // static
     Hexes Battlefield::InitHexes(const CPlayerBattleCallback* battle, const CStack* astack, int percentValue, bool isMorale) {
         auto res = Hexes{};
-        auto ainfo = battle->getAccesibility();
+        auto ainfo = battle->getAccessibility();
         auto hexstacks = HexStacks{};  // expensive check for blocked shooters => eager load once
         auto stackinfos = StackInfos{}; // expensive check for stack->speed, isblocked and getReachability
 

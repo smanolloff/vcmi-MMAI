@@ -77,7 +77,7 @@ namespace MMAI::BAI::V3 {
         return std::make_unique<State>(version, colorname, b);
     }
 
-    void BAI::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool side, bool replayAllowed) {
+    void BAI::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         Base::battleStart(bid, army1, army2, tile, hero1, hero2, side, replayAllowed);
         battle = cb->getBattle(bid);
         state = initState(battle.get());
@@ -332,7 +332,7 @@ namespace MMAI::BAI::V3 {
         //    and *set* regular, non-throw errors otherwise
         //
         auto rinfo = battle->getReachability(acstack);
-        auto ainfo = battle->getAccesibility();
+        auto ainfo = battle->getAccessibility();
 
         switch(state->action->hexaction) {
             case HexAction::AMOVE_TR:
@@ -444,7 +444,7 @@ namespace MMAI::BAI::V3 {
         info << "action: " << action->name() << " [" << action->action << "]\n";
         info << "action->hex->bhex.hex = " << action->hex->bhex.hex << "\n";
 
-        auto ainfo = battle->getAccesibility();
+        auto ainfo = battle->getAccessibility();
         auto rinfo = battle->getReachability(astack);
 
         info << "ainfo[bhex]=" << EI(ainfo.at(action->hex->bhex.hex)) << "\n";

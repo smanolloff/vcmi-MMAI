@@ -69,7 +69,7 @@ namespace MMAI::BAI {
         virtual void battleStackMoved(const BattleID &bid, const CStack *stack, std::vector<BattleHex> dest, int distance, bool teleport) override;
         virtual void battleStacksAttacked(const BattleID &bid, const std::vector<BattleStackAttacked> &bsa, bool ranged) override;
         virtual void battleStacksEffectsSet(const BattleID &bid, const SetStackEffect & sse) override;
-        virtual void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool side, bool replayAllowed) override;
+        virtual void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) override;
         virtual void battleTriggerEffect(const BattleID &bid, const BattleTriggerEffect & bte) override;
         virtual void battleUnitsChanged(const BattleID &bid, const std::vector<UnitChanges> & changes) override;
 

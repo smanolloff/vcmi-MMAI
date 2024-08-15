@@ -49,7 +49,7 @@ namespace MMAI::BAI::V1 {
             if (cstack->unitId() == battle->battleActiveUnit()->unitId())
                 astack = cstack;
 
-            cstack->unitSide()
+            cstack->unitSide() == BattleSide::DEFENDER
                 ? r_CStacks.at(cstack->unitSlot()) = cstack
                 : l_CStacks.at(cstack->unitSlot()) = cstack;
 
@@ -62,7 +62,7 @@ namespace MMAI::BAI::V1 {
             expect(ended, "astack is NULL, but ended is not true");
         if (ended) {
             // at battle-end, activeStack is usually the ENEMY stack
-            expect(state->supdata->victory == (astack->getOwner() == battle->battleGetMySide()), "state->supdata->victory is %d, but astack->side=%d and myside=%d", state->supdata->victory, astack->getOwner(), battle->battleGetMySide());
+            expect(state->supdata->victory == (astack->getOwner() == EI(battle->battleGetMySide())), "state->supdata->victory is %d, but astack->side=%d and myside=%d", state->supdata->victory, astack->getOwner(), battle->battleGetMySide());
             expect(!state->battlefield->astack, "ended, but battlefield->astack is not NULL");
         }
 
@@ -336,7 +336,7 @@ namespace MMAI::BAI::V1 {
             }
 
             // auto rinfo = battle->getReachability(cstack);
-            auto ainfo = battle->getAccesibility();
+            auto ainfo = battle->getAccessibility();
             auto aa = ainfo.at(bh);
 
             // Now validate all attributes...
@@ -365,7 +365,7 @@ namespace MMAI::BAI::V1 {
                 break; case A::HEX_ACTION_MASK_FOR_ACT_STACK: {
                     // Check mask is the same for the corresponding FRIENDLY_STACK_ attribute
                     if (!ended) {
-                        auto baseattr = astack->unitSide()
+                        auto baseattr = astack->unitSide() == BattleSide::DEFENDER
                             ? A::HEX_ACTION_MASK_FOR_R_STACK_0
                             : A::HEX_ACTION_MASK_FOR_L_STACK_0;
 
@@ -409,7 +409,7 @@ namespace MMAI::BAI::V1 {
                 break; case A::HEX_MELEEABLE_BY_ACT_STACK: {
                     if (!ended) {
                         // Check meleeability is the same for the corresponding FRIENDLY_STACK_ attribute
-                        auto baseattr = astack->unitSide()
+                        auto baseattr = astack->unitSide() == BattleSide::DEFENDER
                             ? A::HEX_MELEEABLE_BY_R_STACK_0
                             : A::HEX_MELEEABLE_BY_L_STACK_0;
 
@@ -453,7 +453,7 @@ namespace MMAI::BAI::V1 {
                 break; case A::HEX_SHOOT_DISTANCE_FROM_ACT_STACK: {
                     if (!ended) {
                         // Check meleeability is the same for the corresponding FRIENDLY_STACK_ attribute
-                        auto baseattr = astack->unitSide()
+                        auto baseattr = astack->unitSide() == BattleSide::DEFENDER
                             ? A::HEX_SHOOT_DISTANCE_FROM_R_STACK_0
                             : A::HEX_SHOOT_DISTANCE_FROM_L_STACK_0;
 
@@ -497,7 +497,7 @@ namespace MMAI::BAI::V1 {
                 break; case A::HEX_MELEE_DISTANCE_FROM_ACT_STACK: {
                     if (!ended) {
                         // Check meleeability is the same for the corresponding FRIENDLY_STACK_ attribute
-                        auto baseattr = astack->unitSide()
+                        auto baseattr = astack->unitSide() == BattleSide::DEFENDER
                             ? A::HEX_MELEE_DISTANCE_FROM_R_STACK_0
                             : A::HEX_MELEE_DISTANCE_FROM_L_STACK_0;
 
@@ -585,7 +585,7 @@ namespace MMAI::BAI::V1 {
                         expect(cstack->ableToRetaliate(), "STACK_RETALIATIONS_LEFT: >0 but ableToRetaliate=false");
                 break; case A::STACK_SIDE:
                     if (isNA(v, cstack, "STACK_SIDE")) break;
-                    ensureValueMatch(cstack, v, cstack->unitSide(), "STACK_SIDE");
+                    ensureValueMatch(cstack, v, EI(cstack->unitSide()), "STACK_SIDE");
                 break; case A::STACK_SLOT:
                     if (isNA(v, cstack, "STACK_SLOT")) break;
                     ensureValueMatch(cstack, v, cstack->unitSlot(), "STACK_SLOT");

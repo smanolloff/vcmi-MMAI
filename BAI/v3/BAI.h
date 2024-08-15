@@ -44,7 +44,7 @@ namespace MMAI::BAI::V3 {
         void battleStacksAttacked(const BattleID &bid, const std::vector<BattleStackAttacked> & bsa, bool ranged) override; //called when stack receives damage (after battleAttack())
         void battleTriggerEffect(const BattleID &bid, const BattleTriggerEffect & bte) override;
         void battleEnd(const BattleID &bid, const BattleResult *br, QueryID queryID) override;
-        void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, bool side, bool replayAllowed) override; //called by engine when battle starts; side=0 - left, side=1 - right
+        void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) override; //called by engine when battle starts; side=0 - left, side=1 - right
 
         Schema::Action getNonRenderAction() override;
     protected:

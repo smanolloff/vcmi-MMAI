@@ -73,7 +73,7 @@ namespace MMAI::BAI::V3 {
             if (al->defender == nullptr)
                 continue;
 
-            if (al->defender->attr(SA::SIDE) == side) {
+            if (al->defender->attr(SA::SIDE) == EI(side)) {
                 dmgReceived += al->dmg;
                 unitsLost += al->units;
                 valueLost += al->value;

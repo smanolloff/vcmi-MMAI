@@ -23,7 +23,7 @@ namespace MMAI::BAI::V3 {
         int res0 = 0;
         int res1 = 0;
         for (auto &stack : battle->battleGetStacks()) {
-            stack->unitSide() == 0
+            stack->unitSide() == BattleSide::ATTACKER
                 ? res0 += stack->getCount() * stack->unitType()->getAIValue()
                 : res1 += stack->getCount() * stack->unitType()->getAIValue();
         }

@@ -56,7 +56,7 @@ namespace MMAI::AAI {
      * Hybrid call-ins (conecrning both AAI and BAI)
      */
 
-    void AAI::battleStart(const BattleID &bid, const CCreatureSet * army1, const CCreatureSet * army2, int3 tile, const CGHeroInstance * hero1, const CGHeroInstance * hero2, bool side_, bool replayAllowed) {
+    void AAI::battleStart(const BattleID &bid, const CCreatureSet * army1, const CCreatureSet * army2, int3 tile, const CGHeroInstance * hero1, const CGHeroInstance * hero2, BattleSide side_, bool replayAllowed) {
         info("*** battleStart ***");
 
         side = side_;
@@ -103,7 +103,7 @@ namespace MMAI::AAI {
 
         battleAI->battleEnd(bid, br, queryID);
 
-        if (cb->getBattle(bid)->battleGetMySide() == BattlePerspective::LEFT_SIDE) {
+        if (cb->getBattle(bid)->battleGetMySide() == BattleSide::ATTACKER) {
             ASSERT(queryID != -1, "QueryID is -1, but we are ATTACKER");
             info("Answering query " + std::to_string(queryID) + " to re-play battle");
 
@@ -161,16 +161,6 @@ namespace MMAI::AAI {
             // Move 1 tile to the right
             cb->moveHero(h, h->pos + int3{1,0,0}, false);
         });
-    }
-
-    void AAI::saveGame(BinarySerializer & h) {
-        debug("*** saveGame ***");
-        throw std::runtime_error("`saveGame` not implemented by AAI");
-    }
-
-    void AAI::loadGame(BinaryDeserializer & h) {
-        debug("*** loadGame ***");
-        throw std::runtime_error("`loadGame` not implemented by AAI");
     }
 
     void AAI::commanderGotLevel(const CCommanderInstance * commander, std::vector<ui32> skills, QueryID queryID) {
@@ -388,7 +378,7 @@ namespace MMAI::AAI {
         debug("*** tileRevealed ***");
     }
 
-    void AAI::bulkArtMovementStart(size_t numOfArts) {
+    void AAI::bulkArtMovementStart(size_t numOfArts, size_t possibleAssemblyNumOfArts) {
         debug("*** bulkArtMovementStart ***");
     }
 

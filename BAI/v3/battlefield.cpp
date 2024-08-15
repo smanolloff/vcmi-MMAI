@@ -95,7 +95,7 @@ namespace MMAI::BAI::V3 {
         const std::shared_ptr<Stacks> stacks
     ) {
         auto res = std::make_shared<Hexes>();
-        auto ainfo = battle->getAccesibility();
+        auto ainfo = battle->getAccessibility();
         auto hexstacks = std::map<BattleHex, std::shared_ptr<Stack>> {};
         auto hexobstacles = std::array<std::vector<std::shared_ptr<const CObstacleInstance>>, 165> {};
 
@@ -134,7 +134,7 @@ namespace MMAI::BAI::V3 {
             // The only situation astack is NULL, but acstack is NOT NULL,
             // is when army stacks exceeds MAX_STACKS_PER_SIDE and the active
             // stack is one of the ignored stacks (i.e. excluded from state)
-            auto mystacks = stacks->at(battle->battleGetMySide());
+            auto mystacks = stacks->at(EI(battle->battleGetMySide()));
             ASSERT(mystacks.size() == MAX_STACKS_PER_SIDE, "Active stack not found");
             // In this case the AI will fallback to a wait/defend action.
         }
@@ -192,17 +192,17 @@ namespace MMAI::BAI::V3 {
         for (auto& cstack : cstacks) {
             auto slot = cstack->unitSlot();
             auto side = cstack->unitSide();
-            auto &sidestacks = stacks->at(cstack->unitSide());
+            auto &sidestacks = stacks->at(EI(cstack->unitSide()));
 
             if (slot >= 0) {
-                used.at(side).set(slot);
+                used.at(EI(side)).set(slot);
                 auto stack = std::make_shared<Stack>(cstack, slot, queue);
                 sidestacks.at(slot) = stack;
                 mapping.insert({cstack, stack});
             } else if (slot == SlotID::SUMMONED_SLOT_PLACEHOLDER) {
-                summons.at(side).push_back(cstack);
+                summons.at(EI(side)).push_back(cstack);
             } else if (slot == SlotID::WAR_MACHINES_SLOT) {
-                machines.at(side).push_back(cstack);
+                machines.at(EI(side)).push_back(cstack);
             } // arrow towers ignored
         }
 
@@ -210,8 +210,8 @@ namespace MMAI::BAI::V3 {
         auto ignored = 0;
 
         for (auto side : {0, 1}) {
-            auto &sideslots = freeslots.at(side);
-            auto &sideused = used.at(side);
+            auto &sideslots = freeslots.at(EI(side));
+            auto &sideused = used.at(EI(side));
 
             // First use "extra" slots 7, 8, 9...
             for (int i=7; i<MAX_STACKS_PER_SIDE; i++)
@@ -222,9 +222,9 @@ namespace MMAI::BAI::V3 {
                 if (!sideused.test(i))
                     sideslots.push_back(i);
 
-            auto &sidestacks = stacks->at(side);
-            auto &sidesummons = summons.at(side);
-            auto &sidemachines = machines.at(side);
+            auto &sidestacks = stacks->at(EI(side));
+            auto &sidesummons = summons.at(EI(side));
+            auto &sidemachines = machines.at(EI(side));
 
             // First insert the summons, only then add the war machines
             auto extras = std::deque<const CStack*> {};
