@@ -59,6 +59,8 @@ namespace MMAI::BAI::V3 {
             break; case BonusType::LUCK: {
                 if (bonus->valType == BonusValueType::INDEPENDENT_MAX)
                     minluck = bonus->val;
+                else if (bonus->valType == BonusValueType::INDEPENDENT_MIN)
+                    maxluck = bonus->val;  // e.g. hourglass of the evil hour
                 else
                     addattr(A::LUCK, bonus->val);
             }
@@ -67,6 +69,8 @@ namespace MMAI::BAI::V3 {
             break; case BonusType::MORALE: {
                 if (bonus->valType == BonusValueType::INDEPENDENT_MAX)
                     minmorale = bonus->val;  // e.g. minotaur
+                else if (bonus->valType == BonusValueType::INDEPENDENT_MIN)
+                    maxmorale = bonus->val;  // e.g. spirit of oppression
                 else
                     addattr(A::MORALE, bonus->val);
             }
