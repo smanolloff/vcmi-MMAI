@@ -78,15 +78,6 @@ namespace MMAI::AAI {
             info("Will play with " + hero->getNameTextID() + " on the right side (DEFENDER) in this battle");
         }
 
-        // XXX: VCMI's hero IDs is assigned at runtime and is not part of the map data
-        //      The ML maps use the hero's experience as a unique ref
-        // debug("(battleStart) hero1->tempOwner: " + std::to_string(hero1->tempOwner));
-        // debug("(battleStart) hero2->tempOwner: " + std::to_string(hero2->tempOwner));
-        // debug("(battleStart) hero(army)->tempOwner: " + std::to_string(hero->tempOwner));
-        // debug("(battleStart) hero1->getOwner(): " + std::to_string(hero1->getOwner()));
-        // debug("(battleStart) hero2->getOwner(): " + std::to_string(hero2->getOwner()));
-        // debug("(battleStart) hero(army)->getOwner(): " + std::to_string(hero->getOwner()));
-
         // just copied code from CAdventureAI::battleStart
         // only difference is argument to initBattleInterface()
         assert(!battleAI);
