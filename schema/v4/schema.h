@@ -16,15 +16,23 @@
 
 #pragma once
 
-/*
- * THIS FILE LIVES IN:
- *
- * vcmi/AI/MMAI/export/export.h
- *
- */
+#ifdef MAX_SCHEMA_VERSION
+  #if MAX_SCHEMA_VERSION < 4
+    #undef MAX_SCHEMA_VERSION
+    #define MAX_SCHEMA_VERSION 4
+  #endif
+#else
+  #define MAX_SCHEMA_VERSION 4
+#endif
 
-#include "base.h"
-#include "v1/schema.h"
-#include "v2/schema.h"
-#include "v3/schema.h"
-#include "v4/schema.h"
+#ifdef MIN_SCHEMA_VERSION
+  #if MIN_SCHEMA_VERSION > 4
+    #undef MAX_SCHEMA_VERSION
+    #define MIN_SCHEMA_VERSION 4
+  #endif
+#else
+  #define MIN_SCHEMA_VERSION 4
+#endif
+
+#include "types.h"
+#include "constants.h"

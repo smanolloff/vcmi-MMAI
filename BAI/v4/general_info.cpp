@@ -14,17 +14,26 @@
 // limitations under the License.
 // =============================================================================
 
-#pragma once
+#include "CStack.h"
+#include "./general_info.h"
 
-/*
- * THIS FILE LIVES IN:
- *
- * vcmi/AI/MMAI/export/export.h
- *
- */
+namespace MMAI::BAI::V4 {
+    // static
+    ArmyValues GeneralInfo::CalcTotalArmyValues(const CPlayerBattleCallback* battle) {
+        int res0 = 0;
+        int res1 = 0;
+        for (auto &stack : battle->battleGetStacks()) {
+            stack->unitSide() == BattleSide::ATTACKER
+                ? res0 += stack->getCount() * stack->unitType()->getAIValue()
+                : res1 += stack->getCount() * stack->unitType()->getAIValue();
+        }
+        return {res0, res1};
+    }
 
-#include "base.h"
-#include "v1/schema.h"
-#include "v2/schema.h"
-#include "v3/schema.h"
-#include "v4/schema.h"
+    GeneralInfo::GeneralInfo(
+        const CPlayerBattleCallback* battle,
+        ArmyValues initialArmyValues_
+    ) : initialArmyValues(initialArmyValues_),
+        currentArmyValues(CalcTotalArmyValues(battle))
+        {};
+}
