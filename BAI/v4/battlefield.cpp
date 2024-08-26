@@ -217,8 +217,8 @@ namespace MMAI::BAI::V4 {
             }
 
             if (astack && astack->unitSide() != cstack->unitSide()) {
-                const auto info = BattleAttackInfo(astack, cstack, 0, astack->canShoot() && !blocked[astack]);
-                estdmg[cstack] = battle->calculateDmgRange(info);
+                const auto attinfo = BattleAttackInfo(astack, cstack, 0, astack->canShoot() && !blocked[astack]);
+                estdmg[cstack] = battle->calculateDmgRange(attinfo);
             }
 
             if (slot >= 0) {

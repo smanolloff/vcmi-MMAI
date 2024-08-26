@@ -28,6 +28,11 @@
 namespace MMAI::BAI::V4 {
     using A = Schema::V4::StackAttribute;
 
+    // static
+    int Stack::Damp(int v, int max) {
+        return max * std::tanh(static_cast<float>(v) / max);
+    }
+
     Stack::Stack(const CStack* cstack_, int id, Queue &q, bool blocked, bool blocking, DamageEstimation estdmg)
     : cstack(cstack_)
     {

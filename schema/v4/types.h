@@ -310,13 +310,13 @@ namespace MMAI::Schema::V4 {
         INVALID_DIR,
     };
 
-    class IStats {
+    class IMisc {
     public:
         virtual int getInitialArmyValueLeft() const = 0;
         virtual int getInitialArmyValueRight() const = 0;
         virtual int getCurrentArmyValueLeft() const = 0;
         virtual int getCurrentArmyValueRight() const = 0;
-        virtual ~IStats() = default;
+        virtual ~IMisc() = default;
     };
 
     using StackAttrs = std::array<int, static_cast<int>(StackAttribute::_count)>;
@@ -372,7 +372,7 @@ namespace MMAI::Schema::V4 {
         virtual int getValueKilled() const = 0;
         virtual bool getIsBattleEnded() const = 0;
         virtual bool getIsVictorious() const = 0;
-        virtual const IStats* getStats() const = 0;
+        virtual const IMisc* getMisc() const = 0;
         virtual const Hexes getHexes() const = 0;
         virtual const Stacks getStacks() const = 0;
         virtual const AttackLogs getAttackLogs() const = 0;

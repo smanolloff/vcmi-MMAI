@@ -708,6 +708,7 @@ namespace MMAI::BAI::V4 {
                             auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
                             auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
                             auto dmgAsHPPercent = static_cast<int>(100 * dmgAsHPFrac);
+                            // XXX: this gives false mismatches sometimes (floating point arithmetic)
                             want = std::clamp<int>(dmgAsHPPercent, 0, 100);
                         }
 
@@ -727,7 +728,7 @@ namespace MMAI::BAI::V4 {
     // This intentionally uses the IState interface to ensure that
     // the schema is properly exposing all needed informaton
     std::string Render(const Schema::IState* istate, const Action *action) {
-        auto bfstate = istate->getBattlefieldState();
+        // auto bfstate = istate->getBattlefieldState();
         auto supdata_ = istate->getSupplementaryData();
         expect(supdata_.has_value(), "supdata_ holds no value");
         expect(supdata_.type() == typeid(const ISupplementaryData*), "supdata_ of unexpected type");
@@ -1044,9 +1045,11 @@ namespace MMAI::BAI::V4 {
             RowDef{SA::HP_LEFT, "HP left"},
             RowDef{SA::SPEED, "Speed"},
             RowDef{SA::WAITED, "Waited"},
+            RowDef{SA::ACTED, "Acted"},
             RowDef{SA::QUEUE_POS, "Queue"},
             RowDef{SA::RETALIATIONS_LEFT, "Ret. left"},
             RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
+            RowDef{SA::AI_VALUE, "Value"},
             RowDef{SA::X_COORD, ""},  // divider row
         };
 
@@ -1090,9 +1093,19 @@ namespace MMAI::BAI::V4 {
 
                     if (stack) {
                         color = stack->getAttr(SA::SIDE) ? bluecol : redcol;
-                        value = a == SA::ID
-                            ? std::string(1, stack->getAlias())
-                            : std::to_string(stack->getAttr(a));
+                        if (a == SA::ID) {
+                            value = std::string(1, stack->getAlias());
+                        } else if (a == SA::AI_VALUE && stack->getAttr(a) >= 1000) {
+                            std::ostringstream oss;
+                            oss << std::fixed << std::setprecision(1) << (stack->getAttr(a) / 1000.0);
+                            value = oss.str();
+                            value[value.size()-2] = 'k';
+                            if (value.rfind("K0") == (value.size() - 2))
+                                value.resize(value.size() - 1);
+                        } else {
+                            value = std::to_string(stack->getAttr(a));
+                        }
+
                         if (stack->getAttr(SA::QUEUE_POS) == 0 && !supdata->getIsBattleEnded()) color += activemod;
                     }
 
