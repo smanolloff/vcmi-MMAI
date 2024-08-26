@@ -50,8 +50,9 @@ namespace MMAI::BAI::V4 {
 
         // Subsequent versions may override this if they only change
         // the data type of encoded values (i.e. have their own HEX_ENCODING)
-        virtual void encodeHex(Hex* hex);
+        virtual void encodeMisc();
         virtual void encodeStack(Stack* stack);
+        virtual void encodeHex(Hex* hex);
         virtual void verify();
 
         const int version_;

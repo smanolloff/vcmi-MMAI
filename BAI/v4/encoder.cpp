@@ -73,6 +73,11 @@ namespace MMAI::BAI::V4 {
         }
     }
 
+    void Encoder::Encode(const MiscAttribute a, const int v, BS &vec) {
+        auto &[_, e, n, vmax] = MISC_ENCODING.at(EI(a));
+        Encode(EI(a), e, n, v, vmax, vec);
+    }
+
     void Encoder::Encode(const StackAttribute a, const int v, BS &vec) {
         auto &[_, e, n, vmax] = STACK_ENCODING.at(EI(a));
         Encode(EI(a), e, n, v, vmax, vec);

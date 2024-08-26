@@ -115,6 +115,8 @@ namespace MMAI::BAI::V4 {
             }
         }
 
+        encodeMisc();
+
         for (auto &sidestacks : *battlefield->stacks) {
             for (auto &stack : sidestacks)
                 encodeStack(stack.get());
@@ -125,6 +127,13 @@ namespace MMAI::BAI::V4 {
                 encodeHex(hex.get());
 
         verify();
+    }
+
+    void State::encodeMisc() {
+        Encoder::Encode(MiscAttribute::INITIAL_ARMY_VALUE_LEFT, supdata->misc->initialArmyValueLeft, bfstate);
+        Encoder::Encode(MiscAttribute::INITIAL_ARMY_VALUE_RIGHT, supdata->misc->initialArmyValueRight, bfstate);
+        Encoder::Encode(MiscAttribute::CURRENT_ARMY_VALUE_LEFT, supdata->misc->currentArmyValueLeft, bfstate);
+        Encoder::Encode(MiscAttribute::CURRENT_ARMY_VALUE_RIGHT, supdata->misc->currentArmyValueRight, bfstate);
     }
 
     void State::encodeStack(Stack* stack) {

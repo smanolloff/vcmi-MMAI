@@ -630,7 +630,7 @@ namespace MMAI::BAI::V4 {
                     break; case SA::SIDE:
                         ensureStackValueMatch(a, v, EI(cstack->unitSide()), "STACK.SIDE");
                     break; case SA::QUANTITY:
-                        ensureStackValueMatch(a, v, std::min(cstack->getCount(), vmax), "STACK.QUANTITY");
+                        ensureStackValueMatch(a, v, STACK_QTY_MAX * std::tanh(float(cstack->getCount()) / STACK_QTY_MAX), "STACK.AI_VALUE");
                     break; case SA::ATTACK:
                         ensureStackValueMatch(a, v, cstack->getAttack(false), "STACK.ATTACK");
                     break; case SA::DEFENSE:
@@ -673,7 +673,7 @@ namespace MMAI::BAI::V4 {
                     break; case SA::IS_WIDE:
                         ensureStackValueMatch(a, v, cstack->occupiedHex().isAvailable(), "STACK.IS_WIDE");
                     break; case SA::AI_VALUE:
-                        ensureStackValueMatch(a, v, cstack->unitType()->getAIValue(), "STACK.AI_VALUE");
+                        ensureStackValueMatch(a, v, STACK_VALUE_MAX * std::tanh(float(cstack->unitType()->getAIValue()) / STACK_VALUE_MAX), "STACK.AI_VALUE");
                     break; case SA::BLIND_LIKE_ATTACK:
                         want = castchance({SpellID::BLIND, SpellID::STONE_GAZE, SpellID::PARALYZE});
                         ensureStackValueMatch(a, v, want, "STACK.BLIND_LIKE_ATTACK");
@@ -734,6 +734,7 @@ namespace MMAI::BAI::V4 {
         expect(supdata_.type() == typeid(const ISupplementaryData*), "supdata_ of unexpected type");
         auto supdata = std::any_cast<const ISupplementaryData*>(supdata_);
         expect(supdata, "supdata holds a nullptr");
+        auto misc = supdata->getMisc();
         auto hexes = supdata->getHexes();
         auto allstacks = supdata->getStacks();
         auto color = supdata->getColor();
@@ -995,7 +996,8 @@ namespace MMAI::BAI::V4 {
                 name = "Battle result"; value = supdata->getIsBattleEnded() ? (restext + nocol) : "";
                 break;
             }
-            // case 10: name = "Victory"; value = r.ended ? (r.victory ? "yes" : "no") : ""; break;
+            case 10: name = "Total/Start Value (L)"; value = boost::str(boost::format("%d / %d)") % misc->getCurrentArmyValueLeft() % misc->getInitialArmyValueLeft());
+            case 11: name = "Total/Start Value (R)"; value = boost::str(boost::format("%d / %d)") % misc->getCurrentArmyValueRight() % misc->getInitialArmyValueRight());
             default:
                 continue;
             }

@@ -46,8 +46,6 @@ namespace MMAI::BAI::V4 {
         int attr(StackAttribute a) const;
         int shots;
     private:
-        static int Damp(int v, int max);
-
         void setattr(StackAttribute a, int value);
         void addattr(StackAttribute a, int value);
         void finalize();

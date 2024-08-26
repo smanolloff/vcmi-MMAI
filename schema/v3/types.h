@@ -247,10 +247,6 @@ namespace MMAI::Schema::V3 {
         _count
     };
 
-    enum class GlobalAttribute : int {
-        PERCENT_CUR_TO_START_TOTAL_VALUE,
-    };
-
     enum class StackAttribute : int {
         ID,
         Y_COORD,

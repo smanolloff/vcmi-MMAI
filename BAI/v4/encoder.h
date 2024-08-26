@@ -19,12 +19,14 @@
 #include "schema/v4/types.h"
 
 namespace MMAI::BAI::V4 {
+    using MiscAttribute = Schema::V4::MiscAttribute;
     using HexAttribute = Schema::V4::HexAttribute;
     using StackAttribute = Schema::V4::StackAttribute;
     using BS = Schema::BattlefieldState;
 
     class Encoder {
     public:
+        static void Encode(const MiscAttribute a, const int v, BS &vec);
         static void Encode(const HexAttribute a, const int v, BS &vec);
         static void Encode(const StackAttribute a, const int v, BS &vec);
         static void Encode(const int a, const Schema::V4::Encoding e, const int n, const int v, const int vmax, BS &vec);

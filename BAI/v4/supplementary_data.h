@@ -20,19 +20,16 @@
 #include "battle/CPlayerBattleCallback.h"
 #include "schema/v4/types.h"
 #include "./attack_log.h"
+#include "./util.h"
 
 namespace MMAI::BAI::V4 {
-    inline int Damp(int v, int max) {
-        return max * std::tanh(static_cast<float>(v) / max);
-    }
-
     class Misc : public Schema::V4::IMisc {
     public:
         Misc(const Battlefield* bf)
-        : initialArmyValueLeft(std::get<0>(bf->info->initialArmyValues))
-        , initialArmyValueRight(std::get<1>(bf->info->initialArmyValues))
-        , currentArmyValueLeft(std::get<0>(bf->info->currentArmyValues))
-        , currentArmyValueRight(std::get<1>(bf->info->currentArmyValues))
+        : initialArmyValueLeft(Util::Damp(std::get<0>(bf->info->initialArmyValues), MMAI::BAI::V4::ARMY_VALUE_MAX))
+        , initialArmyValueRight(Util::Damp(std::get<1>(bf->info->initialArmyValues), MMAI::BAI::V4::ARMY_VALUE_MAX))
+        , currentArmyValueLeft(Util::Damp(std::get<0>(bf->info->currentArmyValues), MMAI::BAI::V4::ARMY_VALUE_MAX))
+        , currentArmyValueRight(Util::Damp(std::get<1>(bf->info->currentArmyValues), MMAI::BAI::V4::ARMY_VALUE_MAX))
         {}
 
         int getInitialArmyValueLeft() const override { return initialArmyValueLeft; }

@@ -247,8 +247,12 @@ namespace MMAI::Schema::V4 {
         _count
     };
 
-    enum class GlobalAttribute : int {
-        PERCENT_CUR_TO_START_TOTAL_VALUE,
+    enum class MiscAttribute : int {
+        INITIAL_ARMY_VALUE_LEFT,
+        INITIAL_ARMY_VALUE_RIGHT,
+        CURRENT_ARMY_VALUE_LEFT,
+        CURRENT_ARMY_VALUE_RIGHT,
+        _count
     };
 
     enum class StackAttribute : int {

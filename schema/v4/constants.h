@@ -60,6 +60,7 @@ namespace MMAI::Schema::V4 {
         inline constexpr auto NS = Encoding::NORMALIZED_STRICT_NULL;
         inline constexpr auto NZ = Encoding::NORMALIZED_ZERO_NULL;
 
+        using MA = MiscAttribute;
         using HA = HexAttribute;
         using SA = StackAttribute;
 
@@ -67,10 +68,12 @@ namespace MMAI::Schema::V4 {
          * The encoding schema `{a, e, n, vmax}`, where:
          * `a`=attribute, `e`=encoding, `n`=size, `vmax`=max_value.
          */
+        using E4M = std::tuple<MiscAttribute, Encoding, int, int>;
         using E4H = std::tuple<HexAttribute, Encoding, int, int>;
         using E4S = std::tuple<StackAttribute, Encoding, int, int>;
     }
 
+    using MiscEncoding = std::array<E4M, EI(MiscAttribute::_count)>;
     using HexEncoding = std::array<E4H, EI(HexAttribute::_count)>;
     using StackEncoding = std::array<E4S, EI(StackAttribute::_count)>;
 
@@ -111,8 +114,20 @@ namespace MMAI::Schema::V4 {
         }
     }
 
+    // These MAX values are damped via tanh()
+    constexpr int STACK_QTY_MAX = 1500;
+    constexpr int STACK_VALUE_MAX = 40000;  // archangel 9K, crystal dragon 39K, azure dragon 79K
+    constexpr int ARMY_VALUE_MAX = 1000000;
+
     constexpr int MAX_STACKS_PER_SIDE = std::tuple_size<Stacks::value_type>::value;
     constexpr int MAX_STACKS = 2 * MAX_STACKS_PER_SIDE;
+
+    constexpr MiscEncoding MISC_ENCODING {
+        E4(MA::INITIAL_ARMY_VALUE_LEFT, NS, ARMY_VALUE_MAX),
+        E4(MA::INITIAL_ARMY_VALUE_RIGHT, NS, ARMY_VALUE_MAX),
+        E4(MA::CURRENT_ARMY_VALUE_LEFT, NS, ARMY_VALUE_MAX),
+        E4(MA::CURRENT_ARMY_VALUE_RIGHT, NS, ARMY_VALUE_MAX),
+    };
 
     constexpr HexEncoding HEX_ENCODING {
         E4(HA::Y_COORD,     CS, 10),
@@ -127,7 +142,7 @@ namespace MMAI::Schema::V4 {
         E4(SA::Y_COORD,                   CE, 10),
         E4(SA::X_COORD,                   CE, 14),
         E4(SA::SIDE,                      CE, 1),        // 0=attacker, 1=defender
-        E4(SA::QUANTITY,                  NE, 2000),
+        E4(SA::QUANTITY,                  NE, STACK_QTY_MAX),  // damped using tanh()
         E4(SA::ATTACK,                    NE, 80),
         E4(SA::DEFENSE,                   NE, 80),       // azure dragon is 60 when defending
         E4(SA::SHOTS,                     NE, 32),       // sharpshooter is 32
@@ -145,7 +160,7 @@ namespace MMAI::Schema::V4 {
         E4(SA::ESTIMATED_DMG,             NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
         E4(SA::RETALIATIONS_LEFT,         NE, 2),        // inf is truncated to 2 (royal griffin)
         E4(SA::IS_WIDE,                   NE, 1),
-        E4(SA::AI_VALUE,                  NE, 40000),    // azure dragon is 78845, but is damped to 40K (using tanh())
+        E4(SA::AI_VALUE,                  NE, STACK_VALUE_MAX), // damped using tanh()
         E4(SA::FLYING,                    NE, 1),
         E4(SA::BLIND_LIKE_ATTACK,         NE, 100),      // cast chance for unicorns (20), medusas (20), basilisks (20), scorpicores (20)
         E4(SA::ADDITIONAL_ATTACK,         NE, 1),
@@ -156,19 +171,26 @@ namespace MMAI::Schema::V4 {
 
     // Dedining encodings for each attribute by hand is error-prone
     // The below compile-time asserts are essential.
+    static_assert(UninitializedEncodingAttributes(MISC_ENCODING) == 0, "Found uninitialized elements");
     static_assert(UninitializedEncodingAttributes(HEX_ENCODING) == 0, "Found uninitialized elements");
     static_assert(UninitializedEncodingAttributes(STACK_ENCODING) == 0, "Found uninitialized elements");
+    static_assert(DisarrayedEncodingAttributeIndex(MISC_ENCODING) == -1, "Found wrong element at this index");
     static_assert(DisarrayedEncodingAttributeIndex(HEX_ENCODING) == -1, "Found wrong element at this index");
     static_assert(DisarrayedEncodingAttributeIndex(STACK_ENCODING) == -1, "Found wrong element at this index");
+    static_assert(MiscalculatedBinaryAttributeIndex(MISC_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
     static_assert(MiscalculatedBinaryAttributeIndex(HEX_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
     static_assert(MiscalculatedBinaryAttributeIndex(STACK_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
+    static_assert(MiscalculatedBinaryAttributeUnusedValues(MISC_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
     static_assert(MiscalculatedBinaryAttributeUnusedValues(HEX_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
     static_assert(MiscalculatedBinaryAttributeUnusedValues(STACK_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
 
-    // constexpr int BATTLEFIELD_STATE_SIZE_OTHER = EncodedSize(GENERAL_ENCODING);
+    constexpr int BATTLEFIELD_STATE_SIZE_MISC = EncodedSize(MISC_ENCODING);
     constexpr int BATTLEFIELD_STATE_SIZE_ONE_STACK = EncodedSize(STACK_ENCODING);
     constexpr int BATTLEFIELD_STATE_SIZE_ALL_STACKS = MAX_STACKS * BATTLEFIELD_STATE_SIZE_ONE_STACK;
     constexpr int BATTLEFIELD_STATE_SIZE_ONE_HEX = EncodedSize(HEX_ENCODING);
     constexpr int BATTLEFIELD_STATE_SIZE_ALL_HEXES = 165 * BATTLEFIELD_STATE_SIZE_ONE_HEX;
-    constexpr int BATTLEFIELD_STATE_SIZE = BATTLEFIELD_STATE_SIZE_ALL_STACKS + BATTLEFIELD_STATE_SIZE_ALL_HEXES;
+    constexpr int BATTLEFIELD_STATE_SIZE =
+        BATTLEFIELD_STATE_SIZE_MISC +
+        BATTLEFIELD_STATE_SIZE_ALL_STACKS +
+        BATTLEFIELD_STATE_SIZE_ALL_HEXES;
 }

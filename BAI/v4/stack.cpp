@@ -18,6 +18,7 @@
 
 #include "./stack.h"
 #include "./hex.h"
+#include "./util.h"
 #include "battle/IBattleInfoCallback.h"
 #include "bonuses/BonusCustomTypes.h"
 #include "constants/EntityIdentifiers.h"
@@ -27,11 +28,6 @@
 
 namespace MMAI::BAI::V4 {
     using A = Schema::V4::StackAttribute;
-
-    // static
-    int Stack::Damp(int v, int max) {
-        return max * std::tanh(static_cast<float>(v) / max);
-    }
 
     Stack::Stack(const CStack* cstack_, int id, Queue &q, bool blocked, bool blocking, DamageEstimation estdmg)
     : cstack(cstack_)
@@ -298,7 +294,7 @@ namespace MMAI::BAI::V4 {
         setattr(A::Y_COORD, y);
         setattr(A::X_COORD, x);
         setattr(A::SIDE, EI(cstack->unitSide()));
-        setattr(A::QUANTITY, cstack->getCount());
+        setattr(A::QUANTITY, Util::Damp(cstack->getCount(), STACK_QTY_MAX));
         setattr(A::ATTACK, cstack->getAttack(shots > 0));
         setattr(A::DEFENSE, cstack->getDefense(false));
         setattr(A::SHOTS, shots);
@@ -315,7 +311,7 @@ namespace MMAI::BAI::V4 {
         setattr(A::ESTIMATED_DMG, dmgPercentHP);
         setattr(A::RETALIATIONS_LEFT, noretal ? 0 : cstack->counterAttacks.available());
         setattr(A::IS_WIDE, cstack->occupiedHex().isAvailable());
-        setattr(A::AI_VALUE, cstack->unitType()->getAIValue());
+        setattr(A::AI_VALUE, Util::Damp(cstack->unitType()->getAIValue(), STACK_VALUE_MAX));
 
         finalize();
     }
