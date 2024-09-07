@@ -219,6 +219,13 @@ namespace MMAI::Schema::V4 {
         // XXX: NORMALIZED_ZERO_NULL obsoletes NORMALIZED_IMPLICIT_NULL
     };
 
+    enum class StackActState : int {
+        READY,          // will act this turn, not waited
+        WAITING,        // will act this turn, already waited
+        DONE,           // will not act this turn
+        _count
+    };
+
     enum class HexState : int {
         // IMPASSABLE,         // obstacle/stack/gate(closed,attacker)
         PASSABLE,       // empty/mine/firewall/gate(open)/gate(closed,defender), ...
@@ -269,13 +276,12 @@ namespace MMAI::Schema::V4 {
         HP,
         HP_LEFT,
         SPEED,
-        WAITED,
         QUEUE_POS,
-        ACTED,
+        ACTSTATE,
         SLEEPING,
         BLOCKED,
         BLOCKING,
-        ESTIMATED_DMG,
+        // ESTIMATED_DMG,
         RETALIATIONS_LEFT,
         IS_WIDE,
         AI_VALUE,

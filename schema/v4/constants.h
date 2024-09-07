@@ -151,13 +151,12 @@ namespace MMAI::Schema::V4 {
         E4(SA::HP,                        NE, 1300),     // azure dragon + all artifacts is 1254
         E4(SA::HP_LEFT,                   NE, 1300),
         E4(SA::SPEED,                     NE, 30),       // at 19=full reach; max is... 37?
-        E4(SA::WAITED,                    NE, 1),
         E4(SA::QUEUE_POS,                 NE, 15),       // 0..14, 0=active stack
-        E4(SA::ACTED,                     NE, 1),
+        E4(SA::ACTSTATE,                  CE, EI(StackActState::_count) - 1),
         E4(SA::SLEEPING,                  NE, 1),        // 0..3 (rounds remaining)
         E4(SA::BLOCKED,                   NE, 1),        // is this stack a blocked shooter?
         E4(SA::BLOCKING,                  NE, 1),        // does this stack block a shooter?
-        E4(SA::ESTIMATED_DMG,             NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
+        // E4(SA::ESTIMATED_DMG,             NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
         E4(SA::RETALIATIONS_LEFT,         NE, 2),        // inf is truncated to 2 (royal griffin)
         E4(SA::IS_WIDE,                   NE, 1),
         E4(SA::AI_VALUE,                  NE, STACK_VALUE_MAX), // damped using tanh()

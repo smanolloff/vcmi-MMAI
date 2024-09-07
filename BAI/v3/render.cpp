@@ -380,8 +380,9 @@ namespace MMAI::BAI::V3 {
                         if (aa == EAccessibility::OBSTACLE || aa == EAccessibility::ALIVE_STACK)
                             break;
 
-                        if (battle->battleGetSiegeLevel() == CGTownInstance::NONE)
-                            throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is neither OBSTACLE nor ALIVE_STACK (no siege)");
+                        // no moat == no fort?
+                        if (battle->battleGetFortifications().wallsHealth > 0)
+                            throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is neither OBSTACLE nor ALIVE_STACK (no walls)");
 
                         expect(aa == EAccessibility::DESTRUCTIBLE_WALL || aa == EAccessibility::GATE || aa == EAccessibility::UNAVAILABLE,
                             "HEX.STATE_MASK: PASSABLE bit not set (siege), but accessibility is %d", EI(aa));

@@ -380,8 +380,9 @@ namespace MMAI::BAI::V4 {
                         if (aa == EAccessibility::OBSTACLE || aa == EAccessibility::ALIVE_STACK)
                             break;
 
-                        if (battle->battleGetSiegeLevel() == CGTownInstance::NONE)
-                            throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is neither OBSTACLE nor ALIVE_STACK (no siege)");
+                        // no moat == no fort?
+                        if (battle->battleGetFortifications().wallsHealth > 0)
+                            throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is neither OBSTACLE nor ALIVE_STACK (no walls)");
 
                         expect(aa == EAccessibility::DESTRUCTIBLE_WALL || aa == EAccessibility::GATE || aa == EAccessibility::UNAVAILABLE,
                             "HEX.STATE_MASK: PASSABLE bit not set (siege), but accessibility is %d", EI(aa));
@@ -647,10 +648,16 @@ namespace MMAI::BAI::V4 {
                         ensureStackValueMatch(a, v, cstack->getFirstHPleft(), "STACK.HP_LEFT");
                     break; case SA::SPEED:
                         ensureStackValueMatch(a, v, cstack->getMovementRange(), "STACK.SPEED");
-                    break; case SA::WAITED:
-                        ensureStackValueMatch(a, v, cstack->waitedThisTurn, "STACK.WAITED");
-                    break; case SA::ACTED:
-                        ensureStackValueMatch(a, v, cstack->movedThisRound, "STACK.ACTED");
+                    break; case SA::ACTSTATE:
+                        if (cstack->willMove()) {
+                            if (cstack->waited()) {
+                                ensureStackValueMatch(a, v, EI(StackActState::WAITING), "STACK.ACTSTATE");
+                            } else {
+                                ensureStackValueMatch(a, v, EI(StackActState::READY), "STACK.ACTSTATE");
+                            }
+                        } else {
+                            ensureStackValueMatch(a, v, EI(StackActState::DONE), "STACK.ACTSTATE");
+                        }
                     break; case SA::SLEEPING:
                         ensureStackValueMatch(a, v, get_bonus_duration(BonusType::NOT_ACTIVE), "STACK.SLEEPING");
                     break; case SA::QUEUE_POS:
@@ -701,18 +708,18 @@ namespace MMAI::BAI::V4 {
                             }
                         }
                         ensureStackValueMatch(a, v, want, "STACK.BLOCKING");
-                    break; case SA::ESTIMATED_DMG:
-                        if (!astack || astack->unitSide() == cstack->unitSide()) {
-                           want = 0;
-                        } else {
-                            auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
-                            auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
-                            auto dmgAsHPPercent = static_cast<int>(100 * dmgAsHPFrac);
-                            // XXX: this gives false mismatches sometimes (floating point arithmetic)
-                            want = std::clamp<int>(dmgAsHPPercent, 0, 100);
-                        }
-
-                        ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");
+                    // XXX: disabled DMG estimation
+                    // break; case SA::ESTIMATED_DMG:
+                    //     if (!astack || astack->unitSide() == cstack->unitSide()) {
+                    //        want = 0;
+                    //     } else {
+                    //         auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
+                    //         auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
+                    //         auto dmgAsHPPercent = static_cast<int>(100 * dmgAsHPFrac);
+                    //         // XXX: this gives false mismatches sometimes (floating point arithmetic)
+                    //         want = std::clamp<int>(dmgAsHPPercent, 0, 100);
+                    //     }
+                    //     ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");
                     break; case SA::BLOCKS_RETALIATION:
                         want = has_bonus(BonusType::BLOCKS_RETALIATION);
                         ensureStackValueMatch(a, v, want, "STACK.BLOCKS_RETALIATION");
@@ -1046,11 +1053,11 @@ namespace MMAI::BAI::V4 {
             RowDef{SA::HP, "HP"},
             RowDef{SA::HP_LEFT, "HP left"},
             RowDef{SA::SPEED, "Speed"},
-            RowDef{SA::WAITED, "Waited"},
-            RowDef{SA::ACTED, "Acted"},
+            RowDef{SA::ACTSTATE, "Act state"},
             RowDef{SA::QUEUE_POS, "Queue"},
             RowDef{SA::RETALIATIONS_LEFT, "Ret. left"},
-            RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
+            // XXX: disabled DMG estimation
+            // RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
             RowDef{SA::AI_VALUE, "Value"},
             RowDef{SA::BLOCKED, "Blocked?"},
             RowDef{SA::BLOCKING, "Blocking?"},
@@ -1099,6 +1106,14 @@ namespace MMAI::BAI::V4 {
                         color = stack->getAttr(SA::SIDE) ? bluecol : redcol;
                         if (a == SA::ID) {
                             value = std::string(1, stack->getAlias());
+                        } else if (a == SA::ACTSTATE) {
+                            switch(StackActState(stack->getAttr(a))) {
+                            break; case StackActState::READY: value = "R";
+                            break; case StackActState::WAITING: value = "W";
+                            break; case StackActState::DONE: value = "D";
+                            break; default:
+                                throw std::runtime_error("Unexpected actstate:: " + std::to_string(EI(stack->getAttr(a))));
+                            }
                         } else if (a == SA::AI_VALUE && stack->getAttr(a) >= 1000) {
                             std::ostringstream oss;
                             oss << std::fixed << std::setprecision(1) << (stack->getAttr(a) / 1000.0);
