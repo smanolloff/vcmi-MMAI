@@ -1052,6 +1052,8 @@ namespace MMAI::BAI::V4 {
             RowDef{SA::RETALIATIONS_LEFT, "Ret. left"},
             RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
             RowDef{SA::AI_VALUE, "Value"},
+            RowDef{SA::BLOCKED, "Blocked?"},
+            RowDef{SA::BLOCKING, "Blocking?"},
             RowDef{SA::X_COORD, ""},  // divider row
         };
 
