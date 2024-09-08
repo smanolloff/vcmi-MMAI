@@ -281,7 +281,7 @@ namespace MMAI::Schema::V4 {
         SLEEPING,
         BLOCKED,
         BLOCKING,
-        // ESTIMATED_DMG,
+        ESTIMATED_DMG,
         RETALIATIONS_LEFT,
         IS_WIDE,
         AI_VALUE,

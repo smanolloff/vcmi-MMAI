@@ -287,9 +287,8 @@ namespace MMAI::BAI::V4 {
         }
 
         shots = cstack->shots.available();
-        // XXX: disabled DMG estimation
-        // double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
-        // auto dmgPercentHP = std::clamp<int>(static_cast<int>(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
+        double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
+        auto dmgPercentHP = std::clamp<int>(static_cast<int>(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
 
         auto sas = StackActState::DONE;
 
@@ -315,8 +314,7 @@ namespace MMAI::BAI::V4 {
         setattr(A::ACTSTATE, EI(sas));
         setattr(A::BLOCKED, blocked);
         setattr(A::BLOCKING, blocking);
-        // XXX: disabled DMG estimation
-        // setattr(A::ESTIMATED_DMG, dmgPercentHP);
+        setattr(A::ESTIMATED_DMG, dmgPercentHP);
         setattr(A::RETALIATIONS_LEFT, noretal ? 0 : cstack->counterAttacks.available());
         setattr(A::IS_WIDE, cstack->occupiedHex().isAvailable());
         setattr(A::AI_VALUE, Util::Damp(cstack->unitType()->getAIValue(), STACK_VALUE_MAX));

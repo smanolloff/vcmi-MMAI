@@ -708,18 +708,17 @@ namespace MMAI::BAI::V4 {
                             }
                         }
                         ensureStackValueMatch(a, v, want, "STACK.BLOCKING");
-                    // XXX: disabled DMG estimation
-                    // break; case SA::ESTIMATED_DMG:
-                    //     if (!astack || astack->unitSide() == cstack->unitSide()) {
-                    //        want = 0;
-                    //     } else {
-                    //         auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
-                    //         auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
-                    //         auto dmgAsHPPercent = static_cast<int>(100 * dmgAsHPFrac);
-                    //         // XXX: this gives false mismatches sometimes (floating point arithmetic)
-                    //         want = std::clamp<int>(dmgAsHPPercent, 0, 100);
-                    //     }
-                    //     ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");
+                    break; case SA::ESTIMATED_DMG:
+                        if (!astack || astack->unitSide() == cstack->unitSide()) {
+                           want = 0;
+                        } else {
+                            auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
+                            auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
+                            auto dmgAsHPPercent = static_cast<int>(100 * dmgAsHPFrac);
+                            // XXX: this gives false mismatches sometimes (floating point arithmetic)
+                            want = std::clamp<int>(dmgAsHPPercent, 0, 100);
+                        }
+                        ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");
                     break; case SA::BLOCKS_RETALIATION:
                         want = has_bonus(BonusType::BLOCKS_RETALIATION);
                         ensureStackValueMatch(a, v, want, "STACK.BLOCKS_RETALIATION");
@@ -1056,8 +1055,7 @@ namespace MMAI::BAI::V4 {
             RowDef{SA::ACTSTATE, "Act state"},
             RowDef{SA::QUEUE_POS, "Queue"},
             RowDef{SA::RETALIATIONS_LEFT, "Ret. left"},
-            // XXX: disabled DMG estimation
-            // RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
+            RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
             RowDef{SA::AI_VALUE, "Value"},
             RowDef{SA::BLOCKED, "Blocked?"},
             RowDef{SA::BLOCKING, "Blocking?"},

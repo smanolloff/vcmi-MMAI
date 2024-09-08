@@ -156,7 +156,7 @@ namespace MMAI::Schema::V4 {
         E4(SA::SLEEPING,                  NE, 1),        // 0..3 (rounds remaining)
         E4(SA::BLOCKED,                   NE, 1),        // is this stack a blocked shooter?
         E4(SA::BLOCKING,                  NE, 1),        // does this stack block a shooter?
-        // E4(SA::ESTIMATED_DMG,             NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
+        E4(SA::ESTIMATED_DMG,             NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
         E4(SA::RETALIATIONS_LEFT,         NE, 2),        // inf is truncated to 2 (royal griffin)
         E4(SA::IS_WIDE,                   NE, 1),
         E4(SA::AI_VALUE,                  NE, STACK_VALUE_MAX), // damped using tanh()
