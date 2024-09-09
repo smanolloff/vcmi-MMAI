@@ -659,7 +659,10 @@ namespace MMAI::BAI::V4 {
                             ensureStackValueMatch(a, v, EI(StackActState::DONE), "STACK.ACTSTATE");
                         }
                     break; case SA::SLEEPING:
-                        ensureStackValueMatch(a, v, get_bonus_duration(BonusType::NOT_ACTIVE), "STACK.SLEEPING");
+                        if (cstack->unitType()->getId() == CreatureID::AMMO_CART)
+                            ensureStackValueMatch(a, v, 0, "STACK.SLEEPING");
+                        else
+                            ensureStackValueMatch(a, v, get_bonus_duration(BonusType::NOT_ACTIVE), "STACK.SLEEPING");
                     break; case SA::QUEUE_POS:
                         // at battle end, queue is messed up
                         // (the stack that dealt the killing blow is still "active", but not on 0 pos)
@@ -1059,6 +1062,7 @@ namespace MMAI::BAI::V4 {
             RowDef{SA::AI_VALUE, "Value"},
             RowDef{SA::BLOCKED, "Blocked?"},
             RowDef{SA::BLOCKING, "Blocking?"},
+            RowDef{SA::SLEEPING, "Sleeping?"},
             RowDef{SA::X_COORD, ""},  // divider row
         };
 

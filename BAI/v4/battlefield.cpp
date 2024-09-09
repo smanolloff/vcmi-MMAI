@@ -217,10 +217,10 @@ namespace MMAI::BAI::V4 {
             }
 
             // XXX: disabled DMG estimation
-            // if (astack && astack->unitSide() != cstack->unitSide()) {
-            //     const auto attinfo = BattleAttackInfo(astack, cstack, 0, astack->canShoot() && !blocked[astack]);
-            //     estdmg[cstack] = battle->calculateDmgRange(attinfo);
-            // }
+            if (astack && astack->unitSide() != cstack->unitSide()) {
+                const auto attinfo = BattleAttackInfo(astack, cstack, 0, astack->canShoot() && !blocked[astack]);
+                estdmg[cstack] = battle->calculateDmgRange(attinfo);
+            }
 
             if (slot >= 0) {
                 used.at(EI(side)).set(slot);
