@@ -631,7 +631,7 @@ namespace MMAI::BAI::V4 {
                     break; case SA::SIDE:
                         ensureStackValueMatch(a, v, EI(cstack->unitSide()), "STACK.SIDE");
                     break; case SA::QUANTITY:
-                        ensureStackValueMatch(a, v, STACK_QTY_MAX * std::tanh(float(cstack->getCount()) / STACK_QTY_MAX), "STACK.AI_VALUE");
+                        ensureStackValueMatch(a, v, std::round(STACK_QTY_MAX * std::tanh(float(cstack->getCount()) / STACK_QTY_MAX)), "STACK.AI_VALUE");
                     break; case SA::ATTACK:
                         ensureStackValueMatch(a, v, cstack->getAttack(false), "STACK.ATTACK");
                     break; case SA::DEFENSE:
@@ -683,7 +683,7 @@ namespace MMAI::BAI::V4 {
                     break; case SA::IS_WIDE:
                         ensureStackValueMatch(a, v, cstack->occupiedHex().isAvailable(), "STACK.IS_WIDE");
                     break; case SA::AI_VALUE:
-                        ensureStackValueMatch(a, v, STACK_VALUE_MAX * std::tanh(float(cstack->unitType()->getAIValue()) / STACK_VALUE_MAX), "STACK.AI_VALUE");
+                        ensureStackValueMatch(a, v, std::round(STACK_VALUE_MAX * std::tanh(float(cstack->unitType()->getAIValue()) / STACK_VALUE_MAX)), "STACK.AI_VALUE");
                     break; case SA::BLIND_LIKE_ATTACK:
                         want = castchance({SpellID::BLIND, SpellID::STONE_GAZE, SpellID::PARALYZE});
                         ensureStackValueMatch(a, v, want, "STACK.BLIND_LIKE_ATTACK");
@@ -712,13 +712,15 @@ namespace MMAI::BAI::V4 {
                         }
                         ensureStackValueMatch(a, v, want, "STACK.BLOCKING");
                     break; case SA::ESTIMATED_DMG:
+                        if (ended)
+                            break;
+
                         if (!astack || astack->unitSide() == cstack->unitSide()) {
                            want = 0;
                         } else {
                             auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
                             auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
-                            auto dmgAsHPPercent = static_cast<int>(100 * dmgAsHPFrac);
-                            // XXX: this gives false mismatches sometimes (floating point arithmetic)
+                            auto dmgAsHPPercent = static_cast<int>(std::round(100 * dmgAsHPFrac));
                             want = std::clamp<int>(dmgAsHPPercent, 0, 100);
                         }
                         ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");

@@ -191,19 +191,9 @@ namespace MMAI::BAI::V4 {
         auto blocking = std::map<const CStack*, bool> {};
         auto blocked = std::map<const CStack*, bool> {};
 
-        // estimated dmg by active stack
-        // values are for ranged attack if unit is an unblocked shooter
-        // otherwise for melee attack
-        auto estdmg = std::map<const CStack*, DamageEstimation> {};
-
-        for (auto& cstack : cstacks) {
-            auto slot = cstack->unitSlot();
-            auto side = cstack->unitSide();
-            auto &sidestacks = stacks->at(EI(cstack->unitSide()));
-
+        auto setBlockedBlocking = [&battle, &blocked, &blocking](const CStack* cstack) {
             blocked.emplace(cstack, false);
             blocking.emplace(cstack, false);
-            estdmg.emplace(cstack, DamageEstimation());
 
             for(const auto * adjacent : battle->battleAdjacentUnits(cstack)) {
                 if (adjacent->unitOwner() == cstack->unitOwner()) continue;
@@ -215,12 +205,39 @@ namespace MMAI::BAI::V4 {
                     blocking[cstack] = true;
                 }
             }
+        };
 
-            // XXX: disabled DMG estimation
-            if (astack && astack->unitSide() != cstack->unitSide()) {
+        // estimated dmg by active stack
+        // values are for ranged attack if unit is an unblocked shooter
+        // otherwise for melee attack
+        auto estdmg = std::map<const CStack*, DamageEstimation> {};
+
+        auto estimateDamage = [&battle, &estdmg, &blocked] (const CStack* astack, const CStack* cstack) {
+            if (!astack) {
+                // no active stack (e.g. called during battleStart or battleEnd)
+                estdmg.emplace(cstack, DamageEstimation());
+            } else if(astack->unitSide() == cstack->unitSide()) {
+                // no damage to friendly units
+                estdmg.emplace(cstack, DamageEstimation());
+            } else {
                 const auto attinfo = BattleAttackInfo(astack, cstack, 0, astack->canShoot() && !blocked[astack]);
-                estdmg[cstack] = battle->calculateDmgRange(attinfo);
+                estdmg.emplace(cstack, battle->calculateDmgRange(attinfo));
             }
+        };
+
+        // This must be pre-set as dmg estimation depends on it
+        if (astack)
+            setBlockedBlocking(astack);
+
+        for (auto& cstack : cstacks) {
+            auto slot = cstack->unitSlot();
+            auto side = cstack->unitSide();
+            auto &sidestacks = stacks->at(EI(cstack->unitSide()));
+
+            if (cstack != astack)
+                setBlockedBlocking(cstack);
+
+            estimateDamage(astack, cstack);
 
             if (slot >= 0) {
                 used.at(EI(side)).set(slot);

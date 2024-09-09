@@ -122,12 +122,13 @@ namespace MMAI::AAI {
         return std::nullopt;
     }
 
-    void AAI::initGameInterface(std::shared_ptr<Environment> env, std::shared_ptr<CCallback> CB, AICombatOptions aiCombatOptions_) {
+    void AAI::initGameInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CCallback> CB, AICombatOptions aiCombatOptions_) {
         info("*** initGameInterface ***");
 
         aiCombatOptions = aiCombatOptions_;
         color = CB->getPlayerID()->toString();
 
+        env = ENV;
         cb = CB;
         cbc = CB;
 

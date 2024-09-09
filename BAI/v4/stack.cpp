@@ -286,9 +286,8 @@ namespace MMAI::BAI::V4 {
           }
         }
 
-        shots = cstack->shots.available();
         double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
-        auto dmgPercentHP = std::clamp<int>(static_cast<int>(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
+        auto dmgPercentHP = std::clamp<int>(std::round(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
 
         auto sas = StackActState::DONE;
 
@@ -296,6 +295,7 @@ namespace MMAI::BAI::V4 {
             sas = cstack->waitedThisTurn ? StackActState::WAITING : StackActState::READY;
         }
 
+        shots = cstack->shots.available();
 
         setattr(A::ID, id);
         setattr(A::Y_COORD, y);
