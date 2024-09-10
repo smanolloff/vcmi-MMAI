@@ -1036,7 +1036,7 @@ namespace MMAI::BAI::V4 {
         // All cell text is aligned right
         auto colwidths = std::array<int, 4 + MAX_STACKS>{};
         colwidths.fill(4); // default col width
-        colwidths.at(0) = 11; // header col
+        colwidths.at(0) = 16; // header col
 
         // Divider column indexes
         auto divcolids = {1, MAX_STACKS_PER_SIDE+2, MAX_STACKS+3};
@@ -1062,9 +1062,13 @@ namespace MMAI::BAI::V4 {
             RowDef{SA::RETALIATIONS_LEFT, "Ret. left"},
             RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
             RowDef{SA::AI_VALUE, "Value"},
-            RowDef{SA::BLOCKED, "Blocked?"},
-            RowDef{SA::BLOCKING, "Blocking?"},
-            RowDef{SA::SLEEPING, "Sleeping?"},
+            RowDef{SA::BLIND_LIKE_ATTACK, "Blind* chance"},
+            // 2 values per column to avoid too long table
+            RowDef{SA::Y_COORD, "Attacks/Retals"},
+            RowDef{SA::Y_COORD, "Blocked/ing"},
+            RowDef{SA::Y_COORD, "Fly/Sleep"},
+            RowDef{SA::Y_COORD, "No Retal/Melee"},
+            RowDef{SA::Y_COORD, "Wide/Breath"},
             RowDef{SA::X_COORD, ""},  // divider row
         };
 
@@ -1081,6 +1085,8 @@ namespace MMAI::BAI::V4 {
 
         for (int i : divcolids)
             divrow.at(i) = {nocol, colwidths.at(i), std::string(colwidths.at(i)-1, '-') + "+"};
+
+        int specialcounter = 0;
 
         // Attribute rows
         for (auto& [a, aname] : rowdefs) {
@@ -1125,6 +1131,17 @@ namespace MMAI::BAI::V4 {
                             value[value.size()-2] = 'k';
                             if (value.rfind("K0") == (value.size() - 2))
                                 value.resize(value.size() - 1);
+                        } else if (a == SA::Y_COORD) {
+                            auto fmt = boost::format("%d/%d");
+                            switch(specialcounter) {
+                            break; case 0: value = boost::str(fmt % (stack->getAttr(SA::ADDITIONAL_ATTACK) ? 2 : 1) % stack->getAttr(SA::RETALIATIONS_LEFT));
+                            break; case 1: value = boost::str(fmt % stack->getAttr(SA::BLOCKED) % stack->getAttr(SA::BLOCKING));
+                            break; case 2: value = boost::str(fmt % stack->getAttr(SA::FLYING) % stack->getAttr(SA::SLEEPING));
+                            break; case 3: value = boost::str(fmt % stack->getAttr(SA::BLOCKS_RETALIATION) % stack->getAttr(SA::NO_MELEE_PENALTY));
+                            break; case 4: value = boost::str(fmt % stack->getAttr(SA::IS_WIDE) % stack->getAttr(SA::TWO_HEX_ATTACK_BREATH));
+                            break; default:
+                                THROW_FORMAT("Unexpected specialcounter: %d", specialcounter);
+                            }
                         } else {
                             value = std::to_string(stack->getAttr(a));
                         }
@@ -1136,6 +1153,9 @@ namespace MMAI::BAI::V4 {
                     row.at(colid) = {color, colwidths.at(colid), value};
                 }
             }
+
+            if (a == SA::Y_COORD)
+                ++specialcounter;
 
             table.push_back(row);
         }
