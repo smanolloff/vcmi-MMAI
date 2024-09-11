@@ -115,6 +115,11 @@ namespace MMAI::BAI::V4 {
             }
         }
 
+        // XXX: Order is important:
+        //   1. Misc
+        //   2. Stacks
+        //   3. Hexes
+
         encodeMisc();
 
         for (auto &sidestacks : *battlefield->stacks) {
