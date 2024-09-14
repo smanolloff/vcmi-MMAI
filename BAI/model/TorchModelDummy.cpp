@@ -17,6 +17,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "schema/base.h"
 #include "schema/schema.h"
 #include "TorchModel.h"
 
@@ -33,6 +34,7 @@ namespace MMAI::BAI {
         );
     }
 
+    Schema::ModelType TorchModel::getType() { return MMAI::Schema::ModelType::TORCH; };
     std::string TorchModel::getName() { return ""; };
     int TorchModel::getVersion() { return 0; }
     int TorchModel::getAction(const MMAI::Schema::IState * s) { return 0; }
