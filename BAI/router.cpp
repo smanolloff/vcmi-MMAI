@@ -18,14 +18,53 @@
 #include <filesystem>
 #include "AI/BattleAI/BattleAI.h"
 #include "AI/StupidAI/StupidAI.h"
+#include "BAI/model/TorchModel.h"
+#include "BAI/model/FallbackModel.h"
 #include "BAI/router.h"
 #include "BAI/base.h"
 #include "CCallback.h"
+#include "CConfigHandler.h"
 #include "common.h"
 #include "schema/base.h"
 #include "scripted/summoner.h"
 
 namespace MMAI::BAI {
+    using ModelStorage = std::map<std::string, std::unique_ptr<TorchModel>>;
+    static auto models = ModelStorage();
+    static std::unique_ptr<FallbackModel> fallbackModel;
+    static std::mutex modelmutex;
+
+    static Schema::IModel * GetModel(std::string key) {
+        try {
+            auto lock = std::lock_guard(modelmutex);
+            auto it = models.find(key);
+
+            if (it == models.end()) {
+                auto path = settings["battle"]["MMAI"][key].String();
+                logAi->info("Loading %s model from %s", key, path);
+                it = models.emplace(key, std::make_unique<TorchModel>(path)).first;
+            } else {
+                logAi->debug("Using previously loaded %s", key);
+            }
+
+            return it->second.get();
+        } catch (std::exception & e) {
+            logAi->error("Failed to load %s: %s", key, e.what());
+            auto fb = settings["battle"]["MMAI"]["fallback"].String();
+            if (fb.empty()) {
+                logAi->error("Fallback model not configured, throwing...");
+                throw;
+            }
+
+            auto lock = std::lock_guard(modelmutex);
+            if (!fallbackModel)
+                fallbackModel = std::make_unique<FallbackModel>(fb);
+
+            logAi->info("Will use fallback model: %s", fallbackModel->getName());
+            return fallbackModel.get();
+        }
+    }
+
     Router::Router() {
         std::ostringstream oss;
         oss << this; // Store this memory address
@@ -45,17 +84,19 @@ namespace MMAI::BAI {
         colorname = cb->getPlayerID()->toString();
         aiCombatOptions = aiCombatOptions_;
 
+        // During training, baggage is used for injecting the model-in-training
+        // (which acts as a bridge to vcmi-gym)
         auto &any = aiCombatOptions.other;
-        ASSERT(any.has_value(), "aiCombatOptions.other has no value");
+        if (any.has_value()) {
+            auto &t = typeid(Schema::Baggage*);
+            ASSERT(any.type() == t, boost::str(
+                boost::format("Bad std::any payload type for aiCombatOptions.other: want: %s/%u, have: %s/%u") \
+                % boost::core::demangle(t.name()) % t.hash_code() \
+                % boost::core::demangle(any.type().name()) % any.type().hash_code()
+            ));
+            baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
+        }
 
-        auto &t = typeid(Schema::Baggage*);
-        ASSERT(any.type() == t, boost::str(
-            boost::format("Bad std::any payload type for aiCombatOptions.other: want: %s/%u, have: %s/%u") \
-            % boost::core::demangle(t.name()) % t.hash_code() \
-            % boost::core::demangle(any.type().name()) % any.type().hash_code()
-        ));
-
-        baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
         bai.reset();
     }
 
@@ -124,34 +165,53 @@ namespace MMAI::BAI {
     }
 
     void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
-        Schema::IModel* model;
+        Schema::IModel * model;
 
-        if (!baggage->devMode) {
-            // any other than MMAI_MODEL should never occur outside dev mode
-            ASSERT(baggage->modelLeft->getName() == "MMAI_MODEL", "bad name for modelLeft: want: MMAI_MODEL, have: " + baggage->modelLeft->getName());
-            model = side == BattleSide::DEFENDER ? baggage->modelRight : baggage->modelLeft;
-        } else {
-            // dev mode assumes no neutral players
-            ASSERT(cb->getPlayerID()->hasValue(), "cb->getPlayerID()->hasValue() is false");
-
-            // in dev mode, player 0/red is always the left/attacker
-            // Using player ID instead of side, as sides may have been swapped
-            // (the models must *not* get swapped in this case)
+        if (baggage) {
+            // During training, the model object is provided via the baggage
+            // This is a special model (a bridge between VCMI and vcmi-gym).
+            // Additionally, the `cb->getPlayerID` is used instead of `side`
+            // to accomodate for the "side swapping" training feature.
+            // XXX: dev mode assumes there are no neutral players in battle
+            ASSERT(baggage, "baggage is nullptr");
+            ASSERT(cb->getPlayerID()->hasValue(), "cb->getPlayerID() has no value");
             model = cb->getPlayerID()->num ? baggage->modelRight : baggage->modelLeft;
+            if (!model) {
+                // If the baggage does not carry a model, it means we must load one from file
+                // This occurs when training is done vs. another pre-trained model
+                // For example, leftModel is an injected model (being trained),
+                // while rightModel is nullptr which stands for "load a pre-trained
+                // model as usual"
+                model = GetModel(side == BattleSide::ATTACKER ? "leftModel" : "rightModel");
+            }
+        } else {
+            model = GetModel(side == BattleSide::ATTACKER ? "leftModel" : "rightModel");
         }
 
-        if (model->getName() == "StupidAI") {
-            bai = CDynLibHandler::getNewBattleAI("StupidAI");
-            bai->initBattleInterface(env, cb, aiCombatOptions);
-        } else if (model->getName() == "BattleAI") {
-            bai = CDynLibHandler::getNewBattleAI("BattleAI");
-            bai->initBattleInterface(env, cb, aiCombatOptions);
-        } else if (model->getName() == MMAI_RESERVED_NAME_SUMMONER) {
-            bai = std::make_shared<Scripted::Summoner>();
-            bai->initBattleInterface(env, cb, aiCombatOptions);
-        } else {
+        ASSERT(model, "failed to build model");
+
+        switch (model->getType()) {
+        case Schema::ModelType::SCRIPTED:
+            if (model->getName() == "StupidAI") {
+                bai = CDynLibHandler::getNewBattleAI("StupidAI");
+                bai->initBattleInterface(env, cb, aiCombatOptions);
+            } else if (model->getName() == "BattleAI") {
+                bai = CDynLibHandler::getNewBattleAI("BattleAI");
+                bai->initBattleInterface(env, cb, aiCombatOptions);
+            } else if (model->getName() == MMAI_RESERVED_NAME_SUMMONER) {
+                bai = std::make_shared<Scripted::Summoner>();
+                bai->initBattleInterface(env, cb, aiCombatOptions);
+            } else {
+                THROW_FORMAT("Unexpected scripted model name: %s", model->getName());
+            }
+            break;
+        case Schema::ModelType::TORCH:
+        case Schema::ModelType::USER:
             // XXX: must not call initBattleInterface here
             bai = Base::Create(model, env, cb);
+            break;
+        default:
+            THROW_FORMAT("Unexpected model type: %d", EI(model->getType()));
         }
 
         bai->battleStart(bid, army1, army2, tile, hero1, hero2, side, replayAllowed);

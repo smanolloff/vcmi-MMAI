@@ -81,12 +81,16 @@ namespace MMAI::Schema {
         virtual ~IState() = default;
     };
 
-    // The CB functions above are bundled into Baggage struct
-    // to be seamlessly transported through VCMI code as a std::any object,
-    // then cast back to `Baggage` in the AI constructor.
-    // Linkage needed due to ensure std::any_cast sees the proper symbol
+    enum class ModelType : int {
+        SCRIPTED,       // e.g. BattleAI, StupidAI
+        TORCH,          // pre-trained Torch JIT models stored in a file
+        USER,           // user-provided model, e.g. vcmi-gym trainable
+        _count
+    };
+
     class IModel {
     public:
+        virtual ModelType getType() = 0;
         virtual std::string getName() = 0;
         virtual int getVersion() = 0;
         virtual int getAction(const IState*) = 0;
@@ -95,13 +99,17 @@ namespace MMAI::Schema {
         virtual ~IModel() = default;
     };
 
+    // The Baggage struct is converted to a std::any object, which allows to
+    // seamlessly transport MMAI-specific data through VCMI without polluting
+    // the VCMI codebase.
+    // Linkage needed due to ensure the MMAI constructor sees the proper
+    // symbol when converting the std::any object back to a Baggage struct.
+    //
+    // Baggage is used during ML training only, where functions from vcmi-gym
+    // are abstracted behind an IModel object and thus injected into VCMI.
     struct MMAI_DLL_LINKAGE Baggage {
         IModel* modelLeft;
         IModel* modelRight;
-
-        // Models will be assigned based on player color
-        // (used if training a single model on both sides)
-        bool devMode = false;
     };
 
     inline std::string AnyCastError(const std::any any, const std::type_info &t) {
