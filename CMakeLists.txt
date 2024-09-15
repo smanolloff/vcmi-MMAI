@@ -8,8 +8,8 @@ set(MMAI_FILES
   BAI/router.h
   BAI/scripted/summoner.cpp
   BAI/scripted/summoner.h
-  BAI/model/FallbackModel.h
-  BAI/model/FallbackModel.cpp
+  BAI/model/ScriptedModel.h
+  BAI/model/ScriptedModel.cpp
   BAI/model/TorchModel.h
   # BAI/model/TorchModel.cpp       # optionally added later
   # BAI/model/TorchModelDummy.cpp  # optionally added later
@@ -195,6 +195,15 @@ if(ENABLE_STATIC_AI_LIBS)
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
+endif()
+
+install(DIRECTORY torchmodels DESTINATION ${DATA_DIR})
+
+if(COPY_CONFIG_ON_BUILD)
+  add_custom_command(TARGET MMAI POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake_modules/create_link.cmake ${CMAKE_CURRENT_SOURCE_DIR}/torchmodels ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
+  )
 endif()
 
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")

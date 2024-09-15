@@ -85,6 +85,7 @@ namespace MMAI::Schema {
         SCRIPTED,       // e.g. BattleAI, StupidAI
         TORCH,          // pre-trained Torch JIT models stored in a file
         USER,           // user-provided model, e.g. vcmi-gym trainable
+        TORCH_PATH,     // similar to TORCH, but the model is not loaded
         _count
     };
 

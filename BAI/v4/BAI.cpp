@@ -30,30 +30,6 @@
 #include "./render.h"
 
 namespace MMAI::BAI::V4 {
-    // constexpr std::bitset
-    static const std::set<SpellID> GENIE_SPELLS = {
-        SpellID::AIR_SHIELD,
-        SpellID::ANTI_MAGIC,
-        SpellID::BLESS,
-        SpellID::BLOODLUST,
-        SpellID::COUNTERSTRIKE,
-        SpellID::CURE,
-        SpellID::FIRE_SHIELD,
-        SpellID::FORTUNE,
-        SpellID::HASTE,
-        SpellID::MAGIC_MIRROR,
-        SpellID::MIRTH,
-        SpellID::PRAYER,
-        SpellID::PRECISION,
-        SpellID::PROTECTION_FROM_AIR,
-        SpellID::PROTECTION_FROM_EARTH,
-        SpellID::PROTECTION_FROM_FIRE,
-        SpellID::PROTECTION_FROM_WATER,
-        SpellID::SHIELD,
-        SpellID::SLAYER,
-        SpellID::STONE_SKIN
-    };
-
     Schema::Action BAI::getNonRenderAction() {
         // info("getNonRenderAciton called with result type: " + std::to_string(result->type));
         auto s = state.get();

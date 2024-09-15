@@ -15,13 +15,13 @@
 // =============================================================================
 
 #include "schema/base.h"
-#include "FallbackModel.h"
+#include "ScriptedModel.h"
 
 namespace MMAI::BAI {
     const std::vector<std::string> FALLBACKS = {"StupidAI", "BattleAI"};
 
 
-    FallbackModel::FallbackModel(std::string keyword)
+    ScriptedModel::ScriptedModel(std::string keyword)
     : keyword(keyword)
     {
         auto it = std::find(FALLBACKS.begin(), FALLBACKS.end(), keyword);
@@ -30,11 +30,11 @@ namespace MMAI::BAI {
         }
     }
 
-    std::string FallbackModel::getName() {
+    std::string ScriptedModel::getName() {
         return keyword;
     };
 
-    Schema::ModelType FallbackModel::getType() {
+    Schema::ModelType ScriptedModel::getType() {
         return Schema::ModelType::SCRIPTED;
     };
 
@@ -44,22 +44,22 @@ namespace MMAI::BAI {
     // value, the corresponding scripted bot (e.g. StupidAI) should be
     // used for the upcoming battle instead.
 
-    int FallbackModel::getVersion() {
+    int ScriptedModel::getVersion() {
         warn("getVersion", -666);
         return -666;
     };
 
-    int FallbackModel::getAction(const MMAI::Schema::IState * s) {
+    int ScriptedModel::getAction(const MMAI::Schema::IState * s) {
         warn("getAction", -666);
         return -666;
     };
 
-    double FallbackModel::getValue(const MMAI::Schema::IState * s) {
+    double ScriptedModel::getValue(const MMAI::Schema::IState * s) {
         warn("getValue", -666);
         return -666;
     };
 
-    void FallbackModel::warn(std::string m, int retval) {
-        logAi->error("WARNING: method %s called on a FallbackModel object; returning %d\n", m.c_str(), retval);
+    void ScriptedModel::warn(std::string m, int retval) {
+        logAi->error("WARNING: method %s called on a ScriptedModel object; returning %d\n", m.c_str(), retval);
     }
 }

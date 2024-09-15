@@ -14,25 +14,56 @@
 // limitations under the License.
 // =============================================================================
 
+#include "json/JsonUtils.h"
 #include <stdexcept>
 #include <filesystem>
 #include "AI/BattleAI/BattleAI.h"
 #include "AI/StupidAI/StupidAI.h"
 #include "BAI/model/TorchModel.h"
-#include "BAI/model/FallbackModel.h"
+#include "BAI/model/ScriptedModel.h"
 #include "BAI/router.h"
 #include "BAI/base.h"
 #include "CCallback.h"
 #include "CConfigHandler.h"
+#include "VCMIDirs.h"
 #include "common.h"
 #include "schema/base.h"
 #include "scripted/summoner.h"
 
 namespace MMAI::BAI {
+    using ConfigStorage = std::map<std::string, std::string>;
     using ModelStorage = std::map<std::string, std::unique_ptr<TorchModel>>;
+
+    static auto modelconfig = ConfigStorage();
     static auto models = ModelStorage();
-    static std::unique_ptr<FallbackModel> fallbackModel;
+    static std::unique_ptr<ScriptedModel> fallbackModel;
     static std::mutex modelmutex;
+
+    static void InitModelConfigFromSettings() {
+        auto lock = std::lock_guard(modelmutex);
+        if (!modelconfig.empty()) return;
+
+        auto node = JsonUtils::assembleFromFiles("config/ai/mmai/mmai-settings");
+        for (auto &key : {"leftModel", "rightModel", "fallback"}) {
+            if(node.Struct()[key].isString()) {
+                modelconfig.insert({key, node.Struct()[key].String()});
+            } else {
+                logAi->warn("MMAI config contains invalid values: value for '%s' is not a string", key);
+            }
+        }
+    }
+
+    static void InitModelConfigFromBaggage(Schema::Baggage * baggage) {
+        // Since ML client cannot load libtorch models, it sends TORCH_PATH
+        // "models" whose getName() returns the path to the model to load
+        auto lock = std::lock_guard(modelmutex);
+        if (!modelconfig.empty()) return;
+
+        if (baggage->modelLeft->getType() == Schema::ModelType::TORCH_PATH)
+            modelconfig.insert({"leftModel", baggage->modelLeft->getName()});
+        if (baggage->modelRight->getType() == Schema::ModelType::TORCH_PATH)
+            modelconfig.insert({"rightModel", baggage->modelRight->getName()});
+    }
 
     static Schema::IModel * GetModel(std::string key) {
         try {
@@ -40,9 +71,27 @@ namespace MMAI::BAI {
             auto it = models.find(key);
 
             if (it == models.end()) {
-                auto path = settings["battle"]["MMAI"][key].String();
-                logAi->info("Loading %s model from %s", key, path);
-                it = models.emplace(key, std::make_unique<TorchModel>(path)).first;
+                auto it2 = modelconfig.find(key);
+                if (it2 == modelconfig.end())
+                    THROW_FORMAT("No such key in model config: %s", key);
+
+                auto path = boost::filesystem::path(it2->second);
+
+                if (path.is_relative()) {
+                    logAi->debug("Model path '%s' is relative, will try to resolve it", path);
+                    for (auto dirpath : VCMIDirs::get().dataPaths()) {
+                        auto abspath = dirpath / "torchmodels" / path;
+                        if (boost::filesystem::is_regular_file(abspath)) {
+                            logAi->debug("Resolved from '%s'", dirpath.string());
+                            path = abspath;
+                            break;
+                        }
+                        logAi->debug("Could not resolve from '%s'", dirpath.string());
+                    }
+                }
+
+                logAi->info("Loading %s model from %s", key, path.string());
+                it = models.emplace(key, std::make_unique<TorchModel>(path.string())).first;
             } else {
                 logAi->debug("Using previously loaded %s", key);
             }
@@ -50,15 +99,16 @@ namespace MMAI::BAI {
             return it->second.get();
         } catch (std::exception & e) {
             logAi->error("Failed to load %s: %s", key, e.what());
-            auto fb = settings["battle"]["MMAI"]["fallback"].String();
-            if (fb.empty()) {
+
+            auto it2 = modelconfig.find("fallback");
+            if (it2 == modelconfig.end() || it2->second.empty()) {
                 logAi->error("Fallback model not configured, throwing...");
                 throw;
             }
 
             auto lock = std::lock_guard(modelmutex);
             if (!fallbackModel)
-                fallbackModel = std::make_unique<FallbackModel>(fb);
+                fallbackModel = std::make_unique<ScriptedModel>(it2->second);
 
             logAi->info("Will use fallback model: %s", fallbackModel->getName());
             return fallbackModel.get();
@@ -176,7 +226,9 @@ namespace MMAI::BAI {
             ASSERT(baggage, "baggage is nullptr");
             ASSERT(cb->getPlayerID()->hasValue(), "cb->getPlayerID() has no value");
             model = cb->getPlayerID()->num ? baggage->modelRight : baggage->modelLeft;
-            if (!model) {
+            ASSERT(model, "model is nullptr");
+            InitModelConfigFromBaggage(baggage);
+            if (model->getType() == Schema::ModelType::TORCH_PATH) {
                 // If the baggage does not carry a model, it means we must load one from file
                 // This occurs when training is done vs. another pre-trained model
                 // For example, leftModel is an injected model (being trained),
@@ -185,6 +237,7 @@ namespace MMAI::BAI {
                 model = GetModel(side == BattleSide::ATTACKER ? "leftModel" : "rightModel");
             }
         } else {
+            InitModelConfigFromSettings();
             model = GetModel(side == BattleSide::ATTACKER ? "leftModel" : "rightModel");
         }
 
@@ -210,6 +263,9 @@ namespace MMAI::BAI {
             // XXX: must not call initBattleInterface here
             bai = Base::Create(model, env, cb);
             break;
+
+        // TORCH_PATH models should have been replaced by TORCH models
+        case Schema::ModelType::TORCH_PATH:
         default:
             THROW_FORMAT("Unexpected model type: %d", EI(model->getType()));
         }

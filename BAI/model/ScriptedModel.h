@@ -19,9 +19,9 @@
 #include "schema/base.h"
 
 namespace MMAI::BAI {
-    class FallbackModel : public MMAI::Schema::IModel {
+    class ScriptedModel : public MMAI::Schema::IModel {
     public:
-        FallbackModel(std::string keyword);
+        ScriptedModel(std::string keyword);
 
         Schema::ModelType getType() override;
         std::string getName() override;
