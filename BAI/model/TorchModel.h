@@ -20,7 +20,7 @@
 #include "schema/base.h"
 
 #ifdef ENABLE_LIBTORCH
-#include <torch/script.h>
+#include <torch/csrc/jit/mobile/import.h>
 #endif
 
 namespace MMAI::BAI {
@@ -47,9 +47,9 @@ namespace MMAI::BAI {
 #ifdef ENABLE_LIBTORCH
         class TorchJitContainer {
         public:
-            TorchJitContainer(std::string path) : module(torch::jit::load(path)) { module.eval(); }
+            TorchJitContainer(std::string path) : module(torch::jit::_load_for_mobile(path)) {}
             c10::InferenceMode guard;
-            torch::jit::script::Module module;
+            torch::jit::mobile::Module module;
         };
 
         std::unique_ptr<TorchJitContainer> tjc;

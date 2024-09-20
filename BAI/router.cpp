@@ -14,20 +14,20 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+#include "filesystem/Filesystem.h"
 #include "json/JsonUtils.h"
-#include <stdexcept>
-#include <filesystem>
+#include "VCMIDirs.h"
+
+#include "schema/base.h"
+
+#include "common.h"
 #include "AI/BattleAI/BattleAI.h"
 #include "AI/StupidAI/StupidAI.h"
 #include "BAI/model/TorchModel.h"
 #include "BAI/model/ScriptedModel.h"
 #include "BAI/router.h"
 #include "BAI/base.h"
-#include "CCallback.h"
-#include "CConfigHandler.h"
-#include "VCMIDirs.h"
-#include "common.h"
-#include "schema/base.h"
 #include "scripted/summoner.h"
 
 namespace MMAI::BAI {
@@ -43,8 +43,8 @@ namespace MMAI::BAI {
         auto lock = std::lock_guard(modelmutex);
         if (!modelconfig.empty()) return;
 
-        auto node = JsonUtils::assembleFromFiles("config/ai/mmai/mmai-settings");
-        for (auto &key : {"leftModel", "rightModel", "fallback"}) {
+        auto node = JsonUtils::assembleFromFiles("MMAI/CONFIG/mmai-settings.json");
+        for (auto &key : {"attacker", "defender", "fallback"}) {
             if(node.Struct()[key].isString()) {
                 modelconfig.insert({key, node.Struct()[key].String()});
             } else {
@@ -60,9 +60,9 @@ namespace MMAI::BAI {
         if (!modelconfig.empty()) return;
 
         if (baggage->modelLeft->getType() == Schema::ModelType::TORCH_PATH)
-            modelconfig.insert({"leftModel", baggage->modelLeft->getName()});
+            modelconfig.insert({"attacker", baggage->modelLeft->getName()});
         if (baggage->modelRight->getType() == Schema::ModelType::TORCH_PATH)
-            modelconfig.insert({"rightModel", baggage->modelRight->getName()});
+            modelconfig.insert({"defender", baggage->modelRight->getName()});
     }
 
     static Schema::IModel * GetModel(std::string key) {
@@ -75,23 +75,26 @@ namespace MMAI::BAI {
                 if (it2 == modelconfig.end())
                     THROW_FORMAT("No such key in model config: %s", key);
 
-                auto path = boost::filesystem::path(it2->second);
+                logAi->debug("Found value for key %s: %s", key, it2->second);
+                logAi->info("simodebug: 1");
 
-                if (path.is_relative()) {
-                    logAi->debug("Model path '%s' is relative, will try to resolve it", path);
-                    for (auto dirpath : VCMIDirs::get().dataPaths()) {
-                        auto abspath = dirpath / "torchmodels" / path;
-                        if (boost::filesystem::is_regular_file(abspath)) {
-                            logAi->debug("Resolved from '%s'", dirpath.string());
-                            path = abspath;
-                            break;
-                        }
-                        logAi->debug("Could not resolve from '%s'", dirpath.string());
-                    }
-                }
+                auto rpath = ResourcePath(it2->second);
+                logAi->info("simodebug: 2");
+                auto loaders = CResourceHandler::get()->getResourcesWithName(rpath);
+                logAi->info("simodebug: 3");
 
-                logAi->info("Loading %s model from %s", key, path.string());
-                it = models.emplace(key, std::make_unique<TorchModel>(path.string())).first;
+                if (loaders.size() != 1)
+                    logAi->warn("Expected 1 loader, found %d for %s", static_cast<int>(loaders.size()), rpath.getName());
+                logAi->info("simodebug: 4");
+
+                auto fullpath = loaders.at(0)->getResourceName(rpath);
+                logAi->info("simodebug: 5");
+                ASSERT(fullpath.has_value(), "could not obtain path for resource " + rpath.getName());
+                logAi->info("simodebug: 6");
+                auto fullpathstr = fullpath.value().string();
+
+                logAi->info("Loading %s model from %s", key, fullpathstr);
+                it = models.emplace(key, std::make_unique<TorchModel>(fullpathstr)).first;
             } else {
                 logAi->debug("Using previously loaded %s", key);
             }
@@ -99,6 +102,10 @@ namespace MMAI::BAI {
             return it->second.get();
         } catch (std::exception & e) {
             logAi->error("Failed to load %s: %s", key, e.what());
+
+            #ifdef ENABLE_MMAI_STRICT_LOAD
+            throw;
+            #endif
 
             auto it2 = modelconfig.find("fallback");
             if (it2 == modelconfig.end() || it2->second.empty()) {
@@ -231,17 +238,19 @@ namespace MMAI::BAI {
             if (model->getType() == Schema::ModelType::TORCH_PATH) {
                 // If the baggage does not carry a model, it means we must load one from file
                 // This occurs when training is done vs. another pre-trained model
-                // For example, leftModel is an injected model (being trained),
-                // while rightModel is nullptr which stands for "load a pre-trained
+                // For example, attacker is an injected model (being trained),
+                // while defender is nullptr which stands for "load a pre-trained
                 // model as usual"
-                model = GetModel(side == BattleSide::ATTACKER ? "leftModel" : "rightModel");
+                model = GetModel(side == BattleSide::ATTACKER ? "attacker" : "defender");
             }
         } else {
             InitModelConfigFromSettings();
-            model = GetModel(side == BattleSide::ATTACKER ? "leftModel" : "rightModel");
+            model = GetModel(side == BattleSide::ATTACKER ? "attacker" : "defender");
         }
 
         ASSERT(model, "failed to build model");
+
+        // printf("(side=%d) hero0: %s, hero1: %s\n", EI(side), hero1->nameCustomTextId.c_str(), hero2->nameCustomTextId.c_str());
 
         switch (model->getType()) {
         case Schema::ModelType::SCRIPTED:

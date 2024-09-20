@@ -114,6 +114,7 @@ set(MMAI_FILES
 )
 
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
+option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
 option(ENABLE_LIBTORCH "link against libtorch to enable loading of MMAI_MODEL TorchJIT files" ON)
 
 #[[
@@ -169,45 +170,108 @@ set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 if(ENABLE_LIBTORCH)
     add_definitions(-DENABLE_LIBTORCH=1)
 
+    # Disable MMAI fallback (to StupidAI or BattleAI) if model cannot be loaded
+    if (ENABLE_MMAI_STRICT_LOAD)
+      add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
+    endif()
+
     # If used for ML training with vcmi-gym, make sure this libtorch is
-    # the same libtorch downloaded by pip in the vcmi-gym project
-    # (this can be done by symlinking it to e.g.
-    #  "VCMI_GYM_DIR/.venv/lib/python3.10/site-packages/torch")
-    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/BAI/model/libtorch")
-    find_package(Torch REQUIRED)
+    # the the same version as the `torch` downloaded by pip in the vcmi-gym project
+    # You can use `pip show torch` to see where it is located and then pass
+    #
+    #     -DLIBTORCH_PATH=/path/to/pip/torch
+    #
+    # If used for ML inference (regular gameplay), then torch must be
+    # compiled for the appropriate platform.
+    #
+    #
+    #  1. Download pytorch (best to use a directory outside VCMI)
+    #
+    #     $ cd /some/path
+    #     $ git clone --recursive https://github.com/pytorch/pytorch
+    #     $ cd pytorch
+    #     $ git checkout v2.4.1
+    #     $ git submodule sync
+    #     $ git submodule update --init --recursive
+    #     $ python3.10 -m venv .venv
+    #     $ .venv/bin/activate
+    #     $ pip install cmake ninja
+    #     $ pip install -r requirements.txt
+    #     $ python setup.py develop
+    #
+    #  2. Build libtorch
+    #
+    #   2a) For ios or mac
+    #
+    #     $ scripts/build_ios.sh
+    #     $ export LIBTORCH_PATH="$PWD/build_ios/install"
+    #
+    #   2b) For other platforms
+    #
+    #     TODO
+    #
+    #  3. Build VCMI with -DENABLE_LIBTORCH=1 -DLIBTORCH_PATH=$LIBTORCH_PATH
+    #
+
+    if (NOT DEFINED LIBTORCH_PATH OR LIBTORCH_PATH STREQUAL "")
+      set(LIBTORCH_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
+      message(WARNING "LIBTORCH_PATH is not set, falling back to ${LIBTORCH_PATH}")
+    else()
+      message(STATUS "LIBTORCH_PATH: ${LIBTORCH_PATH}")
+    endif()
+
+    find_package(Torch REQUIRED PATHS "${LIBTORCH_PATH}" NO_DEFAULT_PATH)
     find_package(OpenMP REQUIRED)
 
+    if(APPLE_IOS)
+      # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
+      find_library(ACCELERATE Accelerate)
+    endif()
+
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
-    list(APPEND MMAI_LIBS OpenMP::OpenMP_CXX "${TORCH_LIBRARIES}")
+
+    list(APPEND MMAI_LIBS OpenMP::OpenMP_CXX "${TORCH_LIBRARIES}" "${ACCELERATE}")
     list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
     list(APPEND MMAI_INCLUDES "${TORCH_INCLUDE_DIRS}")
+
+    message("MMAI_LIBS: ${MMAI_LIBS}")
+    message("MMAI_FILES: ${MMAI_INCLUDES}")
+    message("MMAI_INCLUDES: ${MMAI_INCLUDES}")
+
+    # message(STATUS "TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
+    # message(STATUS "TORCH_CXX_FLAGS: ${TORCH_CXX_FLAGS}")
+    # message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
 else()
     list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
 endif()
 
-if(NOT ENABLE_STATIC_AI_LIBS)
+if(NOT ENABLE_STATIC_LIBS)
   list(APPEND MMAI_FILES main.cpp StdInc.cpp)
 endif()
 assign_source_group(${MMAI_FILES})
 
-if(ENABLE_STATIC_AI_LIBS)
+if(ENABLE_STATIC_LIBS)
   add_library(MMAI STATIC ${MMAI_FILES})
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-install(DIRECTORY torchmodels DESTINATION ${DATA_DIR})
+# Note about force_load:
+# https://stackoverflow.com/questions/76575846/could-not-find-schema-for-atenempty-memory-format-in-libtorch
+target_link_libraries(MMAI ${MMAI_LIBS})
 
-if(COPY_CONFIG_ON_BUILD)
-  add_custom_command(TARGET MMAI POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake_modules/create_link.cmake ${CMAKE_CURRENT_SOURCE_DIR}/torchmodels ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
-  )
-endif()
+# install(DIRECTORY torchmodels DESTINATION ${DATA_DIR})
+# message(STATUS "Installed directory torchmodels into '${DATA_DIR}'")
+
+# if(COPY_CONFIG_ON_BUILD)
+#   add_custom_command(TARGET MMAI POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
+#     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake_modules/create_link.cmake ${CMAKE_CURRENT_SOURCE_DIR}/torchmodels ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
+#   )
+# endif()
 
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
-target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})
 
 if(ENABLE_MMAI_TEST)

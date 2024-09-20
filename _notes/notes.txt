@@ -13,3 +13,163 @@ Example: create v3
 3. Add newly added files from 1. and 2. into CMakeLists
 4. Add #include "v3/schema.h" in schema/schema.h
 5. Add #include "v3/BAI.h" and a "case 3" switch statement in BAI/base.cpp
+
+
+==== VCMI filesystems ===
+VCMI first loads an "initial" filesystem, see CResourceHandler::initialize
+The initial filesystem loads only dirs, JSON and H3 archives (LOD, VID, etc.)
+(see CFilesystemLoader::listFiles)
+Later, another filesystem is constructed based on config/filesystem.json
+XXX: the "config/filesystem.json" is looked up in the INITIAL filesystem
+     There are multiple "config/filesystem.json" files and the last one
+     is used in this case (the one in ~/Library/Application Support/vcmi)
+MMAI model is physically located in $VCMI/Mods/mmaimodels/models/agent.pt
+The `mmaimodels` mod contains this in the config:
+
+    "filesystem": {
+      "MMAI/MODELS/": [
+        {"type" : "dir",  "path" : "/models"}
+      ],
+      "MMAI/CONFIG/": [
+        {"type" : "dir",  "path" : "/config"}
+      ]
+    }
+
+The value of "path" above will not be present in the resource name of VCMI.
+i.e. resource name will be key ("MMAI/MODELS")
+
+The real location can be obtained as follows:
+     auto rpath = ResourcePath("MMAI/MODELS/defender.pt")
+     auto loaders = CResourceHandler::get()->getResourcesWithName(rpath);
+     auto fullpath = loaders.at(0)->getResourceName(rpath).value().str();
+     // in dev mode this is
+     // "./Mods/MMAI/models/defender.pt"
+
+
+=== Compiling pytorch for mobile ===
+1a. compile VCMI for ios
+
+    $ conan profile new ios --detect
+
+    // sdl_mixer complains my compiler version is 15, but in config it is 14
+    // OpenMP needs cppstd=17
+    // => edit CI/conan/base/apple:
+      -compiler.version=14
+      +compiler.version=15
+      -compiler.cppstd=11
+      +compiler.cppstd=17
+
+    $ conan install . \
+            --install-folder=conan-generated \
+            --no-imports \
+            --build=missing \
+            --profile:build=ios \
+            --profile:host=CI/conan/ios-arm64
+
+    $ cd $PROJ
+    $ git clone --recursive https://github.com/pytorch/pytorch
+    $ cd pytorch
+    $ git checkout v2.4.1
+    $ git submodule sync
+    $ git submodule update --init --recursive
+    $ python3.10 -m venv .venv
+    $ .venv/bin/activate
+    $ pip install cmake ninja
+    $ pip install -r requirements.txt
+    $ python3 setup.py develop
+    $ scripts/build_ios.sh
+    $ ln -s "$PWD/build_ios/install" "$PROJ/vcmi/AI/MMAI/libtorch"
+
+    // modify MMAI/CMakeLists.txt:
+    // * remove find_package(Torch ...)
+    // * add import_static_lib(...) for each library produced from the ios build
+    // * add find_library(ACCELERATE Accelerate)
+    // * ... more changes, see file diff
+
+    // modify MMAI/BAI/model/ files:
+    // * use torch::jit::mobile instead torch::jit
+    // * use c10::IValue instead of torch::IValue
+    // * ... more changes, see file diff
+
+    $ cd $VCMI
+
+    // XXX: due to bug in xcode? there are MANY warnings like this:
+    //        createItemModels creation requirements should not create capability ...
+    // Those are harmless and should be ignored.
+    // Build errors usually can be found by text-searching for "error:"
+
+    $ cmake -B build-ios --preset ios-device-conan \
+        -D BUNDLE_IDENTIFIER_PREFIX=com.simo \
+        -D CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=LD7K7CF9C5 \
+        -D ENABLE_MMAI=1 \
+        -D ENABLE_LIBTORCH=1 \
+        -D ENABLE_MMAI_STRICT_LOAD=1
+
+    // if sublime LSP hints are needed, run cmake -S . -B build ...
+    // (regular initial cmake build cmd for debug build)
+
+    $ cmake --build build-ios --target vcmiclient
+
+    // XXX: cpack will emit several errors like this one:
+    //      install_name_tool: no LC_RPATH load command with path ...
+    //      Those can be ignored
+
+    $ cd build-ios
+    $ cpack -C Debug
+
+    // connect iPhone to mac
+    // run Sideloadly
+    // open Advanced Options and set "Normal install"
+    // (i.e. without signing it -- it's already signed!)
+
+    // iPhone Crash dumps can be seen in "Analytics Data", search for "vcmi"
+    // Also, run "Console" on Mac with connected iPhone via cable,
+    //  then select it from the left pane -- all logs will be streamed
+    //
+    // XXX: printf() seems to cause a crash on iOS
+    //
+
+    // Release iOS builds
+
+    // XXX: first set "CODE_SIGNING_ALLOWED_FOR_APPS=YES" in CMakePresets.json
+
+    $ cmake --preset ios-release-conan-ccache \
+        -D BUNDLE_IDENTIFIER_PREFIX=com.simo \
+        -D CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=LD7K7CF9C5 \
+        -D ENABLE_MMAI=1 \
+        -D ENABLE_MMAI_STRICT_LOAD=1 \
+        -D ENABLE_LIBTORCH=1
+
+    $ cmake --build --preset ios-release-conan-ccache;
+    $ cd out/build/ios-release-conan-ccache
+    $ cpack -C Release
+    $ cd -
+
+1b. compile VCMI for iphone simulator
+  XXX: this does not work -- I can't get QT to build for simulator
+
+  error: Xcode building for iOS Simulator, but linking in an object file built for iOS
+
+  Below is an attempt to re-compile QT for ios simulator, but I eventually gave up
+
+  * create new conan profile (CI/conan/ios-simulator)
+
+        include(base/apple)
+
+        [settings]
+        os=iOS
+        os.sdk=iphonesimulator
+        os.version=12.0
+        arch=armv8
+
+  * Compile deps for ios simulator -- QT will fail
+    => compile QT as per
+       https://github.com/vcmi/vcmi-ios-deps?tab=readme-ov-file#note-for-arm-macs
+    NOTE: this patch must be applied to qt first:
+          https://codereview.qt-project.org/c/qt/qtbase/+/503172/3/mkspecs/features/toolchain.prf#288
+    NOTE 2: don't download into a VCMI sub-dir, as qmake will get confused
+          I unzipped it to
+          ~/Projects/qtbase-everywhere-src-5.15.15
+          then from a "build" dir inside it I ran `../configure ...` as
+          described in the vcmi-ios-deps repo above.
+
