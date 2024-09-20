@@ -14,13 +14,15 @@
 // limitations under the License.
 // =============================================================================
 
-#include "./hex.h"
-#include "./hexactmask.h"
-#include "Global.h"
-#include "schema/v3/constants.h"
+#include "StdInc.h"
 #include "spells/CSpellHandler.h"
 #include "vcmi/spells/Service.h"
 #include "vcmi/spells/Spell.h"
+
+#include "schema/v3/constants.h"
+
+#include "./hex.h"
+#include "./hexactmask.h"
 
 namespace MMAI::BAI::V3 {
     using A = Schema::V3::HexAttribute;

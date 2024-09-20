@@ -14,7 +14,9 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
 #include "CStack.h"
+
 #include "./general_info.h"
 
 namespace MMAI::BAI::V4 {

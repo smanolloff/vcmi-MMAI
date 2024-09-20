@@ -1,4 +1,3 @@
-#include "Global.h"
 #include "StdInc.h"
 #include "battle/AICombatOptions.h"
 #include "lib/AI_Base.h"

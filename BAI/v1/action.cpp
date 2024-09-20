@@ -14,8 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
-#include <stdexcept>
-#include "Global.h"
+#include "StdInc.h"
 #include "battle/CBattleInfoEssentials.h"
 
 #include "BAI/v1/hex.h"

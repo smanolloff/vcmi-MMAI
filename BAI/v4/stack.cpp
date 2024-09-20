@@ -14,17 +14,19 @@
 // limitations under the License.
 // =============================================================================
 
-#include "Global.h"
+#include "StdInc.h"
 
-#include "./stack.h"
-#include "./hex.h"
-#include "./util.h"
 #include "battle/IBattleInfoCallback.h"
 #include "bonuses/BonusCustomTypes.h"
 #include "constants/EntityIdentifiers.h"
 #include "spells/CSpellHandler.h"
+
 #include "schema/v4/constants.h"
 #include "schema/v4/types.h"
+
+#include "./stack.h"
+#include "./hex.h"
+#include "./util.h"
 
 namespace MMAI::BAI::V4 {
     using A = Schema::V4::StackAttribute;

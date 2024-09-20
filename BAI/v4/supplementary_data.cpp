@@ -14,8 +14,10 @@
 // limitations under the License.
 // =============================================================================
 
-#include "./supplementary_data.h"
+#include "StdInc.h"
+
 #include "common.h"
+#include "./supplementary_data.h"
 
 namespace MMAI::BAI::V4 {
     const Schema::V4::Hexes SupplementaryData::getHexes() const {

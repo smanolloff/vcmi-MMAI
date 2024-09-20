@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "BAI/v1/hex.h"
 #include "BAI/v1/hexactmask.h"
 

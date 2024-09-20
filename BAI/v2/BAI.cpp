@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "BAI/v1/BAI.h"
 #include "BAI/v2/BAI.h"
 #include "BAI/v2/state.h"

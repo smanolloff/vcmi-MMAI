@@ -14,12 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
-#include <bitset>
-#include <memory>
-#include <stdexcept>
-#include <limits>
+#include "StdInc.h"
 
-#include "Global.h"
 #include "common.h"
 #include "schema/base.h"
 #include "schema/v1/types.h"

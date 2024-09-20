@@ -14,13 +14,12 @@
 // limitations under the License.
 // =============================================================================
 
-#include "Global.h"
+#include "StdInc.h"
 #include "lib/AI_Base.h"
 #include "battle/BattleAction.h"
 
 #include "common.h"
 #include "schema/v1/types.h"
-
 #include "BAI/v1/BAI.h"
 #include "BAI/v1/supplementary_data.h"
 #include "BAI/v1/action.h"

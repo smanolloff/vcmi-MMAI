@@ -14,20 +14,20 @@
 // limitations under the License.
 // =============================================================================
 
-#include "BAI/v4/hexaction.h"
-#include "Global.h"
+#include "StdInc.h"
+#include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"
 #include "lib/AI_Base.h"
-#include "battle/BattleAction.h"
 
 #include "common.h"
 #include "schema/v4/constants.h"
 #include "schema/v4/types.h"
 
 #include "./BAI.h"
-#include "./supplementary_data.h"
 #include "./action.h"
+#include "./hexaction.h"
 #include "./render.h"
+#include "./supplementary_data.h"
 
 namespace MMAI::BAI::V4 {
     Schema::Action BAI::getNonRenderAction() {

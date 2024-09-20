@@ -14,19 +14,16 @@
 // limitations under the License.
 // =============================================================================
 
-#include <bitset>
-#include <memory>
-#include <stdexcept>
-#include <limits>
-
-#include "BAI/v3/hex.h"
-#include "Global.h"
+#include "StdInc.h"
 #include "battle/ReachabilityInfo.h"
+
 #include "common.h"
 #include "schema/base.h"
 #include "schema/v3/types.h"
 #include "schema/v3/constants.h"
+
 #include "./battlefield.h"
+#include "./hex.h"
 
 
 namespace MMAI::BAI::V3 {

@@ -14,17 +14,17 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
 #include "battle/CPlayerBattleCallback.h"
 #include "battle/IBattleState.h"
 #include "networkPacks/PacksForClientBattle.h"
+
 #include "schema/v1/constants.h"
 #include "schema/v1/types.h"
-
 #include "BAI/v1/state.h"
 #include "BAI/v1/encoder.h"
 #include "BAI/v1/hexaction.h"
 #include "BAI/v1/supplementary_data.h"
-#include "vstd/CLoggerBase.h"
 
 #include <memory>
 

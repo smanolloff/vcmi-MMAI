@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "schema/base.h"
 #include "ScriptedModel.h"
 

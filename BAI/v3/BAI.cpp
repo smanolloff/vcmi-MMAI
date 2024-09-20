@@ -14,17 +14,17 @@
 // limitations under the License.
 // =============================================================================
 
-#include "BAI/v3/hexaction.h"
-#include "Global.h"
+#include "StdInc.h"
+#include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"
 #include "lib/AI_Base.h"
-#include "battle/BattleAction.h"
 
 #include "common.h"
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
 
 #include "./BAI.h"
+#include "./BAI/v3/hexaction.h"
 #include "./supplementary_data.h"
 #include "./action.h"
 #include "./render.h"

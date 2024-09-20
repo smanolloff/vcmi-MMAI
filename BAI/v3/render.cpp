@@ -14,10 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
-#include "BAI/v3/render.h"
+#include "StdInc.h"
 #include "AI/VCAI/AIUtility.h"
-#include "BAI/v3/hex.h"
-#include "Global.h"
 #include "battle/AccessibilityInfo.h"
 #include "battle/CObstacleInstance.h"
 #include "bonuses/Bonus.h"
@@ -29,13 +27,14 @@
 #include "mapObjects/CGTownInstance.h"
 #include "modding/IdentifierStorage.h"
 #include "modding/ModScope.h"
-#include "schema/v3/constants.h"
-#include "schema/v3/types.h"
 #include "spells/CSpellHandler.h"
 #include "vcmi/spells/Caster.h"
-#include <algorithm>
-#include <memory>
-#include <sys/errno.h>
+
+#include "schema/v3/constants.h"
+#include "schema/v3/types.h"
+
+#include "./render.h"
+#include "./hex.h"
 
 namespace MMAI::BAI::V3 {
     std::string PadLeft(const std::string& input, size_t desiredLength, char paddingChar) {

@@ -14,14 +14,13 @@
 // limitations under the License.
 // =============================================================================
 
-#include <memory>
-#include <stdexcept>
-#include <string>
+#include "StdInc.h"
 
-#include "base.h"
 #include "networkPacks/PacksForClientBattle.h"
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
+
+#include "base.h"
 #include "v1/BAI.h"
 #include "v2/BAI.h"
 #include "v3/BAI.h"

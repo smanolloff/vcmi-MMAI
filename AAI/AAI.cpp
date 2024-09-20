@@ -14,26 +14,20 @@
 // limitations under the License.
 // =============================================================================
 
-#include <cstdio>
-#include <boost/thread.hpp>
-#include <stdexcept>
-#include <string>
-
+#include "StdInc.h"
 #include "CCallback.h"
 #include "CStack.h"
 #include "battle/BattleAction.h"
 #include "gameState/CGameState.h"
 #include "mapObjects/CGHeroInstance.h"
-
-#include "common.h"
-#include "schema/base.h"
-#include "AAI/AAI.h"
-
 #include "networkPacks/BattleChanges.h"
 #include "networkPacks/PacksForClientBattle.h"
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
-#include "vstd/CLoggerBase.h"
+
+#include "common.h"
+#include "schema/base.h"
+#include "./AAI.h"
 
 namespace MMAI::AAI {
     AAI::AAI() {

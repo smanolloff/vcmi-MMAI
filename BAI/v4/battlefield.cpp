@@ -14,20 +14,16 @@
 // limitations under the License.
 // =============================================================================
 
-#include <bitset>
-#include <memory>
-#include <stdexcept>
-#include <limits>
-
-#include "BAI/v4/hex.h"
-#include "Global.h"
+#include "StdInc.h"
 #include "battle/IBattleInfoCallback.h"
 #include "battle/ReachabilityInfo.h"
+
 #include "common.h"
 #include "schema/base.h"
 #include "schema/v4/types.h"
 #include "schema/v4/constants.h"
 #include "./battlefield.h"
+#include "./hex.h"
 
 
 namespace MMAI::BAI::V4 {

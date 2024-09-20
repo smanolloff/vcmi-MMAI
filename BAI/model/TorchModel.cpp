@@ -14,17 +14,11 @@
 // limitations under the License.
 // =============================================================================
 
-#include <memory>
-#include <stdexcept>
+#include "StdInc.h"
 
-// #include "enum_"
-
-#include <ATen/core/enum_tag.h>
 #include <ATen/core/ivalue.h>
-#include <c10/core/SymFloat.h>
-#include <c10/core/ScalarType.h>
-#include <torch/torch.h>
-#include <torch/script.h>
+#include <ATen/ops/from_blob.h>
+#include <torch/csrc/jit/mobile/module.h>
 
 #include "TorchModel.h"
 #include "schema/base.h"
@@ -47,18 +41,23 @@ namespace MMAI::BAI {
             break; case 3:
                 sizeOneHex = MMAI::Schema::V3::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V3::N_ACTIONS;
+            break; case 4:
+                sizeOneHex = MMAI::Schema::V4::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V4::N_ACTIONS;
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }
 
-        auto out_features = tjc->module.attr("actor").toModule().attr("out_features").toInt();
-
-        switch(out_features) {
-        break; case 2311: actionOffset = 1;
-        break; case 2312: actionOffset = 0;
-        break; default:
-            throw std::runtime_error("Expected 2311 or 2312 out_features for actor, got: " + std::to_string(out_features));
-        }
+        // XXX: jit::mobile::Module has no toModule() attribute
+        //      Maybe a call to .predict() with a dummy observation would work
+        //
+        // auto out_features = tjc->module.attr("actor", c10::IValue("method_not_found:actor")).toModule().attr("out_features").toInt();
+        // switch(out_features) {
+        // break; case 2311: actionOffset = 1;
+        // break; case 2312: actionOffset = 0;
+        // break; default:
+        //     throw std::runtime_error("Expected 2311 or 2312 out_features for actor, got: " + std::to_string(out_features));
+        // }
     }
 
     Schema::ModelType TorchModel::getType() {
@@ -83,6 +82,8 @@ namespace MMAI::BAI {
                 ended = std::any_cast<const MMAI::Schema::V1::ISupplementaryData*>(any)->getIsBattleEnded();
             break; case 3:
                 ended = std::any_cast<const MMAI::Schema::V3::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 4:
+                ended = std::any_cast<const MMAI::Schema::V4::ISupplementaryData*>(any)->getIsBattleEnded();
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }
@@ -95,9 +96,7 @@ namespace MMAI::BAI {
         dst.resize(src.size());
         std::copy(src.begin(), src.end(), dst.begin());
 
-        auto obs = version < 3
-            ? torch::from_blob(dst.data(), {11, 15, sizeOneHex}, torch::kFloat)
-            : torch::from_blob(dst.data(), {static_cast<long long>(dst.size())}, torch::kFloat);
+        auto obs = at::from_blob(dst.data(), {static_cast<long long>(dst.size())}, at::kFloat);
 
         // yields no performance benefit over (safer) copy approach:
         // auto obs = torch::from_blob(const_cast<float*>(s->getBattlefieldState().data()), {11, 15, sizeOneHex}, torch::kFloat);
@@ -111,7 +110,7 @@ namespace MMAI::BAI {
 
         intmask.at(0) = 0;  // prevent retreats for now
 
-        auto mask = torch::from_blob(intmask.data(), {static_cast<long>(intmask.size())}, torch::kInt).to(torch::kBool);
+        auto mask = at::from_blob(intmask.data(), {static_cast<long>(intmask.size())}, at::kInt).to(at::kBool);
 
         // auto mask_accessor = mask.accessor<bool,1>();
         // for (int i = 0; i < mask_accessor.size(0); ++i)
@@ -120,14 +119,14 @@ namespace MMAI::BAI {
         std::unique_lock lock(m);
 
         auto method = tjc->module.get_method("predict");
-        auto inputs = std::vector<torch::IValue>{obs, mask};
+        auto inputs = std::vector<c10::IValue>{obs, mask};
         auto res = method(inputs).toInt() + actionOffset;
 
         logAi->debug("AI action prediction: %d\n", int(res));
 
         // Also esitmate value
         auto vmethod = tjc->module.get_method("get_value");
-        auto vinputs = std::vector<torch::IValue>{obs};
+        auto vinputs = std::vector<c10::IValue>{obs};
         auto vres = vmethod(vinputs).toDouble();
         logAi->debug("AI value estimation: %f\n", vres);
 
@@ -142,10 +141,10 @@ namespace MMAI::BAI {
 
         std::unique_lock lock(m);
 
-        auto obs = torch::from_blob(dst.data(), {11, 15, sizeOneHex}, torch::kFloat);
+        auto obs = at::from_blob(dst.data(), {11, 15, sizeOneHex}, at::kFloat);
 
         auto method = tjc->module.get_method("get_value");
-        auto inputs = std::vector<torch::IValue>{obs};
+        auto inputs = std::vector<c10::IValue>{obs};
         auto res = method(inputs).toDouble();
         return res;
     }

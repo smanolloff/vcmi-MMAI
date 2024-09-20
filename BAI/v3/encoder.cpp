@@ -14,12 +14,15 @@
 // limitations under the License.
 // =============================================================================
 
-#include "BAI/v3/hex.h"
+#include "StdInc.h"
+
 #include "common.h"
 #include "schema/v3/types.h"
 #include "schema/v3/constants.h"
-#include "./encoder.h"
 #include "schema/v3/util.h"
+
+#include "./encoder.h"
+#include "./hex.h"
 
 namespace MMAI::BAI::V3 {
     using namespace Schema::V3;

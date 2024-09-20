@@ -14,10 +14,11 @@
 // limitations under the License.
 // =============================================================================
 
-#include "Global.h"
+#include "StdInc.h"
 #include "battle/CPlayerBattleCallback.h"
 #include "battle/IBattleState.h"
 #include "networkPacks/PacksForClientBattle.h"
+
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
 
@@ -25,7 +26,6 @@
 #include "./encoder.h"
 #include "./hexaction.h"
 #include "./supplementary_data.h"
-#include "vstd/CLoggerBase.h"
 
 #include <memory>
 

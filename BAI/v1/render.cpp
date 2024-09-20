@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "BAI/v1/render.h"
 #include "schema/v1/constants.h"
 #include "schema/v1/types.h"

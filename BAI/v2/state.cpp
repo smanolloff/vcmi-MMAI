@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "BAI/v2/state.h"
 #include "BAI/v2/encoder.h"
 #include "schema/v2/constants.h"
