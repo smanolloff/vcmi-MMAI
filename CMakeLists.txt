@@ -213,15 +213,16 @@ if(ENABLE_LIBTORCH)
     #  3. Build VCMI with -DENABLE_LIBTORCH=1 -DLIBTORCH_PATH=$LIBTORCH_PATH
     #
 
-    if (NOT DEFINED LIBTORCH_PATH OR LIBTORCH_PATH STREQUAL "")
+    if(NOT DEFINED LIBTORCH_PATH OR LIBTORCH_PATH STREQUAL "")
       set(LIBTORCH_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
-      message(WARNING "LIBTORCH_PATH is not set, falling back to ${LIBTORCH_PATH}")
-    else()
-      message(STATUS "LIBTORCH_PATH: ${LIBTORCH_PATH}")
+      message(FATAL_ERROR "LIBTORCH_PATH is not set")
     endif()
 
-    find_package(Torch REQUIRED PATHS "${LIBTORCH_PATH}" NO_DEFAULT_PATH)
-    find_package(OpenMP REQUIRED)
+    message(STATUS "LIBTORCH_PATH: ${LIBTORCH_PATH}")
+
+    set(ENV{TORCH_INSTALL_PREFIX} ${LIBTORCH_PATH})
+    list(APPEND CMAKE_PREFIX_PATH "${LIBTORCH_PATH}")
+    find_package(Torch REQUIRED)
 
     if(APPLE_IOS)
       # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
@@ -230,14 +231,13 @@ if(ENABLE_LIBTORCH)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-    list(APPEND MMAI_LIBS OpenMP::OpenMP_CXX "${TORCH_LIBRARIES}" "${ACCELERATE}")
+    list(APPEND MMAI_LIBS "${TORCH_LIBRARIES}" "${ACCELERATE}")
     list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
     list(APPEND MMAI_INCLUDES "${TORCH_INCLUDE_DIRS}")
 
     message("MMAI_LIBS: ${MMAI_LIBS}")
     message("MMAI_FILES: ${MMAI_INCLUDES}")
     message("MMAI_INCLUDES: ${MMAI_INCLUDES}")
-
     # message(STATUS "TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
     # message(STATUS "TORCH_CXX_FLAGS: ${TORCH_CXX_FLAGS}")
     # message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
