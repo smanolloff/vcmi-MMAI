@@ -32,7 +32,7 @@ namespace MMAI::BAI {
         std::shared_ptr<CBattleCallback> cb;
 
         AICombatOptions aiCombatOptions;
-        Schema::Baggage* baggage;
+        Schema::Baggage* baggage = nullptr;
         std::shared_ptr<CBattleGameInterface> bai;  // calls will be delegated to this object
 
         /*

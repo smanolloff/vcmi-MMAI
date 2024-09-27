@@ -43,10 +43,11 @@ namespace MMAI::BAI {
         auto lock = std::lock_guard(modelmutex);
         if (!modelconfig.empty()) return;
 
-        auto node = JsonUtils::assembleFromFiles("MMAI/CONFIG/mmai-settings.json");
+        auto cfg = JsonUtils::assembleFromFiles("MMAI/CONFIG/mmai-settings.json").Struct();
+
         for (auto &key : {"attacker", "defender", "fallback"}) {
-            if(node.Struct()[key].isString()) {
-                modelconfig.insert({key, node.Struct()[key].String()});
+            if(cfg[key].isString()) {
+                modelconfig.insert({key, cfg[key].String()});
             } else {
                 logAi->warn("MMAI config contains invalid values: value for '%s' is not a string", key);
             }
@@ -76,21 +77,15 @@ namespace MMAI::BAI {
                     THROW_FORMAT("No such key in model config: %s", key);
 
                 logAi->debug("Found value for key %s: %s", key, it2->second);
-                logAi->info("simodebug: 1");
 
                 auto rpath = ResourcePath(it2->second);
-                logAi->info("simodebug: 2");
                 auto loaders = CResourceHandler::get()->getResourcesWithName(rpath);
-                logAi->info("simodebug: 3");
 
                 if (loaders.size() != 1)
                     logAi->warn("Expected 1 loader, found %d for %s", static_cast<int>(loaders.size()), rpath.getName());
-                logAi->info("simodebug: 4");
 
                 auto fullpath = loaders.at(0)->getResourceName(rpath);
-                logAi->info("simodebug: 5");
                 ASSERT(fullpath.has_value(), "could not obtain path for resource " + rpath.getName());
-                logAi->info("simodebug: 6");
                 auto fullpathstr = fullpath.value().string();
 
                 logAi->info("Loading %s model from %s", key, fullpathstr);
@@ -152,6 +147,13 @@ namespace MMAI::BAI {
                 % boost::core::demangle(any.type().name()) % any.type().hash_code()
             ));
             baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
+
+            info("Baggage decoded");
+            #ifndef ENABLE_ML
+            throw std::runtime_error("ENABLE_ML IS UNDEFINED, but baggage was given!");
+            #endif
+        } else {
+            info("No baggage given");
         }
 
         bai.reset();
@@ -223,6 +225,9 @@ namespace MMAI::BAI {
 
     void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         Schema::IModel * model;
+        logAi->error("TEST ERROR LOG 1");
+        logAi->error("TEST ERROR LOG 2: cb->getPlayerID()->hasValue(): " + std::to_string(cb->getPlayerID()->hasValue()));
+        logAi->error("TEST ERROR LOG 3: baggage is nullptr? " + std::to_string(!!baggage));
 
         if (baggage) {
             // During training, the model object is provided via the baggage

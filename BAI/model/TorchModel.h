@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include <ATen/Parallel.h>
 #include <mutex>
 #include "schema/base.h"
 
 #ifdef ENABLE_LIBTORCH
 #include <torch/csrc/jit/mobile/import.h>
+#include <ATen/PTThreadPool.h>
 #endif
 
 namespace MMAI::BAI {
@@ -47,7 +49,9 @@ namespace MMAI::BAI {
 #ifdef ENABLE_LIBTORCH
         class TorchJitContainer {
         public:
-            TorchJitContainer(std::string path) : module(torch::jit::_load_for_mobile(path)) {}
+            TorchJitContainer(std::string path) : module(torch::jit::_load_for_mobile(path)) {
+                at::init_num_threads();
+            }
             c10::InferenceMode guard;
             torch::jit::mobile::Module module;
         };
