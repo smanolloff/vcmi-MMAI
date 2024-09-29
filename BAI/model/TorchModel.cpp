@@ -23,6 +23,7 @@
 #include "TorchModel.h"
 #include "schema/base.h"
 #include "schema/schema.h"
+#include <android/log.h>
 
 namespace MMAI::BAI {
     TorchModel::TorchModel(std::string path)
@@ -73,7 +74,9 @@ namespace MMAI::BAI {
     };
 
     int TorchModel::getAction(const MMAI::Schema::IState * s) {
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "1");
         auto any = s->getSupplementaryData();
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "2");
         auto ended = false;
 
         switch(version) {
@@ -88,15 +91,22 @@ namespace MMAI::BAI {
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }
 
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "3");
         if (ended)
             return MMAI::Schema::ACTION_RESET;
 
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "4");
         auto &src = s->getBattlefieldState();
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "5");
         auto dst = MMAI::Schema::BattlefieldState{};
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "6");
         dst.resize(src.size());
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "7");
         std::copy(src.begin(), src.end(), dst.begin());
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "8");
 
         auto obs = at::from_blob(dst.data(), {static_cast<long long>(dst.size())}, at::kFloat);
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "9");
 
         // yields no performance benefit over (safer) copy approach:
         // auto obs = torch::from_blob(const_cast<float*>(s->getBattlefieldState().data()), {11, 15, sizeOneHex}, torch::kFloat);
@@ -104,32 +114,47 @@ namespace MMAI::BAI {
         auto intmask = std::vector<int>{};
         intmask.reserve(nactions);
         auto &boolmask = s->getActionMask();
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "10");
 
-        for (auto it = boolmask.begin() + actionOffset; it != boolmask.end(); ++it)
+        int i = 0;
+        for (auto it = boolmask.begin() + actionOffset; it != boolmask.end(); ++it) {
+            // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "boolmask i=%d", i);
+            i++;
             intmask.push_back(static_cast<int>(*it));
+        }
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "11");
 
         intmask.at(0) = 0;  // prevent retreats for now
 
         auto mask = at::from_blob(intmask.data(), {static_cast<long>(intmask.size())}, at::kInt).to(at::kBool);
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "12");
 
         // auto mask_accessor = mask.accessor<bool,1>();
         // for (int i = 0; i < mask_accessor.size(0); ++i)
         //     printf("mask[%d]=%d\n", i, mask_accessor[i]);
 
         std::unique_lock lock(m);
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "13");
 
         auto method = tjc->module.get_method("predict");
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "14");
         auto inputs = std::vector<c10::IValue>{obs, mask};
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "15");
         auto res = method(inputs).toInt() + actionOffset;
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "16");
 
         logAi->debug("AI action prediction: %d\n", int(res));
 
         // Also esitmate value
         auto vmethod = tjc->module.get_method("get_value");
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "17");
         auto vinputs = std::vector<c10::IValue>{obs};
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "18");
         auto vres = vmethod(vinputs).toDouble();
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "19");
         logAi->debug("AI value estimation: %f\n", vres);
 
+        // __android_log_print(ANDROID_LOG_ERROR, "TORCHTEST", "20");
         return MMAI::Schema::Action(res);
     };
 

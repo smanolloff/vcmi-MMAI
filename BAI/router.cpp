@@ -89,6 +89,17 @@ namespace MMAI::BAI {
                 auto fullpathstr = fullpath.value().string();
 
                 logAi->info("Loading %s model from %s", key, fullpathstr);
+
+                const char* varName = "TORCH_SHOW_CPP_STACKTRACES";
+                const char* value = "1";
+
+                // Set environment variable
+                if (setenv(varName, value, 1) == 0) {
+                    logAi->info("%s set to %s", varName, std::getenv(varName));
+                } else {
+                    logAi->error("Failed to set env var %s", varName);
+                }
+
                 it = models.emplace(key, std::make_unique<TorchModel>(fullpathstr)).first;
             } else {
                 logAi->debug("Using previously loaded %s", key);

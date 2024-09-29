@@ -223,14 +223,16 @@ The real location can be obtained as follows:
           -D LIBTORCH_PATH=/home/simo/Projects/pytorch/build/install
 
 
-
 == android
 
+// XXX: libtorch cannot compile with android-ndk r25c
+//      => r26d must be used
 
 1. Compile VCMI deps for android
 
+    $ cd $VCMI
     $ conan profile new android --detect
-    $ conan install android-ndk/r26d@ --profile:build ../vcmi/CI/conan/android-64-ndk-r26d
+    $ conan install android-ndk/r26d@ --profile:build CI/conan/android-64-ndk-r26d
 
     // Download pre-built conan libs
     $ cd $PROJ
@@ -238,40 +240,14 @@ The real location can be obtained as follows:
     $ cd conan-system-libs
     $ conan create zlib vcmi/android
 
-    // Edit VCMI's conanfile.py and add this (+) line below zlib:
-
-            self.requires("zlib/1.2.12@vcmi/android", override=True)
-           +self.requires("libiconv/[~1.17]", override=True) # ffmpeg / sdl
-
-    //XXXXXXX: NOT SURE what worked. Tried many things with many failures:
-    // * had `compiler.version=15` in conan profile (it gave error eventually, reverted to 14)
-    // * had `compiler.cppstd=17` in conan profile (it finally worked without it)
-    // * had `os.api_level=28` and `31` in conan profile (it finally worked with 21)
-    // * had `os.api_level=28` and `31` in conan profile (it finally worked with 21)
-    // * had libiconv "stub" package from conan-system-libs, i.e. also had
-    //        `conan create zlib vcmi/android`
-    //      and then in conanfile.py
-    //        +self.requires("libiconv/1.17@vcmi/android", override=True)
-    //      (it finally worked with the "real" libiconv package 1.17)
-    // * set ndk_path and ANDROID_HOME manually with both `android-64` and `android-64-ndk` profiles:
-    //      export ANDROID_HOME="~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin/"
-    //      conan install . \
-    //          --install-folder=conan-generated \
-    //          --no-imports \
-    //          --build=missing \
-    //          --profile:build=android \
-    //          --profile:host=CI/conan/android-64-ndk --conf tools.android:ndk_path=~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin
-    //      (it finally worked with the android-64-ndk, the ANDROID_HOME set, but without ndk_path)
-    //
-    // Output log of conan install and current state of profiles & conanfile
-    // saved to _notes/android-conan-log.txt
-
+    $ export ANDROID_HOME="/Users/simo/.conan/data/android-ndk/r26d/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin"
     $ conan install . \
         --install-folder=conan-generated \
         --no-imports \
         --build=missing \
         --profile:build=android \
         --profile:host=CI/conan/android-64-ndk --update
+        --conf "tools.android:ndk_path=$ANDROID_HOME"
 
 2. compile libtorch for android
     $ cd $PROJ
@@ -284,30 +260,6 @@ The real location can be obtained as follows:
     $ . .venv/bin/activate.fish
     $ pip install cmake ninja
     $ pip install -r requirements.txt
-
-    // $ python3 setup.py develop # XXX: not needed?
-
-    // Added -DUSE_VULKAN=OFF and due to errors, see:
-    // https://discuss.pytorch.org/t/android-build-and-vulkan-wrapper-h/182942/2
-
-    // pure `build_android.sh` script completes, but does not work afterwards
-    //
-    // $ BUILD_LITE_INTERPRETER=1 \
-    //     ANDROID_NDK=~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin \
-    //     ANDROID_ABI=arm64-v8a \
-    //     scripts/build_android.sh -DUSE_VULKAN=OFF
-
-
-    // XXX: there is a build_pytorch_android.sh script which
-    //      pre-sets some env vars then calls build_android.sh internally,
-    //      BUT it does not pass ARGV => manually inspected the vars and
-    //      came up with this big command instead:
-    //      (NOTE: it may fail with SIGSEGV, see below)
-
-    $ rm -rf "android/pytorch_android/src/main/jniLibs"
-    $ mkdir -p "android/pytorch_android/src/main/jniLibs"
-    $ rm -rf "android/pytorch_android/src/main/cpp/libtorch_include"
-    $ mkdir -p "android/pytorch_android/src/main/cpp/libtorch_include"
 
     $ PYTORCH_DIR="$PWD" \
         PYTORCH_ANDROID_DIR="$PWD/android" \
@@ -324,70 +276,44 @@ The real location can be obtained as follows:
           -DUSE_LITE_INTERPRETER_PROFILER=OFF \
           -DUSE_VULKAN=OFF
 
-    // XXX: the above fails with SIGSEGV
-    //    error: clang frontend command failed with exit code 139
-    // ChatGPT suggested to reduce optimizaiton level -O3 to -O2
-    // manually edited the failing c++ command and confirmed it works
-    // => added -DCMAKE_BUILD_TYPE=Debug   (RelWithDebInfo/MinSizeRel still cause the error)
-
-
     $ ln -s "$PWD/build_android/install/lib" "$PWD/android/pytorch_android/src/main/jniLibs/arm64-v8a"
     $ ln -s "$PWD/build_android/install/include" "$PWD/android/pytorch_android/src/main/cpp/libtorch_include/arm64-v8a"
 
-    // in Debug builds, `libfmt` is named `libfmtd`...
-    $ ln -s libfmtd.a build_android/install/lib/libfmt.a
+3. compile VCMI for android
 
-3. compile VCMI for linux
-
+    $ cd $VCMI
     $ brew install java11
-    // This updated a lot of deps. Output log of brew install
-    // saved to _notes/brew_java11_log.txt
-
     $ export JAVA_HOME=/opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home
-    $ export ANDROID_HOME=~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin
+    $ export ANDROID_HOME="/Users/simo/.conan/data/android-ndk/r26d/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin"
+
+    // TODO: do this only if non-accepted licenses error occurs
+    //       install an OLD version (v10.0) of sdkmanager and accept licenses
+    $ cd (mktemp -d)
+    $ curl https://dl.google.com/android/repository/commandlinetools-mac-9862592_latest.zip -o commandlinetools-v10.zip
+    $ unzip commandlinetools-v10.zip
+    $ cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
+    $ cd -
+
+    // XXX: Edit ./android/vcmi-app/local.properties:
+    //
+    //    sdk.dir=/Users/simo/.conan/data/android-ndk/r26d/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/ bin
+    //
 
     // XXX: the below command triggers a lot of security warnings
     //      "... cannot be opened" which need manual approval from Mac's Settings->Security
     // XXX: NKAI must be built as well, or a weird error during linking occurs
 
-
-    // XXX: NOT SURE IF RELEVANT
-    //      (maybe occurs only when -B was invoked without preset which is wrong)
-    //      post-build will fail due to non-accepted licenses
-    //      To accept them, install an OLD version (v10.0) of sdkmanager
-    //        A) from Android Studio as described here:
-    //            https://stackoverflow.com/a/61480578
-    //            https://stackoverflow.com/a/75763391
-    //            Then:
-    //            $ /Users/simo/Library/Android/sdk/cmdline-tools/10.0/bin/sdkmanager \
-    //                --sdk_root=/Users/simo/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin \
-    //                --licenses
-    //
-    //        B) manually (download link taken from Android Studio logs):
-    //            $ curl https://dl.google.com/android/repository/commandlinetools-mac-9862592_latest.zip -o commandlinetools-v10.zip
-    //            $ unzip commandlinetools-v10.zip
-    //            $ cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
-    //
-
-    // XXX: for ndk 26d, I edited both
-    //    ./android/vcmi-app/local.properties
-    //    ./build-android/android-build/vcmi-app/local.properties
-    // and set
-    //        sdk.dir=/Users/simo/.conan/data/android-ndk/r26d/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/ bin
-    // (possibly only the first file needs to be edited tho)
-
-
     $ cmake -B build-android --preset android-daily-release \
-            -D ENABLE_MMAI=1 \
-            -D ENABLE_MMAI_STRICT_LOAD=1 \
-            -D ENABLE_LIBTORCH=1 \
-            -D LIBTORCH_PATH=/Users/simo/Projects/pytorch/build_android/install
+          -D ENABLE_MMAI=1 \
+          -D ENABLE_MMAI_STRICT_LOAD=1 \
+          -D ENABLE_LIBTORCH=1 \
+          -D LIBTORCH_PATH=/Users/simo/Projects/pytorch/build_android/install
 
     $ cmake --build build-android -- -j8
 
     // Start Android Studio, Tools->Device Manager -> start emulator
     // drag&drop this file
-    // /Users/simo/Projects/vcmi/build-android/android-build/vcmi-app/build/outputs/apk/release/vcmi-release.apk
+    //      $VCMI/build-android/android-build/vcmi-app/build/outputs/apk/debug/vcmi-debug.apk
 
     // To view log files:
-    $ /Users/simo/Library/Android/sdk/platform-tools/adb logcat -T1 --regex="VCMI|vcmi"
+    $ $ANDROID_HOME/platform-tools/adb logcat logcat -T1 '*:S VCMI-global VCMI-network VCMI-ai'

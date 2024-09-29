@@ -42,7 +42,7 @@ namespace MMAI::BAI {
 
         int sizeOneHex;
         int nactions;
-        int actionOffset;
+        int actionOffset = 0;
 
         std::mutex m;
 
