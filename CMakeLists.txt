@@ -220,7 +220,6 @@ if(ENABLE_LIBTORCH)
 
     message(STATUS "LIBTORCH_PATH: ${LIBTORCH_PATH}")
 
-    set(ENV{TORCH_INSTALL_PREFIX} ${LIBTORCH_PATH})
     list(APPEND CMAKE_PREFIX_PATH "${LIBTORCH_PATH}")
     find_package(Torch REQUIRED)
 
@@ -241,6 +240,13 @@ if(ENABLE_LIBTORCH)
     # message(STATUS "TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
     # message(STATUS "TORCH_CXX_FLAGS: ${TORCH_CXX_FLAGS}")
     # message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
+
+    # Install libtorch libraries
+    install(FILES
+      ${LIBTORCH_PATH}/lib/libc10.dylib
+      ${LIBTORCH_PATH}/lib/libtorch.dylib
+      ${LIBTORCH_PATH}/lib/libtorch_cpu.dylib
+      DESTINATION ${LIB_DIR})
 else()
     list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
 endif()
@@ -257,20 +263,7 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-# Note about force_load:
-# https://stackoverflow.com/questions/76575846/could-not-find-schema-for-atenempty-memory-format-in-libtorch
 target_link_libraries(MMAI ${MMAI_LIBS})
-
-# install(DIRECTORY torchmodels DESTINATION ${DATA_DIR})
-# message(STATUS "Installed directory torchmodels into '${DATA_DIR}'")
-
-# if(COPY_CONFIG_ON_BUILD)
-#   add_custom_command(TARGET MMAI POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
-#     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake_modules/create_link.cmake ${CMAKE_CURRENT_SOURCE_DIR}/torchmodels ${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}/torchmodels
-#   )
-# endif()
-
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})
 

@@ -23,7 +23,6 @@
 #include "TorchModel.h"
 #include "schema/base.h"
 #include "schema/schema.h"
-#include <android/log.h>
 
 namespace MMAI::BAI {
     TorchModel::TorchModel(std::string path)

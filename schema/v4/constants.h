@@ -142,7 +142,7 @@ namespace MMAI::Schema::V4 {
         E4(SA::Y_COORD,                   CE, 10),
         E4(SA::X_COORD,                   CE, 14),
         E4(SA::SIDE,                      CE, 1),        // 0=attacker, 1=defender
-        E4(SA::QUANTITY,                  NE, STACK_QTY_MAX),  // damped using tanh()
+        E4(SA::QUANTITY,                  NE, STACK_QTY_MAX),
         E4(SA::ATTACK,                    NE, 80),
         E4(SA::DEFENSE,                   NE, 80),       // azure dragon is 60 when defending
         E4(SA::SHOTS,                     NE, 32),       // sharpshooter is 32

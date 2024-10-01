@@ -248,4 +248,3 @@ namespace MMAI::BAI::V3 {
         vec.push_back(static_cast<float>(v) / static_cast<float>(vmax));
     }
 }
-

@@ -79,8 +79,19 @@ The real location can be obtained as follows:
     $ . .venv/bin/activate.fish
     $ pip install cmake ninja
     $ pip install -r requirements.txt
-    $ python3 setup.py develop  # XXX: not needed?
-    $ BUILD_LITE_INTERPRETER=1 scripts/build_ios.sh
+
+    // Export op list from saved jit model:
+    //
+    //      import yaml
+    //      m = torch.jit.load("$VCMIGYM/rl/models/Attacker model:v10/jit-agent-optimized.pt")
+    //      with open('ops.yml', 'w') as output:
+    //          yaml.dump(torch.jit.export_opnames(m), output)
+    //
+    //      $ export SELECTED_OP_LIST=$VCMIGYM/ops.yml
+    // However, it's not worth it
+    // (size reduced by <10% and the minimal op set would limit future models)
+    //
+    $ scripts/build_ios.sh -DUSE_ROCM=0 -DUSE_OPENMP=0 -DUSE_BLAS=0
 
 3. compile VCMI for ios
     $ cd $VCMI
@@ -172,9 +183,9 @@ The real location can be obtained as follows:
           -D ENABLE_MMAI=1 \
           -D ENABLE_MMAI_STRICT_LOAD=1 \
           -D ENABLE_LIBTORCH=1 \
-          -D LIBTORCH_PATH=/Users/simo/Projects/pytorch/build_mac/install
+          -D LIBTORCH_PATH=/Users/simo/Projects/pytorch/build_mac_static/install
 
-    $ cmake --build build/ -- -j8
+    $ cmake --build play/ -- -j8
 
 == linux
 
@@ -285,7 +296,6 @@ The real location can be obtained as follows:
     $ pip install cmake ninja
     $ pip install -r requirements.txt
 
-    // $ python3 setup.py develop # XXX: not needed?
 
     // Added -DUSE_VULKAN=OFF and due to errors, see:
     // https://discuss.pytorch.org/t/android-build-and-vulkan-wrapper-h/182942/2
@@ -314,8 +324,8 @@ The real location can be obtained as follows:
         GRADLE_PATH="$PWD/android/gradlew" \
         LIB_DIR="$PWD/android/pytorch_android/src/main/jniLibs" \
         INCLUDE_DIR="$PWD/android/pytorch_android/src/main/cpp/libtorch_include" \
-        ANDROID_BUILD_ROOT="$PWD/build_android" \
-        ANDROID_ABI=arm64-v8a \
+        ANDROID_BUILD_ROOT="$PWD/build_android32" \
+        ANDROID_ABI=armeabi-v7a \
         ANDROID_NDK=/Users/simo/.conan/data/android-ndk/r26d/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin \
         BUILD_ROOT="$PWD/build_android" \
         BUILD_LITE_INTERPRETER=1 \

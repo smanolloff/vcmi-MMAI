@@ -46,7 +46,6 @@ namespace MMAI::BAI::V4 {
 
         auto [x, y] = Hex::CalcXY(cstack->getPosition());
         auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
-        auto noretal = false;
 
         // XXX: config/creatures/<faction>.json is misleading
         //      (for example, no creature has NO_MELEE_PENALTY bonus there)
@@ -317,7 +316,7 @@ namespace MMAI::BAI::V4 {
         setattr(A::BLOCKED, blocked);
         setattr(A::BLOCKING, blocking);
         setattr(A::ESTIMATED_DMG, dmgPercentHP);
-        setattr(A::RETALIATIONS_LEFT, noretal ? 0 : cstack->counterAttacks.available());
+        setattr(A::RETALIATIONS_LEFT, cstack->counterAttacks.available());
         setattr(A::IS_WIDE, cstack->occupiedHex().isAvailable());
         setattr(A::AI_VALUE, Util::Damp(cstack->unitType()->getAIValue(), STACK_VALUE_MAX));
 

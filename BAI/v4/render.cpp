@@ -982,35 +982,32 @@ namespace MMAI::BAI::V4 {
             auto side = EI(supdata->getSide());
 
             switch(i) {
-            case 1:
+            break; case 1:
                 name = "Player";
                 if (supdata->getIsBattleEnded())
                     value = "";
                 else
                     value = side ? bluecol + "BLUE" + nocol : redcol + "RED" + nocol;
-                break;
-            case 2:
+            break; case 2:
                 name = "Last action";
                 value = action ? action->name() + " [" + std::to_string(action->action) + "]" : "";
-                break;
-            case 3: name = "DMG dealt"; value = std::to_string(supdata->getDmgDealt()); break;
-            case 4: name = "Units killed"; value = std::to_string(supdata->getUnitsKilled()); break;
-            case 5: name = "Value killed"; value = std::to_string(supdata->getValueKilled()); break;
-            case 6: name = "DMG received"; value = std::to_string(supdata->getDmgReceived()); break;
-            case 7: name = "Units lost"; value = std::to_string(supdata->getUnitsLost()); break;
-            case 8: name = "Value lost"; value = std::to_string(supdata->getValueLost()); break;
-            case 9: {
+            break; case 3: name = "DMG dealt"; value = std::to_string(supdata->getDmgDealt());
+            break; case 4: name = "Units killed"; value = std::to_string(supdata->getUnitsKilled());
+            break; case 5: name = "Value killed"; value = std::to_string(supdata->getValueKilled());
+            break; case 6: name = "DMG received"; value = std::to_string(supdata->getDmgReceived());
+            break; case 7: name = "Units lost"; value = std::to_string(supdata->getUnitsLost());
+            break; case 8: name = "Value lost"; value = std::to_string(supdata->getValueLost());
+            break; case 9: {
                 // XXX: if there's a draw, this text will be incorrect
                 auto restext = supdata->getIsVictorious()
                     ? (side ? bluecol + "BLUE WINS" : redcol + "RED WINS")
                     : (side ? redcol + "RED WINS" : bluecol + "BLUE WINS" );
 
                 name = "Battle result"; value = supdata->getIsBattleEnded() ? (restext + nocol) : "";
-                break;
             }
-            case 10: name = "Total/Start Value (L)"; value = boost::str(boost::format("%d / %d)") % misc->getCurrentArmyValueLeft() % misc->getInitialArmyValueLeft());
-            case 11: name = "Total/Start Value (R)"; value = boost::str(boost::format("%d / %d)") % misc->getCurrentArmyValueRight() % misc->getInitialArmyValueRight());
-            default:
+            break; case 10: name = "Army value (L)"; value = boost::str(boost::format("%d (%d remaining)") % misc->getInitialArmyValueLeft() % misc->getCurrentArmyValueLeft());
+            break; case 11: name = "Army value (R)"; value = boost::str(boost::format("%d (%d remaining)") % misc->getInitialArmyValueRight() % misc->getCurrentArmyValueRight());
+            break; default:
                 continue;
             }
 
