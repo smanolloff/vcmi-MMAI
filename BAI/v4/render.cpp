@@ -16,7 +16,6 @@
 
 #include "StdInc.h"
 
-#include "AI/VCAI/AIUtility.h"
 #include "battle/AccessibilityInfo.h"
 #include "battle/CObstacleInstance.h"
 #include "bonuses/Bonus.h"
@@ -751,7 +750,7 @@ namespace MMAI::BAI::V4 {
         auto allstacks = supdata->getStacks();
         auto color = supdata->getColor();
 
-        IStack* astack;
+        IStack* astack = nullptr;
         auto idstacks = std::array<IStack*, MAX_STACKS>{};
 
         // find an active hex (i.e. with active stack on it)
@@ -929,7 +928,7 @@ namespace MMAI::BAI::V4 {
                 }
 
                 auto amask = HexActMask(hex->getAttr(HA::ACTION_MASK));
-                if (col == nocol && amask.test(EI(HexAction::MOVE)) <= 0) { // || supdata->getIsBattleEnded()
+                if (col == nocol && !amask.test(EI(HexAction::MOVE))) { // || supdata->getIsBattleEnded()
                     col = darkcol;
                     sym = sym == "○" ? "◌" : sym;
                 }

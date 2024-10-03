@@ -45,12 +45,12 @@ namespace MMAI::Schema::V1 {
      */
     constexpr E4 ToE4(HexAttribute a, Encoding e, int vmax) {
         switch(e) {
-        break; case Encoding::NUMERIC:      return E4{a, e, vmax, vmax};
-        break; case Encoding::NUMERIC_SQRT: return E4{a, e, static_cast<int>(CTSqrt(vmax)), vmax};
-        break; case Encoding::BINARY:       return E4{a, e, static_cast<int>(Log2(vmax)), vmax};
-        break; case Encoding::CATEGORICAL:  return E4{a, e, vmax, vmax};
-        break; case Encoding::FLOATING:     return E4{a, e, 1, vmax};
-        break; default:
+        case Encoding::NUMERIC:      return E4{a, e, vmax, vmax};
+        case Encoding::NUMERIC_SQRT: return E4{a, e, static_cast<int>(CTSqrt(vmax)), vmax};
+        case Encoding::BINARY:       return E4{a, e, static_cast<int>(Log2(vmax)), vmax};
+        case Encoding::CATEGORICAL:  return E4{a, e, vmax, vmax};
+        case Encoding::FLOATING:     return E4{a, e, 1, vmax};
+        default:
             throw std::runtime_error("Unexpected encoding: " + std::to_string(EI(e)));
         }
     }

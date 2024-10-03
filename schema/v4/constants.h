@@ -85,31 +85,31 @@ namespace MMAI::Schema::V4 {
     constexpr std::tuple<T, Encoding, int, int> E4(T a, Encoding e, int vmax) {
         switch(e) {
         // "0" is a value => vmax+1 values
-        break; case AE: return {a, e, vmax+2, vmax};
-        break; case AI: return {a, e, vmax+1, vmax};
-        break; case AM: return {a, e, vmax+1, vmax};
-        break; case AS: return {a, e, vmax+1, vmax};
-        break; case AZ: return {a, e, vmax+1, vmax};
+        case AE: return {a, e, vmax+2, vmax};
+        case AI: return {a, e, vmax+1, vmax};
+        case AM: return {a, e, vmax+1, vmax};
+        case AS: return {a, e, vmax+1, vmax};
+        case AZ: return {a, e, vmax+1, vmax};
 
         // Log2(8)=3 (2^3), but if vmax=8 then 4 bits will be required
         // => Log2(9)=4
-        break; case BE: return {a, e, static_cast<int>(Log2(vmax+1))+1, vmax};
-        break; case BM: return {a, e, static_cast<int>(Log2(vmax+1)), vmax};
-        break; case BS: return {a, e, static_cast<int>(Log2(vmax+1)), vmax};
-        break; case BZ: return {a, e, static_cast<int>(Log2(vmax+1)), vmax};
+        case BE: return {a, e, static_cast<int>(Log2(vmax+1))+1, vmax};
+        case BM: return {a, e, static_cast<int>(Log2(vmax+1)), vmax};
+        case BS: return {a, e, static_cast<int>(Log2(vmax+1)), vmax};
+        case BZ: return {a, e, static_cast<int>(Log2(vmax+1)), vmax};
 
         // "0" is a category => vmax+1 categories
-        break; case CE: return {a, e, vmax+2, vmax};
-        break; case CI: return {a, e, vmax+1, vmax};
-        break; case CM: return {a, e, vmax+1, vmax};
-        break; case CS: return {a, e, vmax+1, vmax};
-        break; case CZ: return {a, e, vmax+1, vmax};
+        case CE: return {a, e, vmax+2, vmax};
+        case CI: return {a, e, vmax+1, vmax};
+        case CM: return {a, e, vmax+1, vmax};
+        case CS: return {a, e, vmax+1, vmax};
+        case CZ: return {a, e, vmax+1, vmax};
 
-        break; case NE: return {a, e, 2, vmax};
-        break; case NM: return {a, e, 1, vmax};
-        break; case NS: return {a, e, 1, vmax};
-        break; case NZ: return {a, e, 1, vmax};
-        break; default:
+        case NE: return {a, e, 2, vmax};
+        case NM: return {a, e, 1, vmax};
+        case NS: return {a, e, 1, vmax};
+        case NZ: return {a, e, 1, vmax};
+        default:
             throw std::runtime_error("Unexpected encoding: " + std::to_string(EI(e)));
         }
     }

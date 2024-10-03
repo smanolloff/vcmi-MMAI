@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "BAI/model/TorchModel.h"
 #include "battle/AICombatOptions.h"
 #include "battle/CPlayerBattleCallback.h"
 #include "lib/AI_Base.h"

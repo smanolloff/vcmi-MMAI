@@ -16,47 +16,16 @@
 
 #pragma once
 
-#include <ATen/Parallel.h>
-#include <mutex>
 #include "schema/base.h"
 
-#ifdef ENABLE_LIBTORCH
-#include <torch/csrc/jit/mobile/import.h>
-#include <ATen/PTThreadPool.h>
-#endif
-
 namespace MMAI::BAI {
-    class TorchModel : public MMAI::Schema::IModel {
-    public:
-        TorchModel(std::string path);
-
-        Schema::ModelType getType() override;
-        std::string getName() override;
-        int getVersion() override;
-        int getAction(const MMAI::Schema::IState * s) override;
-        double getValue(const MMAI::Schema::IState * s) override;
-    private:
-        std::string path;
-        std::string name;
-        int version;
-
-        int sizeOneHex;
-        int nactions;
-        int actionOffset = 0;
-
-        std::mutex m;
-
-#ifdef ENABLE_LIBTORCH
-        class TorchJitContainer {
-        public:
-            TorchJitContainer(std::string path) : module(torch::jit::_load_for_mobile(path)) {
-                at::init_num_threads();
-            }
-            c10::InferenceMode guard;
-            torch::jit::mobile::Module module;
-        };
-
-        std::unique_ptr<TorchJitContainer> tjc;
-#endif
-    };
+    // class TorchModel : public MMAI::Schema::IModel {
+    // public:
+    //     TorchModel(std::string path);
+    //     Schema::ModelType getType() override;
+    //     std::string getName() override;
+    //     int getVersion() override;
+    //     int getAction(const MMAI::Schema::IState * s) override;
+    //     double getValue(const MMAI::Schema::IState * s) override;
+    // };
 }

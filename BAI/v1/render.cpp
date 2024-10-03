@@ -765,7 +765,7 @@ namespace MMAI::BAI::V1 {
 
                 switch(HexState(hex->getAttr(A::HEX_STATE))) {
                 break; case HexState::FREE: {
-                    if (!supdata->getIsBattleEnded() && amask.test(EI(HexAction::MOVE)) > 0) {
+                    if (!supdata->getIsBattleEnded() && amask.test(EI(HexAction::MOVE))) {
                         sym = "○";
 
                         auto emasks = masks.at(!EI(supdata->getSide()));
