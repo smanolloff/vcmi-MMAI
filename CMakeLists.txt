@@ -120,12 +120,6 @@ option(ENABLE_LIBTORCH "link against libtorch to enable loading of MMAI_MODEL To
 #[[
 About the ENABLE_LIBTORCH flag:
 
-On iOS: TODO
-On Android: TODO
-On Windows: TODO
-On Mac: use ENABLE_LIBTORCH=1.
-On Linux: read below
-
 VCMI uses a lot of 3rd party libs (like sdl, boost, zlib, etc.) which are
 installed by Linux package managers (e.g. `apt install libsdl2-dev`).
 Those libs are all pre-compiled with CXX11 ABI. VCMI itself is also compiled
@@ -240,13 +234,6 @@ if(ENABLE_LIBTORCH)
     # message(STATUS "TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
     # message(STATUS "TORCH_CXX_FLAGS: ${TORCH_CXX_FLAGS}")
     # message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
-
-    # Install libtorch libraries
-    install(FILES
-      ${LIBTORCH_PATH}/lib/libc10.dylib
-      ${LIBTORCH_PATH}/lib/libtorch.dylib
-      ${LIBTORCH_PATH}/lib/libtorch_cpu.dylib
-      DESTINATION ${LIB_DIR})
 else()
     list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
 endif()
@@ -261,6 +248,23 @@ if(ENABLE_STATIC_LIBS)
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
+
+  if(MSVC AND ENABLE_LIBTORCH)
+    file(GLOB LIBTORCH_LIBS "${LIBTORCH_PATH}/lib/*${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    foreach(LIBTORCH_LIB ${LIBTORCH_LIBS})
+      message("install ${LIBTORCH_LIB} -> ${BIN_DIR}")
+      # No need to install -- we copy them using POST_BUILD
+      # to ensure libs are copied for on --build without needing cmake --install
+      # vcpkg does this automatically by monkey-patching `add_library`
+      # (see https://github.com/microsoft/vcpkg/issues/13308#issuecomment-686808310)
+      # Since torch does not come from vcpkg, we need to copy the dlls manually
+
+      install(FILES ${LIBTORCH_LIB} DESTINATION ${BIN_DIR})
+      add_custom_command(TARGET MMAI POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${LIBTORCH_LIB}" "$<PATH:GET_PARENT_PATH,$<TARGET_FILE_DIR:MMAI>>"
+      )
+    endforeach()
+  endif()
 endif()
 
 target_link_libraries(MMAI ${MMAI_LIBS})
