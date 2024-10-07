@@ -401,3 +401,8 @@ The real location can be obtained as follows:
 
     // To view log files:
     $ /Users/simo/Library/Android/sdk/platform-tools/adb logcat -T1 --regex="VCMI|vcmi"
+
+
+== windows
+
+cmake --fresh --preset windows-msvc-release -DCMAKE_TOOLCHAIN_FILE=%VCMI_DIR%/vcpkg/scripts/buildsystems/vcpkg.cmake -DENABLE_MMAI=1 -DENABLE_LIBTORCH=1 -DLIBTORCH_PATH="D:\libtorch-v2.4.1-win-x64.txz (1)\libtorch-v2.4.1-win-x64\libtorch"
