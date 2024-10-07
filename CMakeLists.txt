@@ -243,45 +243,56 @@ if(NOT ENABLE_STATIC_LIBS)
 endif()
 assign_source_group(${MMAI_FILES})
 
+# The VCPKG tool monkey-patches "add_library()" and "add_executable()" to also copy all linked libs during build.
+# A modified version of VCPKG's script is used for MMAI.dll to copy its linked libs to the VCMI exe dir.
+# (this allows to run VCMI directly from build dir, without needing to install it)
+# XXX: the "install()" part is not actually implemented here, so this function should be used for debug purposes only
+#      (i.e. to reveal which libs are needed)
+function(autoinstall_torch_dlls)
+  add_custom_command(TARGET MMAI POST_BUILD
+      COMMAND ${Z_VCPKG_POWERSHELL_PATH} -noprofile -executionpolicy Bypass -file ${CMAKE_CURRENT_SOURCE_DIR}/dllcp.ps1
+          -targetBinary $<TARGET_FILE:MMAI>
+          -originDir "${LIBTORCH_PATH}/lib"
+          -destinationDir $<TARGET_FILE_DIR:vcmi> #-Verbose
+      VERBATIM
+  )
+endfunction(autoinstall_torch_dlls)
+
+function(install_torch_libs)
+  foreach(libname IN LISTS ARGN)
+    unset(${libname}_LIBRARY CACHE)
+    find_library(${libname}_LIBRARY ${libname} PATHS "${TORCH_INSTALL_PREFIX}/lib")
+    set(libpath ${${libname}_LIBRARY})
+
+    message("Found ${libname}: ${libpath}")
+    install(FILES ${libpath} DESTINATION ${BIN_DIR})
+
+    if(MSVC)
+      add_custom_command(TARGET MMAI POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libpath}" "$<TARGET_FILE_DIR:vcmi>")
+    endif()
+  endforeach()
+endfunction(install_torch_libs)
+
 if(ENABLE_STATIC_LIBS)
   add_library(MMAI STATIC ${MMAI_FILES})
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 
-  if(ENABLE_LIBTORCH)
-    if(MSVC)
-      add_custom_command(TARGET MMAI POST_BUILD
-          COMMAND ${Z_VCPKG_POWERSHELL_PATH} -noprofile -executionpolicy Bypass -file ${CMAKE_CURRENT_SOURCE_DIR}/dllcp.ps1
-              -targetBinary $<TARGET_FILE:MMAI>
-              -originDir "${LIBTORCH_PATH}/lib"
-              -destinationDir $<TARGET_FILE_DIR:vcmi> #-Verbose
-          VERBATIM
-      )
-
-      # XXX: those libraries must also be installed via
-      # install(...)
-      # How the know which were they?
-
-    else()
-      # see vcpkg/scripts/buildsystems/vcpkg.cmake line ~600
-      message(FATAL_ERROR "NOT IMPLEMENTED: COPY SHARED LIBS")
-
-      # elseif(APPLE_MACOS)
-      # find_package(Python COMPONENTS Interpreter)
-      # add_custom_command(TARGET MMAI POST_BUILD
-      #     COMMAND "${Python_EXECUTABLE}" "${Z_VCPKG_TOOLCHAIN_DIR}/osx/applocal.py"
-      #         "$<TARGET_FILE:${target_name}>"
-      #         "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>"
-      #     VERBATIM
-      # )
-      # elseif(LINUX)
-    endif()
-
-    # XXX: is install() needed at all if we are copying the libs during build?
-    # XXX: this copies ALL DLLs, but many are unneeded
-    # file(GLOB LIBTORCH_LIBS "${LIBTORCH_PATH}/lib/*${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    # install(FILES ${LIBTORCH_LIBS} DESTINATION ${BIN_DIR})
+  if(ANDROID)
+    # libtorch is static
+  elseif(APPLE_IOS)
+    # libtorch is static
+  elseif(APPLE_MACOS)
+    install_torch_libs(torch_cpu c10)
+  elseif(MINGW)
+    # TODO
+    message(FATAL_ERROR "TODO: install torch libs on MINGW")
+  elseif(MSVC)
+    install_torch_libs(torch_cpu c10 fbgemm asmjit)
+  else(MSVC)
+    # TODO
+    message(FATAL_ERROR "TODO: install torch libs on XDG")
   endif()
 endif()
 
