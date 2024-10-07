@@ -264,12 +264,13 @@ function(install_torch_libs)
     find_library(${libname}_LIBRARY ${libname} PATHS "${TORCH_INSTALL_PREFIX}/lib")
     set(libpath ${${libname}_LIBRARY})
 
-    message("Found ${libname}: ${libpath}")
-    install(FILES ${libpath} DESTINATION ${BIN_DIR})
-
     if(MSVC)
+      string(REPLACE ".lib" ".dll" libpath ${libpath})
       add_custom_command(TARGET MMAI POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libpath}" "$<TARGET_FILE_DIR:vcmi>")
     endif()
+
+    message("Found ${libname}: ${libpath}")
+    install(FILES ${libpath} DESTINATION ${BIN_DIR})
   endforeach()
 endfunction(install_torch_libs)
 
