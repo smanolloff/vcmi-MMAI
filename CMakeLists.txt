@@ -298,8 +298,7 @@ elseif(MINGW)
 elseif(MSVC)
   install_torch_libs(torch torch_cpu c10 fbgemm asmjit)
 else()
-  # TODO
-  message(FATAL_ERROR "TODO: install torch libs on XDG")
+  install_torch_libs(torch torch_cpu c10)
 endif()
 
 target_link_libraries(MMAI ${MMAI_LIBS})

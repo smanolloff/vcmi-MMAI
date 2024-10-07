@@ -92,7 +92,10 @@ namespace MMAI::AAI {
             ASSERT(queryID != -1, "QueryID is -1, but we are ATTACKER");
             info("Answering query " + std::to_string(queryID) + " to re-play battle");
 
-            cb->selectionMade(1, queryID);
+            boost::thread([this, queryID]() {
+                boost::shared_lock gsLock(CGameState::mutex);
+                cb->selectionMade(1, queryID);
+            }).detach();
         } else {
             // My patch in CGameHandler::endBattle allows replay even when
             // both sides are non-neutrals. Could not figure out how to
@@ -131,15 +134,19 @@ namespace MMAI::AAI {
     void AAI::yourTurn(QueryID queryID) {
         info("*** yourTurn *** (" + std::to_string(queryID.getNum()) + ")");
 
-        info("Answering query " + std::to_string(queryID) + " to start turn");
-        cb->selectionMade(0, queryID);
+        boost::thread([this, queryID]() {
+            boost::shared_lock gsLock(CGameState::mutex);
 
-        auto heroes = cb->getHeroesInfo();
-        assert(!heroes.empty());
-        auto h = heroes.at(0);
+            info("Answering query " + std::to_string(queryID) + " to start turn");
+            cb->selectionMade(0, queryID);
 
-        // Move 1 tile to the right
-        cb->moveHero(h, h->pos + int3{1,0,0}, false);
+            auto heroes = cb->getHeroesInfo();
+            assert(!heroes.empty());
+            auto h = heroes.at(0);
+
+            // Move 1 tile to the right
+            cb->moveHero(h, h->pos + int3{1,0,0}, false);
+        }).detach();
     }
 
     void AAI::commanderGotLevel(const CCommanderInstance * commander, std::vector<ui32> skills, QueryID queryID) {
