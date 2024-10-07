@@ -28,10 +28,6 @@
 // Import + Export macro declarations
 
 #if defined(VCMI_WINDOWS)
-#pragma message("CTM: VCMI_WINDOWS defined")
-#endif
-
-#if defined(_WIN32)
 #  ifdef VCMI_DLL_STATIC
 #    define MMAI_IMPORT
 #    define MMAI_EXPORT
@@ -52,10 +48,8 @@
 #endif
 
 #ifdef MMAI_DLL
-#pragma message("CTM: MMAI_DLL_LINKAGE MMAI_EXPORT")
 #  define MMAI_DLL_LINKAGE MMAI_EXPORT
 #else
-#pragma message("CTM: MMAI_DLL_LINKAGE MMAI_IMPORT")
 #  define MMAI_DLL_LINKAGE MMAI_IMPORT
 #endif
 

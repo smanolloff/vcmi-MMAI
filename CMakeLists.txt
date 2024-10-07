@@ -249,21 +249,39 @@ else()
   add_library(MMAI SHARED ${MMAI_FILES})
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 
-  if(MSVC AND ENABLE_LIBTORCH)
-    file(GLOB LIBTORCH_LIBS "${LIBTORCH_PATH}/lib/*${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    foreach(LIBTORCH_LIB ${LIBTORCH_LIBS})
-      message("install ${LIBTORCH_LIB} -> ${BIN_DIR}")
-      # No need to install -- we copy them using POST_BUILD
-      # to ensure libs are copied for on --build without needing cmake --install
-      # vcpkg does this automatically by monkey-patching `add_library`
-      # (see https://github.com/microsoft/vcpkg/issues/13308#issuecomment-686808310)
-      # Since torch does not come from vcpkg, we need to copy the dlls manually
-
-      install(FILES ${LIBTORCH_LIB} DESTINATION ${BIN_DIR})
+  if(ENABLE_LIBTORCH)
+    if(MSVC)
       add_custom_command(TARGET MMAI POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy "${LIBTORCH_LIB}" "$<PATH:GET_PARENT_PATH,$<TARGET_FILE_DIR:MMAI>>"
+          COMMAND ${Z_VCPKG_POWERSHELL_PATH} -noprofile -executionpolicy Bypass -file ${CMAKE_CURRENT_SOURCE_DIR}/dllcp.ps1
+              -targetBinary $<TARGET_FILE:MMAI>
+              -originDir "${LIBTORCH_PATH}/lib"
+              -destinationDir $<TARGET_FILE_DIR:vcmi> #-Verbose
+          VERBATIM
       )
-    endforeach()
+
+      # XXX: those libraries must also be installed via
+      # install(...)
+      # How the know which were they?
+
+    else()
+      # see vcpkg/scripts/buildsystems/vcpkg.cmake line ~600
+      message(FATAL_ERROR "NOT IMPLEMENTED: COPY SHARED LIBS")
+
+      # elseif(APPLE_MACOS)
+      # find_package(Python COMPONENTS Interpreter)
+      # add_custom_command(TARGET MMAI POST_BUILD
+      #     COMMAND "${Python_EXECUTABLE}" "${Z_VCPKG_TOOLCHAIN_DIR}/osx/applocal.py"
+      #         "$<TARGET_FILE:${target_name}>"
+      #         "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>"
+      #     VERBATIM
+      # )
+      # elseif(LINUX)
+    endif()
+
+    # XXX: is install() needed at all if we are copying the libs during build?
+    # XXX: this copies ALL DLLs, but many are unneeded
+    # file(GLOB LIBTORCH_LIBS "${LIBTORCH_PATH}/lib/*${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    # install(FILES ${LIBTORCH_LIBS} DESTINATION ${BIN_DIR})
   endif()
 endif()
 
