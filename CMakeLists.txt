@@ -279,22 +279,27 @@ if(ENABLE_STATIC_LIBS)
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
+endif()
 
-  if(ANDROID)
-    # libtorch is static
-  elseif(APPLE_IOS)
-    # libtorch is static
-  elseif(APPLE_MACOS)
-    install_torch_libs(torch_cpu c10)
-  elseif(MINGW)
-    # TODO
-    message(FATAL_ERROR "TODO: install torch libs on MINGW")
-  elseif(MSVC)
-    install_torch_libs(torch_cpu c10 fbgemm asmjit)
-  else(MSVC)
-    # TODO
-    message(FATAL_ERROR "TODO: install torch libs on XDG")
+if(ANDROID)
+  # Android 32-bit (armeabi-v7a) libtorch builds fail with assembler error
+  # (same issue as https://github.com/tensorflow/tensorflow/issues/59970)
+  if (ANDROID_ABI MATCHES "^armeabi")
+    message(FATAL_ERROR "libtorch is not supported on 32-bit Android systems, please set -DENABLE_LIBTORCH=0")
   endif()
+  # Android libtorch is always static => nothing to do
+elseif(APPLE_IOS)
+  # iOS libtorch is always static => nothing to do
+elseif(APPLE_MACOS)
+  install_torch_libs(torch torch_cpu c10)
+elseif(MINGW)
+    # MinGW libtorch is not supported (see https://stackoverflow.com/a/76160277)
+  message(FATAL_ERROR "libtorch is not supported on MinGW systems, please set -DENABLE_LIBTORCH=0")
+elseif(MSVC)
+  install_torch_libs(torch torch_cpu c10 fbgemm asmjit)
+else()
+  # TODO
+  message(FATAL_ERROR "TODO: install torch libs on XDG")
 endif()
 
 target_link_libraries(MMAI ${MMAI_LIBS})
