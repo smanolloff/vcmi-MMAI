@@ -218,13 +218,13 @@ if(ENABLE_LIBTORCH)
     find_package(Torch REQUIRED)
 
     if(APPLE_IOS)
-      # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
       find_library(ACCELERATE Accelerate)
+      list(APPEND MMAI_LIBS "${ACCELERATE}")
     endif()
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-    list(APPEND MMAI_LIBS "${TORCH_LIBRARIES}" "${ACCELERATE}")
+    list(APPEND MMAI_LIBS "${TORCH_LIBRARIES}")
     list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
     list(APPEND MMAI_INCLUDES "${TORCH_INCLUDE_DIRS}")
 
