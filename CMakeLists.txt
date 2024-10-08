@@ -115,166 +115,71 @@ set(MMAI_FILES
 
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
 option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
-option(ENABLE_LIBTORCH "link against libtorch to enable loading of MMAI_MODEL TorchJIT files" ON)
+option(MMAI_LIBTORCH_PATH "link against libtorch located at the specified path (don't link if empty)" "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
 
 #[[
-About the ENABLE_LIBTORCH flag:
+About the MMAI_LIBTORCH_PATH flag:
 
-VCMI uses a lot of 3rd party libs (like sdl, boost, zlib, etc.) which are
-installed by Linux package managers (e.g. `apt install libsdl2-dev`).
-Those libs are all pre-compiled with CXX11 ABI. VCMI itself is also compiled
-with CXX11 ABI, so it can link to those libs.
+MMAI_LIBTORCH_PATH must point to a lightweight (CPU-only) version of "libtorch"
+which will be used by VCMI for loading pre-trained ML models during gameplay.
+If MMAI_LIBTORCH_PATH is empty, the cmake will throw an error unless the ENABLE_ML
+flag is also set, since during model training, a *different* libtorch is
+already loaded by vcmi-gym.
 
-For ML, there is an additional 3rd party lib needed: libtorch. However, it is
-not installed by a Linux package manager, but by Python's `pip` tool instead.
-Unfortunately, it is pre-compiled *without* CXX11 ABI, so VCMI linking fails.
+TL; DR
+Depending on what VCMI is being compiled for:
+a) gameplay (i.e. if ENABLE_ML=0): MMAI_LIBTORCH_PATH must be a valid path
+b) training (i.e. if ENABLE_ML=1): MMAI_LIBTORCH_PATH must be blank
 
-There are two solutions to this issue:
-
-1. Compile `libtorch` from source with CXX11 ABI.
-    This is not a straight-forward operation.
-    If CUDA support is required, it becomes tricky as graphics card drivers
-    may also need to be compiled from source.
-    There is a pre-compiled `libtorch` CXX11 ABI binary, but it has no CUDA support.
-    (see https://github.com/pytorch/pytorch/issues/51039#issuecomment-2111849591)
-2. Compile `VCMI` from source without CXX11 ABI.
-    This is also not a straight-forward operation.
-    It requires compiling all dependencies from scratch (sdl, boost, etc.).
-    If using a C++ package manager (like "conan"), it should be possible.
-    I was unable to make VCMI deps compile with conan on Linux (Ubuntu 22.04).
-
-Alternative to the above *solutions*, there are two *workarounds* instead:
-
-1. Compile VCMI with `-D ENABLE_LIBTORCH=0`.
-* Pros: allows training new models on CPU and GPU
-* Cons: prevents loading pre-trained models for gameplay
-* Requirements: you have installed the "default" Python torch package with `pip`
-  (see `requirements.txt` in vcmi-gym).
-
-2. Compile VCMI with `-D ENABLE_LIBTORCH=1`.
-* Pros: allows loading pre-trained models for gameplay
-* Cons: prevents training of new models on GPU (can be trained on CPU only).
-  Requirements: you have installed the CPU-only cxx11 ABI torch package with `pip`
-  (see `requirements.txt` in vcmi-gym).
+PS. It is possible to have both set, effectively using the same "libtorch"
+in VCMI and vcmi-gym, but there are drawbacks to this approach (GPU cannot
+be used for training). More details in vcmi-gym's `requirements.txt`.
 ]]
 
 set(MMAI_LIBS vcmi)
 set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(ENABLE_LIBTORCH)
-    add_definitions(-DENABLE_LIBTORCH=1)
+if(MMAI_LIBTORCH_PATH)
+  add_definitions(-DUSING_LIBTORCH=1)
+  if (ENABLE_MMAI_STRICT_LOAD)
+    add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
+  endif()
 
-    # Disable MMAI fallback (to StupidAI or BattleAI) if model cannot be loaded
-    if (ENABLE_MMAI_STRICT_LOAD)
-      add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
-    endif()
+  message(STATUS "MMAI_LIBTORCH_PATH: ${MMAI_LIBTORCH_PATH}")
+  list(APPEND CMAKE_PREFIX_PATH "${MMAI_LIBTORCH_PATH}")
+  find_package(Torch REQUIRED)
 
-    # If used for ML training with vcmi-gym, make sure this libtorch is
-    # the the same version as the `torch` downloaded by pip in the vcmi-gym project
-    # You can use `pip show torch` to see where it is located and then pass
-    #
-    #     -DLIBTORCH_PATH=/path/to/pip/torch
-    #
-    # If used for ML inference (regular gameplay), then torch must be
-    # compiled for the appropriate platform.
-    #
-    #
-    #  1. Download pytorch (best to use a directory outside VCMI)
-    #
-    #     $ cd /some/path
-    #     $ git clone --recursive https://github.com/pytorch/pytorch
-    #     $ cd pytorch
-    #     $ git checkout v2.4.1
-    #     $ git submodule sync
-    #     $ git submodule update --init --recursive
-    #     $ python3.10 -m venv .venv
-    #     $ .venv/bin/activate
-    #     $ pip install cmake ninja
-    #     $ pip install -r requirements.txt
-    #     $ python setup.py develop
-    #
-    #  2. Build libtorch
-    #
-    #   2a) For ios or mac
-    #
-    #     $ scripts/build_ios.sh
-    #     $ export LIBTORCH_PATH="$PWD/build_ios/install"
-    #
-    #   2b) For other platforms
-    #
-    #     TODO
-    #
-    #  3. Build VCMI with -DENABLE_LIBTORCH=1 -DLIBTORCH_PATH=$LIBTORCH_PATH
-    #
+  if(APPLE_IOS)
+    # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
+    find_library(ACCELERATE Accelerate)
+    list(APPEND MMAI_LIBS "${ACCELERATE}")
+  endif()
 
-    if(NOT DEFINED LIBTORCH_PATH OR LIBTORCH_PATH STREQUAL "")
-      set(LIBTORCH_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
-      message(FATAL_ERROR "LIBTORCH_PATH is not set")
-    endif()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-    message(STATUS "LIBTORCH_PATH: ${LIBTORCH_PATH}")
+  list(APPEND MMAI_LIBS "${TORCH_LIBRARIES}")
+  list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
+  list(APPEND MMAI_INCLUDES "${TORCH_INCLUDE_DIRS}")
 
-    list(APPEND CMAKE_PREFIX_PATH "${LIBTORCH_PATH}")
-    find_package(Torch REQUIRED)
-
-    if(APPLE_IOS)
-      find_library(ACCELERATE Accelerate)
-      list(APPEND MMAI_LIBS "${ACCELERATE}")
-    endif()
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
-
-    list(APPEND MMAI_LIBS "${TORCH_LIBRARIES}")
-    list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
-    list(APPEND MMAI_INCLUDES "${TORCH_INCLUDE_DIRS}")
-
-    message("MMAI_LIBS: ${MMAI_LIBS}")
-    message("MMAI_FILES: ${MMAI_INCLUDES}")
-    message("MMAI_INCLUDES: ${MMAI_INCLUDES}")
-    # message(STATUS "TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
-    # message(STATUS "TORCH_CXX_FLAGS: ${TORCH_CXX_FLAGS}")
-    # message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
+  message("MMAI_LIBS: ${MMAI_LIBS}")
+  message("MMAI_FILES: ${MMAI_INCLUDES}")
+  message("MMAI_INCLUDES: ${MMAI_INCLUDES}")
+  # message(STATUS "TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
+  # message(STATUS "TORCH_CXX_FLAGS: ${TORCH_CXX_FLAGS}")
+  # message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
 else()
-    list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
+  if(NOT ENABLE_ML)
+    # at least one of them must be set
+    message(FATAL_ERROR "A blank MMAI_LIBTORCH_PATH is allowed only when ENABLE_ML is set")
+  endif()
+
+  list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
 endif()
 
 if(NOT ENABLE_STATIC_LIBS)
   list(APPEND MMAI_FILES main.cpp StdInc.cpp)
 endif()
 assign_source_group(${MMAI_FILES})
-
-# The VCPKG tool monkey-patches "add_library()" and "add_executable()" to also copy all linked libs during build.
-# A modified version of VCPKG's script is used for MMAI.dll to copy its linked libs to the VCMI exe dir.
-# (this allows to run VCMI directly from build dir, without needing to install it)
-# XXX: the "install()" part is not actually implemented here, so this function should be used for debug purposes only
-#      (i.e. to reveal which libs are needed)
-function(autoinstall_torch_dlls)
-  add_custom_command(TARGET MMAI POST_BUILD
-      COMMAND ${Z_VCPKG_POWERSHELL_PATH} -noprofile -executionpolicy Bypass -file ${CMAKE_CURRENT_SOURCE_DIR}/dllcp.ps1
-          -targetBinary $<TARGET_FILE:MMAI>
-          -originDir "${LIBTORCH_PATH}/lib"
-          -destinationDir $<TARGET_FILE_DIR:vcmi> #-Verbose
-      VERBATIM
-  )
-endfunction(autoinstall_torch_dlls)
-
-function(autolist_torch_dlls)
-  execute_process(TARGET MMAI POST_BUILD
-      COMMAND ${Z_VCPKG_POWERSHELL_PATH} -noprofile -executionpolicy Bypass -file ${CMAKE_CURRENT_SOURCE_DIR}/dllcp.ps1
-          -targetBinary "${LIBTORCH_PATH}/lib/torch_cpu.dll"
-          -originDir "${LIBTORCH_PATH}/lib"
-          -destinationDir "" #-Verbose
-          -listOnly
-      OUTPUT_VARIABLE PS_OUTPUT
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  separate_arguments(PS_LIST NATIVE_COMMAND "${PS_OUTPUT}")
-  foreach(libpath IN LISTS PS_LIST)
-    message("Detected dependency: ${libpath}")
-    install(FILES ${libpath} DESTINATION ${BIN_DIR})
-  endforeach()
-endfunction(autolist_torch_dlls)
 
 function(install_torch_libs)
   foreach(libname IN LISTS ARGN)
@@ -284,7 +189,9 @@ function(install_torch_libs)
 
     if(MSVC)
       string(REPLACE ".lib" ".dll" libpath ${libpath})
-      add_custom_command(TARGET MMAI POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libpath}" "$<TARGET_FILE_DIR:vcmi>")
+      add_custom_command(TARGET MMAI POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libpath}" "$<TARGET_FILE_DIR:vcmi>"
+      )
     endif()
 
     message("Found ${libname}: ${libpath}")
@@ -299,27 +206,12 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-if(ANDROID)
-  # Android 32-bit (armeabi-v7a) libtorch builds fail with assembler error
-  # (same issue as https://github.com/tensorflow/tensorflow/issues/59970)
-  if (ANDROID_ABI MATCHES "^armeabi")
-    message(FATAL_ERROR "libtorch is not supported on 32-bit Android systems, please set -DENABLE_LIBTORCH=0")
-  endif()
-  # Android libtorch is always static => nothing to do
-elseif(APPLE_IOS)
-  # iOS libtorch is always static => nothing to do
-elseif(APPLE_MACOS)
-  # macOS libtorch depends only on system frameworks
-  install_torch_libs(torch torch_cpu c10)
-elseif(MINGW)
+if(MINGW)
   # MinGW libtorch is not supported (see https://stackoverflow.com/a/76160277)
-  message(FATAL_ERROR "libtorch is not supported on MinGW systems, please set -DENABLE_LIBTORCH=0")
-elseif(MSVC)
-  # Windows libtorch has more deps
-  # TODO: try to remove fbgemm and and libiomp
-  install_torch_libs(torch torch_cpu c10 fbgemm asmjit libiomp)
+  message(FATAL_ERROR "libtorch is not supported on MinGW systems")
+elseif(APPLE_IOS OR ANDROID)
+  # mobile libtorch libs are static, nothing to do
 else()
-  # linux libtorch depends only on kernel libs (at least on ubuntu-22.04)
   install_torch_libs(torch torch_cpu c10)
 endif()
 

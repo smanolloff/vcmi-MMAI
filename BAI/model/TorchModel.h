@@ -19,7 +19,7 @@
 #include <mutex>
 #include "schema/base.h"
 
-#ifdef ENABLE_LIBTORCH
+#ifdef USING_LIBTORCH
 #include <torch/csrc/jit/mobile/import.h>
 #include <torch/csrc/jit/mobile/module.h>
 #endif
@@ -45,7 +45,7 @@ namespace MMAI::BAI {
 
         std::mutex m;
 
-#ifdef ENABLE_LIBTORCH
+#ifdef USING_LIBTORCH
         class TorchJitContainer {
         public:
             TorchJitContainer(std::string path) : module(torch::jit::_load_for_mobile(path)) {}

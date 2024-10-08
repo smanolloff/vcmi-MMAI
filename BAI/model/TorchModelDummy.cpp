@@ -23,14 +23,14 @@
 
 /*
  * Dummy implementation of TorchModel:
- * Used if ENABLE_LIBTORCH is not set (see notes in CMakeLists.txt)
+ * Used if MMAI_LIBTORCH_PATH is not set during compilation
+ * (see notes in CMakeLists.txt)
  */
 
 namespace MMAI::BAI {
     TorchModel::TorchModel(std::string path) {
         throw std::runtime_error(
-            "This binary was compiled without the ENABLE_LIBTORCH flag"
-            " and cannot load \"MMAI_MODEL\" files."
+            "MMAI was compiled without libtorch support and cannot load \"MMAI_MODEL\" files."
         );
     }
 
