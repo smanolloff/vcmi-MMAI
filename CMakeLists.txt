@@ -274,7 +274,7 @@ function(autolist_torch_dlls)
     message("Detected dependency: ${libpath}")
     install(FILES ${libpath} DESTINATION ${BIN_DIR})
   endforeach()
-endfunction(autoinstall_torch_dlls)
+endfunction(autolist_torch_dlls)
 
 function(install_torch_libs)
   foreach(libname IN LISTS ARGN)
