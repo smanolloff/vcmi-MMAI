@@ -115,7 +115,7 @@ set(MMAI_FILES
 
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
 option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
-option(MMAI_LIBTORCH_PATH "link against libtorch located at the specified path (don't link if empty)" "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
+set(MMAI_LIBTORCH_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libtorch" CACHE PATH "Link against libtorch located at the specified path (don't link if empty)")
 
 #[[
 About the MMAI_LIBTORCH_PATH flag:
@@ -136,6 +136,8 @@ in VCMI and vcmi-gym, but there are drawbacks to this approach (GPU cannot
 be used for training). More details in vcmi-gym's `requirements.txt`.
 ]]
 
+message(STATUS "MMAI_LIBTORCH_PATH: ${MMAI_LIBTORCH_PATH}")
+
 set(MMAI_LIBS vcmi)
 set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -145,7 +147,6 @@ if(MMAI_LIBTORCH_PATH)
     add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
   endif()
 
-  message(STATUS "MMAI_LIBTORCH_PATH: ${MMAI_LIBTORCH_PATH}")
   list(APPEND CMAKE_PREFIX_PATH "${MMAI_LIBTORCH_PATH}")
   find_package(Torch REQUIRED)
 
