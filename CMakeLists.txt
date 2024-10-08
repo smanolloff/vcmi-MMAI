@@ -258,6 +258,24 @@ function(autoinstall_torch_dlls)
   )
 endfunction(autoinstall_torch_dlls)
 
+function(autolist_torch_dlls)
+  execute_process(TARGET MMAI POST_BUILD
+      COMMAND ${Z_VCPKG_POWERSHELL_PATH} -noprofile -executionpolicy Bypass -file ${CMAKE_CURRENT_SOURCE_DIR}/dllcp.ps1
+          -targetBinary "${LIBTORCH_PATH}/lib/torch_cpu.dll"
+          -originDir "${LIBTORCH_PATH}/lib"
+          -destinationDir "" #-Verbose
+          -listOnly
+      OUTPUT_VARIABLE PS_OUTPUT
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  separate_arguments(PS_LIST NATIVE_COMMAND "${PS_OUTPUT}")
+  foreach(libpath IN LISTS PS_LIST)
+    message("Detected dependency: ${libpath}")
+    install(FILES ${libpath} DESTINATION ${BIN_DIR})
+  endforeach()
+endfunction(autoinstall_torch_dlls)
+
 function(install_torch_libs)
   foreach(libname IN LISTS ARGN)
     unset(${libname}_LIBRARY CACHE)
@@ -291,13 +309,17 @@ if(ANDROID)
 elseif(APPLE_IOS)
   # iOS libtorch is always static => nothing to do
 elseif(APPLE_MACOS)
+  # macOS libtorch depends only on system frameworks
   install_torch_libs(torch torch_cpu c10)
 elseif(MINGW)
-    # MinGW libtorch is not supported (see https://stackoverflow.com/a/76160277)
+  # MinGW libtorch is not supported (see https://stackoverflow.com/a/76160277)
   message(FATAL_ERROR "libtorch is not supported on MinGW systems, please set -DENABLE_LIBTORCH=0")
 elseif(MSVC)
-  install_torch_libs(torch torch_cpu c10 fbgemm asmjit)
+  # Windows libtorch has more deps
+  # TODO: try to remove fbgemm and and libiomp
+  install_torch_libs(torch torch_cpu c10 fbgemm asmjit libiomp)
 else()
+  # linux libtorch depends only on kernel libs (at least on ubuntu-22.04)
   install_torch_libs(torch torch_cpu c10)
 endif()
 

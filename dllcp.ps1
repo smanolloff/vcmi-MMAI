@@ -5,11 +5,12 @@
 
 [cmdletbinding()]
 
-param([string]$targetBinary, [string]$originDir, [string]$destinationDir)
+param([string]$targetBinary, [string]$originDir, [string]$destinationDir, [switch]$listOnly)
 
-Write-Verbose "Inputs: targetBinary=$targetBinary, destinationDir=$destinationDir, originDir=$originDir"
+Write-Verbose "Inputs: targetBinary=$targetBinary, destinationDir=$destinationDir, originDir=$originDir, listOnly=$listOnly"
 
 $g_searched = @{}
+$g_sourcelist = @()
 $g_install_root = Split-Path $originDir -parent
 $cwd = Get-Location
 Write-Verbose "cwd: $cwd"
@@ -56,19 +57,23 @@ function deployBinary([string]$targetBinaryDir, [string]$SourceDir, [string]$tar
 
         $sourceBinaryFilePath = Join-Path $SourceDir $targetBinaryName
         $targetBinaryFilePath = Join-Path $targetBinaryDir $targetBinaryName
-        if (Test-Path $targetBinaryFilePath) {
-            $sourceModTime = (Get-Item $sourceBinaryFilePath).LastWriteTime
-            $destModTime = (Get-Item $targetBinaryFilePath).LastWriteTime
-            if ($destModTime -lt $sourceModTime) {
-                Write-Verbose "  ${targetBinaryName}: Updating from $sourceBinaryFilePath to $targetBinaryDir"
-                Copy-Item $sourceBinaryFilePath $targetBinaryDir
-            } else {
-                Write-Verbose "  ${targetBinaryName}: already present"
+        if ($listOnly) {
+            $g_sourcelist += $targetBinaryName
+        } else {
+            if (Test-Path $targetBinaryFilePath) {
+                $sourceModTime = (Get-Item $sourceBinaryFilePath).LastWriteTime
+                $destModTime = (Get-Item $targetBinaryFilePath).LastWriteTime
+                if ($destModTime -lt $sourceModTime) {
+                    Write-Verbose "  ${targetBinaryName}: Updating from $sourceBinaryFilePath to $targetBinaryDir"
+                    Copy-Item $sourceBinaryFilePath $targetBinaryDir
+                } else {
+                    Write-Verbose "  ${targetBinaryName}: already present"
+                }
             }
-        }
-        else {
-            Write-Verbose "  ${targetBinaryName}: Copying $sourceBinaryFilePath to $targetBinaryDir"
-            Copy-Item $sourceBinaryFilePath $targetBinaryDir
+            else {
+                Write-Verbose "  ${targetBinaryName}: Copying $sourceBinaryFilePath to $targetBinaryDir"
+                Copy-Item $sourceBinaryFilePath $targetBinaryDir
+            }
         }
     } finally {
         if ($mtx) {
@@ -126,3 +131,7 @@ function resolve([string]$targetBinary) {
 
 resolve($targetBinary)
 Write-Verbose $($g_searched | out-string)
+
+if ($listOnly) {
+    Write-Output $($g_sourcelist -join ",")
+}

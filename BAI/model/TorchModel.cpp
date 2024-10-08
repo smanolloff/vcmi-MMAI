@@ -107,9 +107,7 @@ namespace MMAI::BAI {
         intmask.reserve(nactions);
         auto &boolmask = s->getActionMask();
 
-        // int i = 0;
         for (auto it = boolmask.begin() + actionOffset; it != boolmask.end(); ++it) {
-            // i++;
             intmask.push_back(static_cast<int>(*it));
         }
 

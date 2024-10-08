@@ -61,12 +61,18 @@ The real location can be obtained as follows:
       -compiler.version=14
       +compiler.version=15
 
+    // XXX: suddenly, "zstd" started failing on ios due to broken symlinks
+    //      adding "skip_broken_symlinks_check = True" to ~/.conan/conan.conf
+    //      solves it.
+
     $ conan install . \
             --install-folder=conan-generated \
             --no-imports \
             --build=missing \
             --profile:build=ios \
-            --profile:host=CI/conan/ios-arm64
+            --profile:host=CI/conan/ios-arm64 \
+            --require-override "boost/1.85.0@" \
+            --require-override "qt/5.15.11@"
 
 2. compile libtorch for ios
     $ cd $PROJ
@@ -142,7 +148,14 @@ The real location can be obtained as follows:
         -D CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=LD7K7CF9C5 \
         -D ENABLE_MMAI=1 \
         -D ENABLE_MMAI_STRICT_LOAD=1 \
-        -D ENABLE_LIBTORCH=1
+        -D ENABLE_LIBTORCH=1 \
+        -D LIBTORCH_PATH=~/Downloads/libtorch-v2.4.1-ios-arm64
+
+    // XXX: command below may fail with "Xcode couldn't find any provisioning profiles matching ..."
+    //      what fixed it was to open Xcode, load the 
+    //          out/build/ios-release-conan-ccache/VCMI.xcodeproj
+    //      into Xcode and go to Project's Build Settings->Packaging->Product Bundle Identifier
+    //          then set it to some value (not sure if just opening the project isnt enough)
 
     $ cmake --build --preset ios-release-conan-ccache
     $ cd out/build/ios-release-conan-ccache
@@ -159,6 +172,7 @@ The real location can be obtained as follows:
 == mac
 
 1. same as step 1. for ios (dev), but use `default` for both profiles
+
 2. compile libtorch for mac
 
     // same as step 2. for ios (dev) up until `build_ios.sh` line:
@@ -189,7 +203,7 @@ The real location can be obtained as follows:
 
 == linux
 
-1. same as step 1. for ios (dev), but use `default` for both profiles
+1. (no conan on linux; use apt to install deps)
 2. compile libtorch for linux
 
     // Checks out 30+ git submodules; can take up to 10 min.

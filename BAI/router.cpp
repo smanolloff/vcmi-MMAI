@@ -226,9 +226,6 @@ namespace MMAI::BAI {
 
     void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         Schema::IModel * model;
-        logAi->error("TEST ERROR LOG 1");
-        logAi->error("TEST ERROR LOG 2: cb->getPlayerID()->hasValue(): " + std::to_string(cb->getPlayerID()->hasValue()));
-        logAi->error("TEST ERROR LOG 3: baggage is nullptr? " + std::to_string(!!baggage));
 
         if (baggage) {
             // During training, the model object is provided via the baggage
