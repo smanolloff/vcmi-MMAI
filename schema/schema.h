@@ -23,8 +23,12 @@
  *
  */
 
-#include "base.h"
-#include "v1/schema.h"
-#include "v2/schema.h"
-#include "v3/schema.h"
-#include "v4/schema.h"
+#include "schema/base.h"
+
+#include "schema/v3/schema.h"
+#include "schema/v8/schema.h"
+#include "schema/v9/schema.h"
+#include "schema/v10/schema.h"
+#include "schema/v11/schema.h"
+#include "schema/v12/schema.h"
+#include "schema/v13/schema.h"

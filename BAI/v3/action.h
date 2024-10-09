@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "./hex.h"
-#include "./hexaction.h"
-#include "./battlefield.h"
+#include "BAI/v3/battlefield.h"
+#include "BAI/v3/hex.h"
+#include "BAI/v3/hexaction.h"
 
 namespace MMAI::BAI::V3 {
     /**

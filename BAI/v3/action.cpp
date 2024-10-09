@@ -15,11 +15,12 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/CBattleInfoEssentials.h"
 
-#include "./hex.h"
-#include "./action.h"
-#include "./hexaction.h"
+#include "BAI/v3/action.h"
+#include "BAI/v3/hex.h"
+#include "BAI/v3/hexaction.h"
 
 namespace MMAI::BAI::V3 {
     // static
@@ -79,7 +80,7 @@ namespace MMAI::BAI::V3 {
             THROW_FORMAT("Unexpected HexAction: %d", EI(ha));
         }
 
-        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.hex));
+        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.toInt()));
 
         auto [x, y] = Hex::CalcXY(nbh);
 

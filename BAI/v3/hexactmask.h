@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "./hexaction.h"
+#include "BAI/v3/hexaction.h"
 
 namespace MMAI::BAI::V3 {
     /**

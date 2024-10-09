@@ -15,15 +15,15 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "bonuses/BonusCustomTypes.h"
 #include "constants/EntityIdentifiers.h"
 #include "spells/CSpellHandler.h"
 
+#include "BAI/v3/hex.h"
+#include "BAI/v3/stack.h"
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
-
-#include "./stack.h"
-#include "./hex.h"
 
 namespace MMAI::BAI::V3 {
     using A = Schema::V3::StackAttribute;

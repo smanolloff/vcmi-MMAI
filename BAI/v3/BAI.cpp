@@ -15,19 +15,19 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"
 #include "lib/AI_Base.h"
 
+#include "BAI/v3/BAI.h"
+#include "BAI/v3/hexaction.h"
+#include "BAI/v3/action.h"
+#include "BAI/v3/render.h"
+#include "BAI/v3/supplementary_data.h"
 #include "common.h"
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
-
-#include "./BAI.h"
-#include "./BAI/v3/hexaction.h"
-#include "./supplementary_data.h"
-#include "./action.h"
-#include "./render.h"
 
 namespace MMAI::BAI::V3 {
     Schema::Action BAI::getNonRenderAction() {
@@ -267,7 +267,7 @@ namespace MMAI::BAI::V3 {
             case HexAction::AMOVE_TL: {
                 auto &edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
                 auto nbh = bhex.cloneInDirection(edir, false); // neighbouring bhex
-                ASSERT(nbh.isAvailable(), "mask allowed attack to an unavailable hex #" + std::to_string(nbh.hex));
+                ASSERT(nbh.isAvailable(), "mask allowed attack to an unavailable hex #" + std::to_string(nbh.toInt()));
                 auto estack = battle->battleGetStackByPos(nbh);
                 ASSERT(estack, "no enemy stack for melee attack");
                 res = std::make_shared<BattleAction>(BattleAction::makeMeleeAttack(acstack, nbh, bhex));
@@ -283,7 +283,7 @@ namespace MMAI::BAI::V3 {
                 auto &edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
                 auto obh = acstack->occupiedHex(bhex);
                 auto nbh = obh.cloneInDirection(edir, false); // neighbouring bhex
-                ASSERT(nbh.isAvailable(), "mask allowed attack to an unavailable hex #" + std::to_string(nbh.hex));
+                ASSERT(nbh.isAvailable(), "mask allowed attack to an unavailable hex #" + std::to_string(nbh.toInt()));
                 auto estack = battle->battleGetStackByPos(nbh);
                 ASSERT(estack, "no enemy stack for melee attack");
                 res = std::make_shared<BattleAction>(BattleAction::makeMeleeAttack(acstack, nbh, bhex));
@@ -324,7 +324,7 @@ namespace MMAI::BAI::V3 {
             case HexAction::AMOVE_2L:
             case HexAction::AMOVE_2TL:
             case HexAction::MOVE: {
-                auto a = ainfo.at(action->hex->bhex);
+                auto a = ainfo.at(action->hex->bhex.toInt());
                 if (a == EAccessibility::OBSTACLE) {
                     auto statemask = HexStateMask(hex->attr(HexAttribute::STATE_MASK));
                     ASSERT(!statemask.test(EI(HexState::PASSABLE)), "accessibility is OBSTACLE, but hex state mask has PASSABLE set: " + statemask.to_string() + debugInfo(action, acstack, nullptr));
@@ -333,13 +333,13 @@ namespace MMAI::BAI::V3 {
                     break;
                 } else if (a == EAccessibility::ALIVE_STACK) {
                     auto bh = action->hex->bhex;
-                    if (bh.hex == acstack->getPosition().hex) {
+                    if (bh.toInt() == acstack->getPosition().toInt()) {
                         // means we want to defend (moving to self)
                         // or attack from same hex we're currently at
                         // this should always be allowed
                         ASSERT(false, "mask prevented (A)MOVE to own hex" + debugInfo(action, acstack, nullptr));
-                    } else if (bh.hex == acstack->occupiedHex().hex) {
-                        ASSERT(rinfo.distances.at(bh) == ReachabilityInfo::INFINITE_DIST, "mask prevented (A)MOVE to self-occupied hex" + debugInfo(action, acstack, nullptr));
+                    } else if (bh.toInt() == acstack->occupiedHex().toInt()) {
+                        ASSERT(rinfo.distances.at(bh.toInt()) == ReachabilityInfo::INFINITE_DIST, "mask prevented (A)MOVE to self-occupied hex" + debugInfo(action, acstack, nullptr));
                         // means we can't fit on our own back hex
                     }
 
@@ -418,13 +418,13 @@ namespace MMAI::BAI::V3 {
         auto info = std::stringstream();
         info << "\n*** DEBUG INFO ***\n";
         info << "action: " << action->name() << " [" << action->action << "]\n";
-        info << "action->hex->bhex.hex = " << action->hex->bhex.hex << "\n";
+        info << "action->hex->bhex.toInt() = " << action->hex->bhex.toInt() << "\n";
 
         auto ainfo = battle->getAccessibility();
         auto rinfo = battle->getReachability(astack);
 
-        info << "ainfo[bhex]=" << EI(ainfo.at(action->hex->bhex.hex)) << "\n";
-        info << "rinfo.distances[bhex] <= astack->getMovementRange(): " << (rinfo.distances[action->hex->bhex.hex] <= astack->getMovementRange()) << "\n";
+        info << "ainfo[bhex]=" << EI(ainfo.at(action->hex->bhex.toInt())) << "\n";
+        info << "rinfo.distances[bhex] <= astack->getMovementRange(): " << (rinfo.distances[action->hex->bhex.toInt()] <= astack->getMovementRange()) << "\n";
 
         info << "action->hex->name = " << action->hex->name() << "\n";
 
@@ -437,7 +437,7 @@ namespace MMAI::BAI::V3 {
 
         auto stack = action->hex->stack;
         if (stack) {
-            info << "stack->cstack->getPosition().hex=" << stack->cstack->getPosition().hex << "\n";
+            info << "stack->cstack->getPosition().toInt()=" << stack->cstack->getPosition().toInt() << "\n";
             info << "stack->cstack->slot=" << stack->cstack->unitSlot() << "\n";
             info << "stack->cstack->doubleWide=" << stack->cstack->doubleWide() << "\n";
             info << "cb->battleCanShoot(stack->cstack)=" << battle->battleCanShoot(stack->cstack) << "\n";
@@ -445,15 +445,15 @@ namespace MMAI::BAI::V3 {
             info << "cstack: (nullptr)\n";
         }
 
-        info << "astack->getPosition().hex=" << astack->getPosition().hex << "\n";
+        info << "astack->getPosition().toInt()=" << astack->getPosition().toInt() << "\n";
         info << "astack->slot=" << astack->unitSlot() << "\n";
         info << "astack->doubleWide=" << astack->doubleWide() << "\n";
         info << "cb->battleCanShoot(astack)=" << battle->battleCanShoot(astack) << "\n";
 
         if (nbh) {
-            info << "nbh->hex=" << nbh->hex << "\n";
-            info << "ainfo[nbh]=" << EI(ainfo.at(*nbh)) << "\n";
-            info << "rinfo.distances[nbh] <= astack->getMovementRange(): " << (rinfo.distances[*nbh] <= astack->getMovementRange()) << "\n";
+            info << "nbh->toInt()=" << nbh->toInt() << "\n";
+            info << "ainfo[nbh]=" << EI(ainfo.at(nbh->toInt())) << "\n";
+            info << "rinfo.distances[nbh] <= astack->getMovementRange(): " << (rinfo.distances[nbh->toInt()] <= astack->getMovementRange()) << "\n";
 
             if (stack)
                 info << "astack->isMeleeAttackPossible(...)=" << astack->isMeleeAttackPossible(astack, stack->cstack, *nbh) << "\n";

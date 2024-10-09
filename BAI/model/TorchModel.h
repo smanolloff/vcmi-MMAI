@@ -17,14 +17,15 @@
 #pragma once
 
 #include <mutex>
+
+#include <executorch/extension/module/module.h>
+#include <executorch/extension/tensor/tensor.h>
+
 #include "schema/base.h"
 
-#ifdef USING_LIBTORCH
-#include <torch/csrc/jit/mobile/import.h>
-#include <torch/csrc/jit/mobile/module.h>
-#endif
-
 namespace MMAI::BAI {
+    using namespace executorch;
+
     class TorchModel : public MMAI::Schema::IModel {
     public:
         TorchModel(std::string path);
@@ -38,22 +39,23 @@ namespace MMAI::BAI {
         std::string path;
         std::string name;
         int version;
+        extension::Module model;
 
-        int sizeOneHex;
-        int nactions;
-        int actionOffset = 0;
+        aten::Tensor prepareInput(const MMAI::Schema::IState * s);
 
-        std::mutex m;
+        aten::Tensor call(
+            const std::string& method_name,
+            const std::vector<runtime::EValue>& input,
+            int numel,
+            aten::ScalarType st
+        );
 
-#ifdef USING_LIBTORCH
-        class TorchJitContainer {
-        public:
-            TorchJitContainer(std::string path) : module(torch::jit::_load_for_mobile(path)) {}
-            c10::InferenceMode guard;
-            torch::jit::mobile::Module module;
-        };
+        inline aten::Tensor call(const std::string method_name, const runtime::EValue& ev, int numel, aten::ScalarType st) {
+            return call(method_name, std::vector<runtime::EValue>{ev}, numel, st);
+        }
 
-        std::unique_ptr<TorchJitContainer> tjc;
-#endif
+        inline aten::Tensor call(const std::string method_name, int numel, aten::ScalarType st) {
+            return call(method_name, std::vector<runtime::EValue>{}, numel, st);
+        }
     };
 }

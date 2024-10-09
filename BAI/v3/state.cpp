@@ -15,17 +15,17 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/CPlayerBattleCallback.h"
 #include "battle/IBattleState.h"
 #include "networkPacks/PacksForClientBattle.h"
 
+#include "BAI/v3/encoder.h"
+#include "BAI/v3/hexaction.h"
+#include "BAI/v3/state.h"
+#include "BAI/v3/supplementary_data.h"
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
-
-#include "./state.h"
-#include "./encoder.h"
-#include "./hexaction.h"
-#include "./supplementary_data.h"
 
 #include <memory>
 
@@ -204,7 +204,7 @@ namespace MMAI::BAI::V3 {
         if (static_cast<BonusType>(bte.effect) != BonusType::MORALE)
             return;
 
-        auto stack = battle->battleGetStackByID(bte.stackID);
+        auto stack = battle->battleGetStackByID(bte.stackID, false);
         isMorale = stack->unitSide() == side;
     }
 

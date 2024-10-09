@@ -19,16 +19,14 @@
 #include "json/JsonUtils.h"
 #include "VCMIDirs.h"
 
-#include "schema/schema.h"
-
-#include "common.h"
 #include "AI/BattleAI/BattleAI.h"
 #include "AI/StupidAI/StupidAI.h"
-#include "BAI/model/TorchModel.h"
-#include "BAI/model/ScriptedModel.h"
-#include "BAI/router.h"
 #include "BAI/base.h"
-#include "scripted/summoner.h"
+#include "BAI/model/ScriptedModel.h"
+#include "BAI/model/TorchModel.h"
+#include "BAI/router.h"
+#include "common.h"
+#include "schema/schema.h"
 
 namespace MMAI::BAI {
     using ConfigStorage = std::map<std::string, std::string>;
@@ -54,18 +52,6 @@ namespace MMAI::BAI {
         }
     }
 
-    static void InitModelConfigFromBaggage(Schema::Baggage * baggage) {
-        // Since ML client cannot load libtorch models, it sends TORCH_PATH
-        // "models" whose getName() returns the path to the model to load
-        auto lock = std::lock_guard(modelmutex);
-        if (!modelconfig.empty()) return;
-
-        if (baggage->modelLeft->getType() == Schema::ModelType::TORCH_PATH)
-            modelconfig.insert({"attacker", baggage->modelLeft->getName()});
-        if (baggage->modelRight->getType() == Schema::ModelType::TORCH_PATH)
-            modelconfig.insert({"defender", baggage->modelRight->getName()});
-    }
-
     static Schema::IModel * GetModel(std::string key) {
         try {
             auto lock = std::lock_guard(modelmutex);
@@ -88,8 +74,7 @@ namespace MMAI::BAI {
                 ASSERT(fullpath.has_value(), "could not obtain path for resource " + rpath.getName());
                 auto fullpathstr = fullpath.value().string();
 
-                logAi->info("Loading %s model from %s", key, fullpathstr);
-
+                logAi->info("Loading Torch %s model from %s", key, fullpathstr);
                 it = models.emplace(key, std::make_unique<TorchModel>(fullpathstr)).first;
             } else {
                 logAi->debug("Using previously loaded %s", key);
@@ -102,6 +87,8 @@ namespace MMAI::BAI {
             #ifdef ENABLE_MMAI_STRICT_LOAD
             throw;
             #endif
+
+            // TODO: how to log a message in user interface?
 
             auto it2 = modelconfig.find("fallback");
             if (it2 == modelconfig.end() || it2->second.empty()) {
@@ -127,37 +114,22 @@ namespace MMAI::BAI {
 
     Router::~Router() {
         info("--- destructor ---");
+        cb->waitTillRealize = wasWaitingForRealize;
     }
 
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions_) {
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB) {
         info("*** initBattleInterface ***");
         env = ENV;
         cb = CB;
-
         colorname = cb->getPlayerID()->toString();
-        aiCombatOptions = aiCombatOptions_;
+        wasWaitingForRealize = cb->waitTillRealize;
 
-        // During training, baggage is used for injecting the model-in-training
-        // (which acts as a bridge to vcmi-gym)
-        auto &any = aiCombatOptions.other;
-        if (any.has_value()) {
-            auto &t = typeid(Schema::Baggage*);
-            ASSERT(any.type() == t, boost::str(
-                boost::format("Bad std::any payload type for aiCombatOptions.other: want: %s/%u, have: %s/%u") \
-                % boost::core::demangle(t.name()) % t.hash_code() \
-                % boost::core::demangle(any.type().name()) % any.type().hash_code()
-            ));
-            baggage = std::any_cast<Schema::Baggage*>(aiCombatOptions.other);
-
-            info("Baggage decoded");
-            #ifndef ENABLE_ML
-            throw std::runtime_error("ENABLE_ML IS UNDEFINED, but baggage was given!");
-            #endif
-        } else {
-            info("No baggage given");
-        }
-
+        cb->waitTillRealize = false;
         bai.reset();
+    }
+
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences _) {
+        initBattleInterface(ENV, CB);
     }
 
     /*
@@ -212,7 +184,7 @@ namespace MMAI::BAI {
         bai->battleSpellCast(bid, sc);
     }
 
-    void Router::battleStackMoved(const BattleID &bid, const CStack * stack, std::vector<BattleHex> dest, int distance, bool teleport) {
+    void Router::battleStackMoved(const BattleID &bid, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport) {
         bai->battleStackMoved(bid, stack, dest, distance, teleport);
     }
 
@@ -226,30 +198,8 @@ namespace MMAI::BAI {
 
     void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         Schema::IModel * model;
-
-        if (baggage) {
-            // During training, the model object is provided via the baggage
-            // This is a special model (a bridge between VCMI and vcmi-gym).
-            // Additionally, the `cb->getPlayerID` is used instead of `side`
-            // to accomodate for the "side swapping" training feature.
-            // XXX: dev mode assumes there are no neutral players in battle
-            ASSERT(baggage, "baggage is nullptr");
-            ASSERT(cb->getPlayerID()->hasValue(), "cb->getPlayerID() has no value");
-            model = cb->getPlayerID()->num ? baggage->modelRight : baggage->modelLeft;
-            ASSERT(model, "model is nullptr");
-            InitModelConfigFromBaggage(baggage);
-            if (model->getType() == Schema::ModelType::TORCH_PATH) {
-                // If the baggage does not carry a model, it means we must load one from file
-                // This occurs when training is done vs. another pre-trained model
-                // For example, attacker is an injected model (being trained),
-                // while defender is nullptr which stands for "load a pre-trained
-                // model as usual"
-                model = GetModel(side == BattleSide::ATTACKER ? "attacker" : "defender");
-            }
-        } else {
-            InitModelConfigFromSettings();
-            model = GetModel(side == BattleSide::ATTACKER ? "attacker" : "defender");
-        }
+        InitModelConfigFromSettings();
+        model = GetModel(side == BattleSide::ATTACKER ? "attacker" : "defender");
 
         ASSERT(model, "failed to build model");
 
@@ -259,25 +209,19 @@ namespace MMAI::BAI {
         case Schema::ModelType::SCRIPTED:
             if (model->getName() == "StupidAI") {
                 bai = CDynLibHandler::getNewBattleAI("StupidAI");
-                bai->initBattleInterface(env, cb, aiCombatOptions);
+                bai->initBattleInterface(env, cb);
             } else if (model->getName() == "BattleAI") {
                 bai = CDynLibHandler::getNewBattleAI("BattleAI");
-                bai->initBattleInterface(env, cb, aiCombatOptions);
-            } else if (model->getName() == MMAI_RESERVED_NAME_SUMMONER) {
-                bai = std::make_shared<Scripted::Summoner>();
-                bai->initBattleInterface(env, cb, aiCombatOptions);
+                bai->initBattleInterface(env, cb);
             } else {
                 THROW_FORMAT("Unexpected scripted model name: %s", model->getName());
             }
             break;
         case Schema::ModelType::TORCH:
-        case Schema::ModelType::USER:
             // XXX: must not call initBattleInterface here
             bai = Base::Create(model, env, cb);
             break;
 
-        // TORCH_PATH models should have been replaced by TORCH models
-        case Schema::ModelType::TORCH_PATH:
         default:
             THROW_FORMAT("Unexpected model type: %d", EI(model->getType()));
         }
@@ -307,6 +251,6 @@ namespace MMAI::BAI {
     void Router::debug(const std::string &text) const { log(ELogLevel::DEBUG, text); }
     void Router::trace(const std::string &text) const { log(ELogLevel::TRACE, text); }
     void Router::log(ELogLevel::ELogLevel level, const std::string &text) const {
-        if (logAi->getLevel() <= level) logAi->debug("Router-%s [%s] %s", addrstr, colorname, text);
+        if (logAi->getEffectiveLevel() <= level) logAi->debug("Router-%s [%s] %s", addrstr, colorname, text);
     }
 }

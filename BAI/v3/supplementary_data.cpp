@@ -16,8 +16,8 @@
 
 #include "StdInc.h"
 
+#include "BAI/v3/supplementary_data.h"
 #include "common.h"
-#include "./supplementary_data.h"
 
 namespace MMAI::BAI::V3 {
     const Schema::V3::Hexes SupplementaryData::getHexes() const {

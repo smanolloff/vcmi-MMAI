@@ -16,15 +16,14 @@
 
 #pragma once
 
-#include "BAI/v3/stack.h"
 #include "CCallback.h"
 #include "battle/CObstacleInstance.h"
 #include "battle/ReachabilityInfo.h"
+
+#include "BAI/v3/general_info.h"
+#include "BAI/v3/hex.h"
+#include "BAI/v3/stack.h"
 #include "common.h"
-
-#include "./hex.h"
-#include "./general_info.h"
-
 #include "schema/base.h"
 #include "schema/v3/constants.h"
 

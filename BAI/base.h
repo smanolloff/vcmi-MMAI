@@ -16,7 +16,6 @@
 #pragma once
 
 #include "CGameInterface.h"
-#include "battle/AICombatOptions.h"
 #include "battle/CPlayerBattleCallback.h"
 
 #include "schema/base.h"
@@ -66,7 +65,7 @@ namespace MMAI::BAI {
         virtual void battleNewRoundFirst(const BattleID &bid) override;
         virtual void battleObstaclesChanged(const BattleID &bid, const std::vector<ObstacleChanges> &obstacles) override;
         virtual void battleSpellCast(const BattleID &bid, const BattleSpellCast *sc) override;
-        virtual void battleStackMoved(const BattleID &bid, const CStack *stack, std::vector<BattleHex> dest, int distance, bool teleport) override;
+        virtual void battleStackMoved(const BattleID &bid, const CStack *stack, const BattleHexArray & dest, int distance, bool teleport) override;
         virtual void battleStacksAttacked(const BattleID &bid, const std::vector<BattleStackAttacked> &bsa, bool ranged) override;
         virtual void battleStacksEffectsSet(const BattleID &bid, const SetStackEffect & sse) override;
         virtual void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) override;
@@ -78,7 +77,8 @@ namespace MMAI::BAI {
          * Their base implementation throws a runtime error
          * (whistleblower for developer mistakes)
          */
-        virtual void initBattleInterface(std::shared_ptr<Environment> _1, std::shared_ptr<CBattleCallback> _2, AICombatOptions _3) override { throw std::runtime_error("BAI (base class) received initBattleInterface call"); }
+        virtual void initBattleInterface(std::shared_ptr<Environment> _1, std::shared_ptr<CBattleCallback> _2) override { throw std::runtime_error("BAI (base class) received initBattleInterface call"); }
+        virtual void initBattleInterface(std::shared_ptr<Environment> _1, std::shared_ptr<CBattleCallback> _2, AutocombatPreferences _3) override { throw std::runtime_error("BAI (base class) received initBattleInterface call"); }
 
         const int version;
         const std::string name = "BAI"; // used in logging
@@ -89,6 +89,9 @@ namespace MMAI::BAI {
         Schema::IModel* model;
 
         std::string addrstr = "?";
+
+        // Set via VCMI_BAI_VERBOSE env var ("1" to enable)
+        bool verbose = false;
 
         /*
          * Templates defined in the header
@@ -105,7 +108,7 @@ namespace MMAI::BAI {
         template<typename ... Args> void debug(const std::string &format, Args ... args) const { log(ELogLevel::DEBUG, format, args...); }
         template<typename ... Args> void trace(const std::string &format, Args ... args) const { log(ELogLevel::DEBUG, format, args...); }
         template<typename ... Args> void log(ELogLevel::ELogLevel level, const std::string &format, Args ... args) const {
-            if (logAi->getLevel() <= level) _log(level, format, args...);
+            if (logAi->getEffectiveLevel() <= level) _log(level, format, args...);
         }
 
 
@@ -115,7 +118,7 @@ namespace MMAI::BAI {
         void debug(const std::string &text) const { log(ELogLevel::DEBUG, text); }
         void trace(const std::string &text) const { log(ELogLevel::TRACE, text); }
         void log(ELogLevel::ELogLevel level, const std::string &text) const {
-            if (logAi->getLevel() <= level) _log(level, "%s", text);
+            if (logAi->getEffectiveLevel() <= level) _log(level, "%s", text);
         }
 
         void error(const std::function<std::string()> &cb) const { log(ELogLevel::ERROR, cb); }
@@ -124,7 +127,7 @@ namespace MMAI::BAI {
         void debug(const std::function<std::string()> &cb) const { log(ELogLevel::DEBUG, cb); }
         void trace(const std::function<std::string()> &cb) const { log(ELogLevel::TRACE, cb); }
         void log(ELogLevel::ELogLevel level, const std::function<std::string()> &cb) const {
-            if (logAi->getLevel() <= level) _log(level, "%s", cb());
+            if (logAi->getEffectiveLevel() <= level) _log(level, "%s", cb());
         }
     };
 }

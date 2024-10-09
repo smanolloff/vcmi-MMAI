@@ -15,6 +15,7 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/AccessibilityInfo.h"
 #include "battle/CObstacleInstance.h"
 #include "bonuses/Bonus.h"
@@ -29,11 +30,10 @@
 #include "spells/CSpellHandler.h"
 #include "vcmi/spells/Caster.h"
 
+#include "BAI/v3/hex.h"
+#include "BAI/v3/render.h"
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
-
-#include "./render.h"
-#include "./hex.h"
 
 namespace MMAI::BAI::V3 {
     std::string PadLeft(const std::string& input, size_t desiredLength, char paddingChar) {
@@ -152,7 +152,7 @@ namespace MMAI::BAI::V3 {
         //      if v=1, returns true when reachable
         //
         auto checkReachable = [=](BattleHex bh, int v, const CStack* stack) {
-            auto distance = rinfos.at(stack).distances.at(bh);
+            auto distance = rinfos.at(stack).distances.at(bh.toInt());
             auto canreach = (stack->getMovementRange() >= distance);
             if (v == 0)
                 return !canreach;
@@ -163,7 +163,7 @@ namespace MMAI::BAI::V3 {
         };
 
         auto ensureReachability = [=](BattleHex bh, int v, const CStack* stack, const char* attrname) {
-            expect(checkReachable(bh, v, stack), "%s: (bhex=%d) reachability expected: %d", attrname, bh.hex, v);
+            expect(checkReachable(bh, v, stack), "%s: (bhex=%d) reachability expected: %d", attrname, bh.toInt(), v);
         };
 
         auto ensureReachabilityOrNA = [=](BattleHex bh, int v, const CStack* stack, const char* attrname) {
@@ -234,8 +234,8 @@ namespace MMAI::BAI::V3 {
             auto res = std::vector<int>{};
 
             for (auto &nbh : nbhs)
-                if (nbh.isAvailable() && rinfos.at(stack).distances.at(nbh) <= stack->getMovementRange())
-                    res.push_back(nbh);
+                if (nbh.isAvailable() && rinfos.at(stack).distances.at(nbh.toInt()) <= stack->getMovementRange())
+                    res.push_back(nbh.toInt());
 
             return res;
         };
@@ -297,9 +297,9 @@ namespace MMAI::BAI::V3 {
             }
 
             if (mv) {
-                expect(eindex < MAX_STACKS_PER_SIDE, "%s: =%d (bhex %d, nbhex %d), but nbhex stack has eindex=%d", attrname, bh.hex, nbh.hex, eindex);
+                expect(eindex < MAX_STACKS_PER_SIDE, "%s: =%d (bhex %d, nbhex %d), but nbhex stack has eindex=%d", attrname, bh.toInt(), nbh.toInt(), eindex);
                 // must not pass "nbh" for defender position, as it could be its rear hex
-                expect(cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =1 (bhex %d, nbhex %d), but VCMI says isMeleeAttackPossible=0", attrname, bh.hex, nbh.hex);
+                expect(cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =1 (bhex %d, nbhex %d), but VCMI says isMeleeAttackPossible=0", attrname, bh.toInt(), nbh.toInt());
             }
             //  else {
             //     if (it != estacks.end()) {
@@ -309,7 +309,7 @@ namespace MMAI::BAI::V3 {
             //         if (checkReachable(bh, 1, cstack))
             //             // MASK may prohibita this specific attack from a reachable hex
             //             // it does not mean any attack is impossible
-            //             expect(!cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =0 (bhex %d, nbhex %d), but bhex is reachable and VCMI says isMeleeAttackPossible=1", attrname, bh.hex, nbh.hex);
+            //             expect(!cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =0 (bhex %d, nbhex %d), but bhex is reachable and VCMI says isMeleeAttackPossible=1", attrname, bh.toInt(), nbh.toInt());
             //     }
             // }
         };
@@ -346,7 +346,7 @@ namespace MMAI::BAI::V3 {
             expect(bh == BattleHex(x+1, y), "hex->bhex mismatch");
 
             auto ainfo = battle->getAccessibility();
-            auto aa = ainfo.at(bh);
+            auto aa = ainfo.at(bh.toInt());
 
             for (int i=0; i < EI(HexAttribute::_count); i++) {
                 auto attr = HexAttribute(i);
@@ -378,8 +378,7 @@ namespace MMAI::BAI::V3 {
                         if (aa == EAccessibility::OBSTACLE || aa == EAccessibility::ALIVE_STACK)
                             break;
 
-                        // no moat == no fort?
-                        if (battle->battleGetFortifications().wallsHealth > 0)
+                        if (battle->battleGetFortifications().wallsHealth == 0)
                             throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is neither OBSTACLE nor ALIVE_STACK (no walls)");
 
                         expect(aa == EAccessibility::DESTRUCTIBLE_WALL || aa == EAccessibility::GATE || aa == EAccessibility::UNAVAILABLE,
@@ -419,7 +418,7 @@ namespace MMAI::BAI::V3 {
 
                     // if (mask.test(EI(HexState::GATE))) {
                     //     expect(battle->battleGetSiegeLevel(), "HEX.STATE_MASK: GATE bit is set, but there is no fort");
-                    //     expect(bh == BattleHex::GATE_INNER || bh == BattleHex::GATE_OUTER, "HEX.STATE_MASK: GATE bit is set on bhex#%d", bh.hex);
+                    //     expect(bh == BattleHex::GATE_INNER || bh == BattleHex::GATE_OUTER, "HEX.STATE_MASK: GATE bit is set on bhex#%d", bh.toInt());
                     // }
                 }
                 break; case HA::ACTION_MASK: {

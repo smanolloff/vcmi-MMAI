@@ -15,11 +15,12 @@
 // =============================================================================
 #pragma once
 
-#include "./battlefield.h"
 #include "battle/BattleHex.h"
 #include "battle/CPlayerBattleCallback.h"
+
+#include "BAI/v3/attack_log.h"
+#include "BAI/v3/battlefield.h"
 #include "schema/v3/types.h"
-#include "./attack_log.h"
 
 namespace MMAI::BAI::V3 {
     class Stats : public Schema::V3::IStats {

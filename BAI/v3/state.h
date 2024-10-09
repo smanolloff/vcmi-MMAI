@@ -18,13 +18,14 @@
 #include "battle/BattleHex.h"
 #include "battle/CBattleInfoEssentials.h"
 #include "battle/CPlayerBattleCallback.h"
+
+#include "BAI/v3/action.h"
+#include "BAI/v3/attack_log.h"
+#include "BAI/v3/battlefield.h"
+#include "BAI/v3/supplementary_data.h"
 #include "schema/base.h"
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
-#include "./supplementary_data.h"
-#include "./battlefield.h"
-#include "./attack_log.h"
-#include "./action.h"
 
 namespace MMAI::BAI::V3 {
     using BS = Schema::BattlefieldState;
@@ -32,9 +33,9 @@ namespace MMAI::BAI::V3 {
     class State : public Schema::IState {
     public:
         // IState impl
-        const Schema::ActionMask& getActionMask() const override { return actmask; };
-        const Schema::AttentionMask& getAttentionMask() const override { return attnmask; }
-        const Schema::BattlefieldState& getBattlefieldState() const override { return bfstate; }
+        const Schema::ActionMask* getActionMask() const override { return &actmask; };
+        const Schema::AttentionMask* getAttentionMask() const override { return &attnmask; }
+        const Schema::BattlefieldState* getBattlefieldState() const override { return &bfstate; }
         const std::any getSupplementaryData() const override {
             return static_cast<const MMAI::Schema::V3::ISupplementaryData*>(supdata.get());
         }

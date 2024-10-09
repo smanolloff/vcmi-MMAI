@@ -15,16 +15,15 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/ReachabilityInfo.h"
 
+#include "BAI/v3/battlefield.h"
+#include "BAI/v3/hex.h"
 #include "common.h"
 #include "schema/base.h"
-#include "schema/v3/types.h"
 #include "schema/v3/constants.h"
-
-#include "./battlefield.h"
-#include "./hex.h"
-
+#include "schema/v3/types.h"
 
 namespace MMAI::BAI::V3 {
     using HA = HexAttribute;
@@ -74,12 +73,17 @@ namespace MMAI::BAI::V3 {
             for (auto &unit : units)
                 res.push_back(unit->unitId());
 
-        if (isMorale) {
-            assert(astack);
+        // XXX: after morale, battleGetTurnOrder() returns wrong order
+        //      (where a non-active stack is first)
+        //      The active stack *must* be first-in-queue
+        if (isMorale && astack && res.at(0) != astack->unitId()) {
             std::rotate(res.rbegin(), res.rbegin() + 1, res.rend());
             res.at(0) = astack->unitId();
         } else {
-            assert(astack == nullptr || res.at(0) == astack->unitId());
+            // the only scenario where the active stack is not first in queue
+            // is at battle end (i.e. no active stack)
+            // assert(astack == nullptr || res.at(0) == astack->unitId());
+            ASSERT(astack == nullptr || res.at(0) == astack->unitId(), "queue[0] is not the currently active stack!");
         }
 
         return res;
@@ -143,7 +147,7 @@ namespace MMAI::BAI::V3 {
                 auto i = y*15 + x;
                 auto bh = BattleHex(x+1, y);
                 res->at(y).at(x) = std::make_unique<Hex>(
-                    bh, ainfo.at(bh), gatestate, hexobstacles.at(i),
+                    bh, ainfo.at(bh.toInt()), gatestate, hexobstacles.at(i),
                     hexstacks, astackinfo
                 );
             }
