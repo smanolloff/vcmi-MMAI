@@ -116,15 +116,16 @@ namespace MMAI::BAI {
         info("--- destructor ---");
     }
 
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions_) {
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB) {
         info("*** initBattleInterface ***");
         env = ENV;
         cb = CB;
-
         colorname = cb->getPlayerID()->toString();
-        aiCombatOptions = aiCombatOptions_;
-
         bai.reset();
+    }
+
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences _) {
+        initBattleInterface(ENV, CB);
     }
 
     /*
@@ -204,10 +205,10 @@ namespace MMAI::BAI {
         case Schema::ModelType::SCRIPTED:
             if (model->getName() == "StupidAI") {
                 bai = CDynLibHandler::getNewBattleAI("StupidAI");
-                bai->initBattleInterface(env, cb, aiCombatOptions);
+                bai->initBattleInterface(env, cb);
             } else if (model->getName() == "BattleAI") {
                 bai = CDynLibHandler::getNewBattleAI("BattleAI");
-                bai->initBattleInterface(env, cb, aiCombatOptions);
+                bai->initBattleInterface(env, cb);
             } else {
                 THROW_FORMAT("Unexpected scripted model name: %s", model->getName());
             }
