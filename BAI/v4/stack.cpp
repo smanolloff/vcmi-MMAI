@@ -287,8 +287,8 @@ namespace MMAI::BAI::V4 {
           }
         }
 
-        double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
-        auto dmgPercentHP = std::clamp<int>(std::round(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
+        // double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
+        // auto dmgPercentHP = std::clamp<int>(std::round(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
 
         auto sas = StackActState::DONE;
 
@@ -298,18 +298,18 @@ namespace MMAI::BAI::V4 {
 
         shots = cstack->shots.available();
 
-        int cid = cstack->creatureId().num;
-        if (cid > Schema::V4::CREATURE_ID_MAX) {
-            logAi->error("MMAI error: unknown creature with: %d (%s)", cid, cstack->getDescription());
-            ML(throw std::runtime_error("unknown creature id: " + std::to_string(cid)));
-            cid = 122; // this is a "NOT USED (1)" creature
-        }
+        // int cid = cstack->creatureId().num;
+        // if (cid > Schema::V4::CREATURE_ID_MAX) {
+        //     logAi->error("MMAI error: unknown creature with: %d (%s)", cid, cstack->getDescription());
+        //     ML(throw std::runtime_error("unknown creature id: " + std::to_string(cid)));
+        //     cid = 122; // this is a "NOT USED (1)" creature
+        // }
 
         setattr(A::ID, id);
         setattr(A::Y_COORD, y);
         setattr(A::X_COORD, x);
         setattr(A::SIDE, EI(cstack->unitSide()));
-        setattr(A::CREATURE_ID, cid);
+        // setattr(A::CREATURE_ID, cid);
         setattr(A::QUANTITY, Util::Damp(cstack->getCount(), STACK_QTY_MAX));
         setattr(A::ATTACK, cstack->getAttack(shots > 0));
         setattr(A::DEFENSE, cstack->getDefense(false));
@@ -323,7 +323,7 @@ namespace MMAI::BAI::V4 {
         setattr(A::ACTSTATE, EI(sas));
         setattr(A::BLOCKED, blocked);
         setattr(A::BLOCKING, blocking);
-        setattr(A::ESTIMATED_DMG, dmgPercentHP);
+        // setattr(A::ESTIMATED_DMG, dmgPercentHP);
         setattr(A::RETALIATIONS_LEFT, cstack->counterAttacks.available());
         setattr(A::IS_WIDE, cstack->occupiedHex().isAvailable());
         setattr(A::AI_VALUE, Util::Damp(cstack->unitType()->getAIValue(), STACK_VALUE_MAX));
