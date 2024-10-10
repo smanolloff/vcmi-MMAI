@@ -645,8 +645,8 @@ namespace MMAI::BAI::V4 {
                         expect(v == x, "STACK.X_COORD: %d != %d", v, x);
                     break; case SA::SIDE:
                         ensureStackValueMatch(a, v, EI(cstack->unitSide()), "STACK.SIDE");
-                    break; case SA::CREATURE_ID:
-                        ensureStackValueMatch(a, v, cstack->unitType()->getId(), "STACK.SIDE");
+                    // break; case SA::CREATURE_ID:
+                    //     ensureStackValueMatch(a, v, cstack->unitType()->getId(), "STACK.SIDE");
                     break; case SA::QUANTITY:
                         ensureStackValueMatch(a, v, std::round(STACK_QTY_MAX * std::tanh(float(cstack->getCount()) / STACK_QTY_MAX)), "STACK.AI_VALUE");
                     break; case SA::ATTACK:
@@ -728,19 +728,19 @@ namespace MMAI::BAI::V4 {
                             }
                         }
                         ensureStackValueMatch(a, v, want, "STACK.BLOCKING");
-                    break; case SA::ESTIMATED_DMG:
-                        if (ended)
-                            break;
+                    // break; case SA::ESTIMATED_DMG:
+                    //     if (ended)
+                    //         break;
 
-                        if (!astack || astack->unitSide() == cstack->unitSide()) {
-                           want = 0;
-                        } else {
-                            auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
-                            auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
-                            auto dmgAsHPPercent = static_cast<int>(std::round(100 * dmgAsHPFrac));
-                            want = std::clamp<int>(dmgAsHPPercent, 0, 100);
-                        }
-                        ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");
+                    //     if (!astack || astack->unitSide() == cstack->unitSide()) {
+                    //        want = 0;
+                    //     } else {
+                    //         auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
+                    //         auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
+                    //         auto dmgAsHPPercent = static_cast<int>(std::round(100 * dmgAsHPFrac));
+                    //         want = std::clamp<int>(dmgAsHPPercent, 0, 100);
+                    //     }
+                    //     ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");
                     break; case SA::BLOCKS_RETALIATION:
                         want = has_bonus(BonusType::BLOCKS_RETALIATION);
                         ensureStackValueMatch(a, v, want, "STACK.BLOCKS_RETALIATION");
@@ -1074,7 +1074,7 @@ namespace MMAI::BAI::V4 {
             RowDef{SA::ACTSTATE, "Act state"},
             RowDef{SA::QUEUE_POS, "Queue"},
             RowDef{SA::RETALIATIONS_LEFT, "Ret. left"},
-            RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
+            // RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
             RowDef{SA::AI_VALUE, "Value"},
             RowDef{SA::BLIND_LIKE_ATTACK, "Blind* chance"},
             // 2 values per column to avoid too long table
