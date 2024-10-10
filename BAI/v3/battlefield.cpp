@@ -74,12 +74,17 @@ namespace MMAI::BAI::V3 {
             for (auto &unit : units)
                 res.push_back(unit->unitId());
 
-        if (isMorale) {
-            assert(astack);
+        // XXX: after morale, battleGetTurnOrder() returns wrong order
+        //      (where a non-active stack is first)
+        //      The active stack *must* be first-in-queue
+        if (isMorale && astack && res.at(0) != astack->unitId()) {
             std::rotate(res.rbegin(), res.rbegin() + 1, res.rend());
             res.at(0) = astack->unitId();
         } else {
-            assert(astack == nullptr || res.at(0) == astack->unitId());
+            // the only scenario where the active stack is not first in queue
+            // is at battle end (i.e. no active stack)
+            // assert(astack == nullptr || res.at(0) == astack->unitId());
+            ASSERT(astack == nullptr || res.at(0) == astack->unitId(), "queue[0] is not the currently active stack!");
         }
 
         return res;
