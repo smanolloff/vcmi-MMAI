@@ -69,10 +69,6 @@ namespace MMAI::BAI {
         oss << this; // Store this memory address
         addrstr = oss.str();
         info("+++ constructor +++");
-
-        // Not sure if this is needed
-        cb->waitTillRealize = false;
-        cb->unlockGsWhenWaiting = false;
     }
 
     /*

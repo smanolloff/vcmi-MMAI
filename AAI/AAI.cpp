@@ -126,7 +126,6 @@ namespace MMAI::AAI {
         cb = CB;
         cbc = CB;
 
-        // XXX: not sure if needed
         cb->waitTillRealize = true;
         cb->unlockGsWhenWaiting = true;
     };
