@@ -16,9 +16,14 @@
 
 #pragma once
 
+#include <boost/core/demangle.hpp>
+#include <boost/format.hpp>
+
 #include <any>
+#include <functional>
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 #include <boost/format.hpp>
 #include <boost/core/demangle.hpp>
@@ -81,6 +86,8 @@ namespace MMAI::Schema {
     enum class ModelType : int {
         SCRIPTED,       // e.g. BattleAI, StupidAI
         TORCH,          // pre-trained Torch models stored in a file
+        TORCH_PATH,     // similar to TORCH, but the model is not yet loaded (see BAI/router.cpp)
+        USER,           // user-provided model, e.g. vcmi-gym trainable
         _count
     };
 
@@ -100,6 +107,19 @@ namespace MMAI::Schema {
         virtual Side getSide() = 0;
 
         virtual ~IModel() = default;
+    };
+
+    // The Baggage struct is converted to a std::any object, which allows to
+    // seamlessly transport MMAI-specific data through VCMI without polluting
+    // the VCMI codebase.
+    // Linkage needed due to ensure the MMAI constructor sees the proper
+    // symbol when converting the std::any object back to a Baggage struct.
+    //
+    // Baggage is used during ML training only, where functions from vcmi-gym
+    // are abstracted behind an IModel object and thus injected into VCMI.
+    struct MMAI_DLL_LINKAGE Baggage {
+        IModel* modelLeft;
+        IModel* modelRight;
     };
 
     // Convenience formatter for std::any cast errors

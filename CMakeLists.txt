@@ -1,4 +1,7 @@
 set(MMAI_FILES
+  AAI/AAI.cpp
+  AAI/AAI.h
+
   BAI/base.cpp
   BAI/base.h
   BAI/router.cpp

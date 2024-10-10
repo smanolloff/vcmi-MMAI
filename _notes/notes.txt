@@ -1,0 +1,448 @@
+=== Developer notes ===
+
+==== 1.5 -> 1.6 speedup ====
+
+===== VCMI raw benchmarks (mlclient-cli):
+8x64 BattleAI 59.3  -> 277  [steps/s]  aka. 0.0169 [s/step] -> 0.0036 [s/step] = -0.0133 => 425% proj. speedup
+8x64 StupidAI 600   -> 907  [steps/s]  aka. 0.0017 [s/step] -> 0.0011 [s/step] = -0.0006 => 115% proj. speedup
+
+A1   BattleAI 421   -> 1073 [steps/s] = 0.0009 [s/step]
+A1   StupidAI 1292  -> 1937 [steps/s] = 0.0005 [s/step]
+
+===== Training benchmarks
+StupidAI, 1.5               ->  BattleAI, 1.6
+22366208                    ->  31766016
+26553344                    ->  34319360
+10h                         ->  9h
+= 418713.6  [steps/h]       ->  = 283705    [steps/h]
+= 116       [steps/s]       ->  = 79        [steps/s]
+= 0.0086s   [s/step]        ->  = 0.0127    [s/step]
+= 148% of the new speed     ->  = 68% of the old speed
+-----------
+
+0.0127 [s/step] w/o training
+0.0086 [s/step] with training
+=>
+0.0041 [s/step] training overhead
+
+
+==== Adding a new version of BAI ===
+
+Example: create v3
+
+1. create schema/v3:
+  - copy schema/v1 to schema/v3 update constants/types as needed
+
+2. create BAI/v3:
+  - copy BAI/v1 to BAI/v3 update all references as needed
+
+3. Add newly added files from 1. and 2. into CMakeLists
+4. Add #include "v3/schema.h" in schema/schema.h
+5. Add #include "v3/BAI.h" and a "case 3" switch statement in BAI/base.cpp
+
+
+==== VCMI filesystems ===
+
+VCMI first loads an "initial" filesystem, see CResourceHandler::initialize
+The initial filesystem loads only dirs, JSON and H3 archives (LOD, VID, etc.)
+(see CFilesystemLoader::listFiles)
+Later, another filesystem is constructed based on config/filesystem.json
+XXX: the "config/filesystem.json" is looked up in the INITIAL filesystem
+     There are multiple "config/filesystem.json" files and the last one
+     is used in this case (the one in ~/Library/Application Support/vcmi)
+MMAI model is physically located in $VCMI/Mods/mmaimodels/models/agent.pt
+The `mmaimodels` mod contains this in the config:
+
+    "filesystem": {
+      "MMAI/MODELS/": [
+        {"type" : "dir",  "path" : "/models"}
+      ],
+      "MMAI/CONFIG/": [
+        {"type" : "dir",  "path" : "/config"}
+      ]
+    }
+
+The value of "path" above will not be present in the resource name of VCMI.
+i.e. resource name will be key ("MMAI/MODELS")
+
+The real location can be obtained as follows:
+     auto rpath = ResourcePath("MMAI/MODELS/defender.pt")
+     auto loaders = CResourceHandler::get()->getResourcesWithName(rpath);
+     auto fullpath = loaders.at(0)->getResourceName(rpath).value().str();
+     // in dev mode this is
+     // "./Mods/MMAI/models/defender.pt"
+
+
+=== libtorch ===
+== ios (dev)
+1. compile VCMI deps for ios
+    // NOTE: for this to work, conanfile must be amended to ensure no
+    //       `hwloc` dependency exists, as it cannot be built for mobile os
+    //       down-grading to `onetbb/2020.3.3` solves that
+
+    $ conan profile new ios --detect
+
+    // sdl_mixer complains my compiler version is 15, but in config it is 14
+    // => edit CI/conan/base/apple:
+      -compiler.version=14
+      +compiler.version=15
+
+    // XXX: suddenly, "zstd" started failing on ios due to broken symlinks
+    //      adding "skip_broken_symlinks_check = True" to ~/.conan/conan.conf
+    //      solves it.
+
+    $ conan install . \
+            --install-folder=conan-generated \
+            --no-imports \
+            --build=missing \
+            --profile:build=ios \
+            --profile:host=CI/conan/ios-arm64 \
+            --require-override "boost/1.85.0@" \
+            --require-override "qt/5.15.11@"
+
+2. compile libtorch for ios
+    $ cd $PROJ
+    $ git clone --recursive https://github.com/pytorch/pytorch
+    $ cd pytorch
+    $ git checkout v2.4.1
+    $ git submodule sync
+    $ git submodule update --init --recursive
+    $ python3.10 -m venv .venv
+    $ . .venv/bin/activate.fish
+    $ pip install cmake ninja
+    $ pip install -r requirements.txt
+
+    // Export op list from saved jit model:
+    //
+    //      import yaml
+    //      m = torch.jit.load("$VCMIGYM/rl/models/Attacker model:v10/jit-agent-optimized.pt")
+    //      with open('ops.yml', 'w') as output:
+    //          yaml.dump(torch.jit.export_opnames(m), output)
+    //
+    //      $ export SELECTED_OP_LIST=$VCMIGYM/ops.yml
+    // However, it's not worth it
+    // (size reduced by <10% and the minimal op set would limit future models)
+    //
+    $ scripts/build_ios.sh -DUSE_ROCM=0 -DUSE_OPENMP=0 -DUSE_BLAS=0
+
+3. compile VCMI for ios
+    $ cd $VCMI
+    $ cmake -B build-ios --preset ios-device-conan \
+        -D BUNDLE_IDENTIFIER_PREFIX=com.simo \
+        -D CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=LD7K7CF9C5 \
+        -D ENABLE_MMAI=1 \
+        -D ENABLE_MMAI_STRICT_LOAD=1 \
+        -D ENABLE_LIBTORCH=1 \
+        -D LIBTORCH_PATH=/Users/simo/Projects/pytorch/build_ios/install
+
+    // XXX: there are MANY warnings like this (xcode bug?):
+    //        createItemModels creation requirements should not create capability ...
+    // They can be ignored.
+    // Build errors usually can be found by text-searching for "error:"
+
+    $ cmake --build build-ios --target vcmiclient
+
+    $ cd build-ios
+    $ cpack -C Debug
+
+    // XXX: there are several errors like this:
+    //        install_name_tool: no LC_RPATH load command with path ...
+    // They can be ignored
+
+4. (optional) test with an iphone device
+    4.1. connect iPhone to mac
+    4.2. run Sideloadly
+    4.3. open Advanced Options and set "Normal install"
+          (i.e. without signing it -- it's already signed!)
+
+    // iPhone Crash dumps can be seen in "Analytics Data", search for "vcmi"
+    // Also, run "Console" on Mac with connected iPhone via cable,
+    // then select it from the left pane -- all logs will be streamed
+    //
+    // XXX: printf() seems to cause a crash on iOS
+    //
+
+== ios (release)
+
+1. same as step 1. for ios (dev), but use `--profile:host=CI/conan/ios-arm64`
+2. same as step 2. for ios (dev)
+3. compile VCMI for ios (release)
+    // XXX: first set "CODE_SIGNING_ALLOWED_FOR_APPS=YES" in CMakePresets.json
+    $ cd $VCMI
+    $ cmake --preset ios-release-conan-ccache \
+        -D BUNDLE_IDENTIFIER_PREFIX=com.simo \
+        -D CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=LD7K7CF9C5 \
+        -D ENABLE_MMAI=1 \
+        -D ENABLE_MMAI_STRICT_LOAD=1 \
+        -D ENABLE_LIBTORCH=1 \
+        -D LIBTORCH_PATH=~/Downloads/libtorch-v2.4.1-ios-arm64
+
+    // XXX: command below may fail with "Xcode couldn't find any provisioning profiles matching ..."
+    //      what fixed it was to open Xcode, load the 
+    //          out/build/ios-release-conan-ccache/VCMI.xcodeproj
+    //      into Xcode and go to Project's Build Settings->Packaging->Product Bundle Identifier
+    //          then set it to some value (not sure if just opening the project isnt enough)
+
+    $ cmake --build --preset ios-release-conan-ccache
+    $ cd out/build/ios-release-conan-ccache
+    $ cpack -C Release
+    $ cd -
+4. same as step 4. for ios (dev)
+
+== iphone simulator
+
+  XXX: does not work -- I couldn't get QT to build for simulator due to
+  error: Xcode building for iOS Simulator, but linking in an object file built for iOS
+  I did try to separately compile QT for ios simulator, but I eventually gave up
+
+== mac
+
+1. same as step 1. for ios (dev), but use `default` for both profiles
+
+2. compile libtorch for mac
+
+    // same as step 2. for ios (dev) up until `build_ios.sh` line:
+    $ BUILD_ROOT="$PWD/build_mac" scripts/build_local.sh \
+      -DCMAKE_INSTALL_PREFIX="$PWD/build_mac/install" \
+      -DBUILD_LITE_INTERPRETER=ON
+
+    $ cmake -P build_mac/cmake_install.cmake
+
+3. compile VCMI for mac
+    $ cd $VCMI
+    $ cmake -S . -B play -Wno-dev \
+          -D CMAKE_TOOLCHAIN_FILE=conan-generated/conan_toolchain.cmake \
+          -D CMAKE_BUILD_TYPE=Debug \
+          -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+          -D ENABLE_SINGLE_APP_BUILD=0 \
+          -D ENABLE_CCACHE=1 \
+          -D ENABLE_NULLKILLER_AI=0 \
+          -D ENABLE_LAUNCHER=1 \
+          -D ENABLE_LOBBY=1 \
+          -D ENABLE_ML=0 \
+          -D ENABLE_MMAI=1 \
+          -D ENABLE_MMAI_STRICT_LOAD=1 \
+          -D ENABLE_LIBTORCH=1 \
+          -D LIBTORCH_PATH=/Users/simo/Projects/pytorch/build_mac_static/install
+
+    $ cmake --build play/ -- -j8
+
+== linux
+
+1. (no conan on linux; use apt to install deps)
+2. compile libtorch for linux
+
+    // Checks out 30+ git submodules; can take up to 10 min.
+    $ git clone --branch v2.4.1 --depth 1 \
+      --recurse-submodules --shallow-submodules \
+      https://github.com/pytorch/pytorch
+
+    // Apply patch for CUDA on linux
+    // https://github.com/NVIDIA/nccl/issues/650#issuecomment-1145173577
+
+    $ python3.10 -m venv .venv
+    $ . .venv/bin/activate
+
+    // XXX: the "scripts/build_local.sh" fails during linking
+    // of torch_shm_manager with missing symbols in libtorch_cpu.so
+    // undefined reference to `torch::distributed::rpc::RRefForkData
+    // ...
+    // just go with regular `python setup.py develop` (as is per the docs btw)
+    // Also, it seems to build with CXX11_ABI=true by default
+    $ python setup.py develop
+    $ cmake -D CMAKE_INSTALL_PREFIX=build/install -P build/cmake_install.cmake
+
+    // the above works, but is VERY slow in runtime (tried USE_CUDA=0, same)
+    // Alternatively, just download this
+    // https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.4.1%2Bcpu.zip
+    // and set LIBTORCH_PATH, extract, and use LIBTORCH_PATH=(dir containing include, lib & share)
+
+3. compile VCMI for linux
+
+    $ cmake -S . -B rel -Wno-dev \
+          -D CMAKE_BUILD_TYPE=Release \
+          -D CMAKE_EXPORT_COMPILE_COMMANDS=0 \
+          -D ENABLE_SINGLE_APP_BUILD=0 \
+          -D ENABLE_CCACHE=1 \
+          -D ENABLE_NULLKILLER_AI=0 \
+          -D ENABLE_LAUNCHER=1 \
+          -D ENABLE_LOBBY=1 \
+          -D ENABLE_ML=1 \
+          -D ENABLE_MMAI=1 \
+          -D ENABLE_MMAI_STRICT_LOAD=1 \
+          -D ENABLE_LIBTORCH=1 \
+          -D LIBTORCH_PATH=/home/simo/Projects/pytorch/build/install
+
+
+
+== android
+
+
+1. Compile VCMI deps for android
+
+    $ conan profile new android --detect
+    $ conan install android-ndk/r26d@ --profile:build ../vcmi/CI/conan/android-64-ndk-r26d
+
+    // Download pre-built conan libs
+    $ cd $PROJ
+    $ git clone https://github.com/kambala-decapitator/conan-system-libs
+    $ cd conan-system-libs
+    $ conan create zlib vcmi/android
+
+    // Edit VCMI's conanfile.py and add this (+) line below zlib:
+
+            self.requires("zlib/1.2.12@vcmi/android", override=True)
+           +self.requires("libiconv/[~1.17]", override=True) # ffmpeg / sdl
+
+    //XXXXXXX: NOT SURE what worked. Tried many things with many failures:
+    // * had `compiler.version=15` in conan profile (it gave error eventually, reverted to 14)
+    // * had `compiler.cppstd=17` in conan profile (it finally worked without it)
+    // * had `os.api_level=28` and `31` in conan profile (it finally worked with 21)
+    // * had `os.api_level=28` and `31` in conan profile (it finally worked with 21)
+    // * had libiconv "stub" package from conan-system-libs, i.e. also had
+    //        `conan create zlib vcmi/android`
+    //      and then in conanfile.py
+    //        +self.requires("libiconv/1.17@vcmi/android", override=True)
+    //      (it finally worked with the "real" libiconv package 1.17)
+    // * set ndk_path and ANDROID_HOME manually with both `android-64` and `android-64-ndk` profiles:
+    //      export ANDROID_HOME="~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin/"
+    //      conan install . \
+    //          --install-folder=conan-generated \
+    //          --no-imports \
+    //          --build=missing \
+    //          --profile:build=android \
+    //          --profile:host=CI/conan/android-64-ndk --conf tools.android:ndk_path=~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin
+    //      (it finally worked with the android-64-ndk, the ANDROID_HOME set, but without ndk_path)
+    //
+    // Output log of conan install and current state of profiles & conanfile
+    // saved to _notes/android-conan-log.txt
+
+    $ conan install . \
+        --install-folder=conan-generated \
+        --no-imports \
+        --build=missing \
+        --profile:build=android \
+        --profile:host=CI/conan/android-64-ndk --update
+
+2. compile libtorch for android
+    $ cd $PROJ
+    $ git clone --recursive https://github.com/pytorch/pytorch
+    $ cd pytorch
+    $ git checkout v2.4.1
+    $ git submodule sync
+    $ git submodule update --init --recursive
+    $ python3.10 -m venv .venv
+    $ . .venv/bin/activate.fish
+    $ pip install cmake ninja
+    $ pip install -r requirements.txt
+
+
+    // Added -DUSE_VULKAN=OFF and due to errors, see:
+    // https://discuss.pytorch.org/t/android-build-and-vulkan-wrapper-h/182942/2
+
+    // pure `build_android.sh` script completes, but does not work afterwards
+    //
+    // $ BUILD_LITE_INTERPRETER=1 \
+    //     ANDROID_NDK=~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin \
+    //     ANDROID_ABI=arm64-v8a \
+    //     scripts/build_android.sh -DUSE_VULKAN=OFF
+
+
+    // XXX: there is a build_pytorch_android.sh script which
+    //      pre-sets some env vars then calls build_android.sh internally,
+    //      BUT it does not pass ARGV => manually inspected the vars and
+    //      came up with this big command instead:
+    //      (NOTE: it may fail with SIGSEGV, see below)
+
+    $ rm -rf "android/pytorch_android/src/main/jniLibs"
+    $ mkdir -p "android/pytorch_android/src/main/jniLibs"
+    $ rm -rf "android/pytorch_android/src/main/cpp/libtorch_include"
+    $ mkdir -p "android/pytorch_android/src/main/cpp/libtorch_include"
+
+    $ PYTORCH_DIR="$PWD" \
+        PYTORCH_ANDROID_DIR="$PWD/android" \
+        GRADLE_PATH="$PWD/android/gradlew" \
+        LIB_DIR="$PWD/android/pytorch_android/src/main/jniLibs" \
+        INCLUDE_DIR="$PWD/android/pytorch_android/src/main/cpp/libtorch_include" \
+        ANDROID_BUILD_ROOT="$PWD/build_android32" \
+        ANDROID_ABI=armeabi-v7a \
+        ANDROID_NDK=/Users/simo/.conan/data/android-ndk/r26d/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin \
+        BUILD_ROOT="$PWD/build_android" \
+        BUILD_LITE_INTERPRETER=1 \
+        scripts/build_android.sh \
+          -DANDROID_CCACHE=/opt/homebrew/bin/ccache \
+          -DUSE_LITE_INTERPRETER_PROFILER=OFF \
+          -DUSE_VULKAN=OFF
+
+    // XXX: the above fails with SIGSEGV
+    //    error: clang frontend command failed with exit code 139
+    // ChatGPT suggested to reduce optimizaiton level -O3 to -O2
+    // manually edited the failing c++ command and confirmed it works
+    // => added -DCMAKE_BUILD_TYPE=Debug   (RelWithDebInfo/MinSizeRel still cause the error)
+
+
+    $ ln -s "$PWD/build_android/install/lib" "$PWD/android/pytorch_android/src/main/jniLibs/arm64-v8a"
+    $ ln -s "$PWD/build_android/install/include" "$PWD/android/pytorch_android/src/main/cpp/libtorch_include/arm64-v8a"
+
+    // in Debug builds, `libfmt` is named `libfmtd`...
+    $ ln -s libfmtd.a build_android/install/lib/libfmt.a
+
+3. compile VCMI for linux
+
+    $ brew install java11
+    // This updated a lot of deps. Output log of brew install
+    // saved to _notes/brew_java11_log.txt
+
+    $ export JAVA_HOME=/opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk/Contents/Home
+    $ export ANDROID_HOME=~/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin
+
+    // XXX: the below command triggers a lot of security warnings
+    //      "... cannot be opened" which need manual approval from Mac's Settings->Security
+    // XXX: NKAI must be built as well, or a weird error during linking occurs
+
+
+    // XXX: NOT SURE IF RELEVANT
+    //      (maybe occurs only when -B was invoked without preset which is wrong)
+    //      post-build will fail due to non-accepted licenses
+    //      To accept them, install an OLD version (v10.0) of sdkmanager
+    //        A) from Android Studio as described here:
+    //            https://stackoverflow.com/a/61480578
+    //            https://stackoverflow.com/a/75763391
+    //            Then:
+    //            $ /Users/simo/Library/Android/sdk/cmdline-tools/10.0/bin/sdkmanager \
+    //                --sdk_root=/Users/simo/.conan/data/android-ndk/r25c/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/bin \
+    //                --licenses
+    //
+    //        B) manually (download link taken from Android Studio logs):
+    //            $ curl https://dl.google.com/android/repository/commandlinetools-mac-9862592_latest.zip -o commandlinetools-v10.zip
+    //            $ unzip commandlinetools-v10.zip
+    //            $ cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
+    //
+
+    // XXX: for ndk 26d, I edited both
+    //    ./android/vcmi-app/local.properties
+    //    ./build-android/android-build/vcmi-app/local.properties
+    // and set
+    //        sdk.dir=/Users/simo/.conan/data/android-ndk/r26d/_/_/package/06d313f2ce6737a31e5d7ccd4d516d2ac742276a/ bin
+    // (possibly only the first file needs to be edited tho)
+
+
+    $ cmake -B build-android --preset android-daily-release \
+            -D ENABLE_MMAI=1 \
+            -D ENABLE_MMAI_STRICT_LOAD=1 \
+            -D ENABLE_LIBTORCH=1 \
+            -D LIBTORCH_PATH=/Users/simo/Projects/pytorch/build_android/install
+
+    $ cmake --build build-android -- -j8
+
+    // Start Android Studio, Tools->Device Manager -> start emulator
+    // drag&drop this file
+    // /Users/simo/Projects/vcmi/build-android/android-build/vcmi-app/build/outputs/apk/release/vcmi-release.apk
+
+    // To view log files:
+    $ /Users/simo/Library/Android/sdk/platform-tools/adb logcat -T1 --regex="VCMI|vcmi"
+
+
+== windows
+
+cmake --fresh --preset windows-msvc-release -DCMAKE_TOOLCHAIN_FILE=%VCMI_DIR%/vcpkg/scripts/buildsystems/vcpkg.cmake -DENABLE_MMAI=1 -DENABLE_LIBTORCH=1 -DLIBTORCH_PATH="D:\libtorch-v2.4.1-win-x64.txz (1)\libtorch-v2.4.1-win-x64\libtorch"
