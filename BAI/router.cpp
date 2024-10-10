@@ -117,20 +117,18 @@ namespace MMAI::BAI {
         cb->waitTillRealize = wasWaitingForRealize;
     }
 
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB) {
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AICombatOptions aiCombatOptions_) {
         info("*** initBattleInterface ***");
         env = ENV;
         cb = CB;
         colorname = cb->getPlayerID()->toString();
         wasWaitingForRealize = cb->waitTillRealize;
+        aiCombatOptions = aiCombatOptions_;
 
         cb->waitTillRealize = false;
         bai.reset();
     }
 
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences _) {
-        initBattleInterface(ENV, CB);
-    }
 
     /*
      * Delegated methods
@@ -209,10 +207,10 @@ namespace MMAI::BAI {
         case Schema::ModelType::SCRIPTED:
             if (model->getName() == "StupidAI") {
                 bai = CDynLibHandler::getNewBattleAI("StupidAI");
-                bai->initBattleInterface(env, cb);
+                bai->initBattleInterface(env, cb, aiCombatOptions);
             } else if (model->getName() == "BattleAI") {
                 bai = CDynLibHandler::getNewBattleAI("BattleAI");
-                bai->initBattleInterface(env, cb);
+                bai->initBattleInterface(env, cb, aiCombatOptions);
             } else {
                 THROW_FORMAT("Unexpected scripted model name: %s", model->getName());
             }
