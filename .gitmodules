@@ -1,0 +1,3 @@
+[submodule "schema/gcem"]
+	path = schema/gcem
+	url = git@github.com:kthohr/gcem.git

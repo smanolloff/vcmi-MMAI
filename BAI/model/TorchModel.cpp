@@ -34,20 +34,27 @@ namespace MMAI::BAI {
         version = tjc->module.get_method("get_version")({}).toInt();
 
         switch(version) {
-            break; case 1:
-                sizeOneHex = MMAI::Schema::V1::BATTLEFIELD_STATE_SIZE_ONE_HEX;
-                nactions = MMAI::Schema::V1::N_ACTIONS;
-                actionOffset = 1;
-            break; case 2:
-                sizeOneHex = MMAI::Schema::V2::BATTLEFIELD_STATE_SIZE_ONE_HEX;
-                nactions = MMAI::Schema::V1::N_ACTIONS;
-                actionOffset = 1;
             break; case 3:
                 sizeOneHex = MMAI::Schema::V3::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V3::N_ACTIONS;
-            break; case 4:
-                sizeOneHex = MMAI::Schema::V4::BATTLEFIELD_STATE_SIZE_ONE_HEX;
-                nactions = MMAI::Schema::V4::N_ACTIONS;
+            break; case 8:
+                sizeOneHex = MMAI::Schema::V8::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V8::N_ACTIONS;
+            break; case 9:
+                sizeOneHex = MMAI::Schema::V9::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V9::N_ACTIONS;
+            break; case 10:
+                sizeOneHex = MMAI::Schema::V10::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V10::N_ACTIONS;
+            break; case 11:
+                sizeOneHex = MMAI::Schema::V11::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V11::N_ACTIONS;
+            break; case 12:
+                sizeOneHex = MMAI::Schema::V12::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V12::N_ACTIONS;
+            break; case 13:
+                sizeOneHex = MMAI::Schema::V13::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V13::N_ACTIONS;
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }
@@ -82,13 +89,20 @@ namespace MMAI::BAI {
         auto ended = false;
 
         switch(version) {
-            break; case 1:
-                   case 2:
-                ended = std::any_cast<const MMAI::Schema::V1::ISupplementaryData*>(any)->getIsBattleEnded();
             break; case 3:
                 ended = std::any_cast<const MMAI::Schema::V3::ISupplementaryData*>(any)->getIsBattleEnded();
-            break; case 4:
-                ended = std::any_cast<const MMAI::Schema::V4::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 8:
+                ended = std::any_cast<const MMAI::Schema::V8::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 9:
+                ended = std::any_cast<const MMAI::Schema::V9::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 10:
+                ended = std::any_cast<const MMAI::Schema::V10::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 11:
+                ended = std::any_cast<const MMAI::Schema::V11::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 12:
+                ended = std::any_cast<const MMAI::Schema::V12::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 13:
+                ended = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any)->getIsBattleEnded();
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }
@@ -96,10 +110,10 @@ namespace MMAI::BAI {
         if (ended)
             return MMAI::Schema::ACTION_RESET;
 
-        auto &src = s->getBattlefieldState();
+        auto src = s->getBattlefieldState();
         auto dst = MMAI::Schema::BattlefieldState{};
-        dst.resize(src.size());
-        std::copy(src.begin(), src.end(), dst.begin());
+        dst.resize(src->size());
+        std::copy(src->begin(), src->end(), dst.begin());
 
         auto obs = at::from_blob(dst.data(), {static_cast<long long>(dst.size())}, at::kFloat);
 
@@ -108,9 +122,9 @@ namespace MMAI::BAI {
 
         auto intmask = std::vector<int>{};
         intmask.reserve(nactions);
-        auto &boolmask = s->getActionMask();
+        auto boolmask = s->getActionMask();
 
-        for (auto it = boolmask.begin() + actionOffset; it != boolmask.end(); ++it) {
+        for (auto it = boolmask->begin() + actionOffset; it != boolmask->end(); ++it) {
             intmask.push_back(static_cast<int>(*it));
         }
 
@@ -143,10 +157,10 @@ namespace MMAI::BAI {
     };
 
     double TorchModel::getValue(const MMAI::Schema::IState * s) {
-        auto &src = s->getBattlefieldState();
+        auto src = s->getBattlefieldState();
         auto dst = MMAI::Schema::BattlefieldState{};
         dst.reserve(dst.size());
-        std::copy(src.begin(), src.end(), dst.begin());
+        std::copy(src->begin(), src->end(), dst.begin());
 
         std::unique_lock lock(m);
 

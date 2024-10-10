@@ -65,7 +65,7 @@ namespace MMAI::BAI {
         virtual void battleNewRoundFirst(const BattleID &bid) override;
         virtual void battleObstaclesChanged(const BattleID &bid, const std::vector<ObstacleChanges> &obstacles) override;
         virtual void battleSpellCast(const BattleID &bid, const BattleSpellCast *sc) override;
-        virtual void battleStackMoved(const BattleID &bid, const CStack *stack, std::vector<BattleHex> dest, int distance, bool teleport) override;
+        virtual void battleStackMoved(const BattleID &bid, const CStack *stack, const BattleHexArray & dest, int distance, bool teleport) override;
         virtual void battleStacksAttacked(const BattleID &bid, const std::vector<BattleStackAttacked> &bsa, bool ranged) override;
         virtual void battleStacksEffectsSet(const BattleID &bid, const SetStackEffect & sse) override;
         virtual void battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) override;
@@ -89,6 +89,9 @@ namespace MMAI::BAI {
         Schema::IModel* model;
 
         std::string addrstr = "?";
+
+        // Set via VCMI_BAI_VERBOSE env var ("1" to enable)
+        bool verbose = false;
 
         /*
          * Templates defined in the header

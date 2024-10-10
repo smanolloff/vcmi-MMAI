@@ -9,34 +9,6 @@ set(MMAI_FILES
   # BAI/model/TorchModel.cpp       # optionally added later
   # BAI/model/TorchModelDummy.cpp  # optionally added later
 
-  BAI/v1/BAI.cpp
-  BAI/v1/BAI.h
-  BAI/v1/action.cpp
-  BAI/v1/action.h
-  BAI/v1/attack_log.h
-  BAI/v1/battlefield.cpp
-  BAI/v1/battlefield.h
-  BAI/v1/encoder.cpp
-  BAI/v1/encoder.h
-  BAI/v1/hex.cpp
-  BAI/v1/hex.h
-  BAI/v1/hexaction.h
-  BAI/v1/hexactmask.h
-  BAI/v1/render.cpp
-  BAI/v1/render.h
-  BAI/v1/stackinfo.h
-  BAI/v1/state.cpp
-  BAI/v1/state.h
-  BAI/v1/supplementary_data.cpp
-  BAI/v1/supplementary_data.h
-
-  BAI/v2/BAI.cpp
-  BAI/v2/BAI.h
-  BAI/v2/encoder.cpp
-  BAI/v2/encoder.h
-  BAI/v2/state.cpp
-  BAI/v2/state.h
-
   BAI/v3/BAI.cpp
   BAI/v3/BAI.h
   BAI/v3/action.cpp
@@ -61,47 +33,197 @@ set(MMAI_FILES
   BAI/v3/supplementary_data.cpp
   BAI/v3/supplementary_data.h
 
-  BAI/v4/BAI.cpp
-  BAI/v4/BAI.h
-  BAI/v4/action.cpp
-  BAI/v4/action.h
-  BAI/v4/attack_log.h
-  BAI/v4/battlefield.cpp
-  BAI/v4/battlefield.h
-  BAI/v4/encoder.cpp
-  BAI/v4/encoder.h
-  BAI/v4/general_info.cpp
-  BAI/v4/general_info.h
-  BAI/v4/hex.cpp
-  BAI/v4/hex.h
-  BAI/v4/hexaction.h
-  BAI/v4/hexactmask.h
-  BAI/v4/render.cpp
-  BAI/v4/render.h
-  BAI/v4/stack.cpp
-  BAI/v4/stack.h
-  BAI/v4/state.cpp
-  BAI/v4/state.h
-  BAI/v4/supplementary_data.cpp
-  BAI/v4/supplementary_data.h
-  BAI/v4/util.cpp
-  BAI/v4/util.h
+  BAI/v8/BAI.cpp
+  BAI/v8/BAI.h
+  BAI/v8/action.cpp
+  BAI/v8/action.h
+  BAI/v8/attack_log.h
+  BAI/v8/battlefield.cpp
+  BAI/v8/battlefield.h
+  BAI/v8/encoder.cpp
+  BAI/v8/encoder.h
+  BAI/v8/global_stats.h
+  BAI/v8/hex.cpp
+  BAI/v8/hex.h
+  BAI/v8/hexaction.h
+  BAI/v8/hexactmask.h
+  BAI/v8/render.cpp
+  BAI/v8/render.h
+  BAI/v8/stack.cpp
+  BAI/v8/stack.h
+  BAI/v8/state.cpp
+  BAI/v8/state.h
+  BAI/v8/supplementary_data.cpp
+  BAI/v8/supplementary_data.h
+  BAI/v8/util.cpp
+  BAI/v8/util.h
+
+  BAI/v9/BAI.cpp
+  BAI/v9/BAI.h
+  BAI/v9/action.cpp
+  BAI/v9/action.h
+  BAI/v9/attack_log.h
+  BAI/v9/battlefield.cpp
+  BAI/v9/battlefield.h
+  BAI/v9/encoder.cpp
+  BAI/v9/encoder.h
+  BAI/v9/global_stats.h
+  BAI/v9/hex.cpp
+  BAI/v9/hex.h
+  BAI/v9/hexaction.h
+  BAI/v9/hexactmask.h
+  BAI/v9/render.cpp
+  BAI/v9/render.h
+  BAI/v9/stack.cpp
+  BAI/v9/stack.h
+  BAI/v9/state.cpp
+  BAI/v9/state.h
+  BAI/v9/supplementary_data.cpp
+  BAI/v9/supplementary_data.h
+  BAI/v9/util.cpp
+  BAI/v9/util.h
+
+  BAI/v10/BAI.cpp
+  BAI/v10/BAI.h
+  BAI/v10/action.cpp
+  BAI/v10/action.h
+  BAI/v10/attack_log.h
+  BAI/v10/battlefield.cpp
+  BAI/v10/battlefield.h
+  BAI/v10/encoder.cpp
+  BAI/v10/encoder.h
+  BAI/v10/global_stats.cpp
+  BAI/v10/global_stats.h
+  BAI/v10/hex.cpp
+  BAI/v10/hex.h
+  BAI/v10/hexaction.h
+  BAI/v10/hexactmask.h
+  BAI/v10/player_stats.cpp
+  BAI/v10/player_stats.h
+  BAI/v10/render.cpp
+  BAI/v10/render.h
+  BAI/v10/stack.cpp
+  BAI/v10/stack.h
+  BAI/v10/state.cpp
+  BAI/v10/state.h
+  BAI/v10/supplementary_data.cpp
+  BAI/v10/supplementary_data.h
+  BAI/v10/util.cpp
+  BAI/v10/util.h
+
+  BAI/v11/BAI.cpp
+  BAI/v11/BAI.h
+  BAI/v11/action.cpp
+  BAI/v11/action.h
+  BAI/v11/attack_log.h
+  BAI/v11/battlefield.cpp
+  BAI/v11/battlefield.h
+  BAI/v11/encoder.cpp
+  BAI/v11/encoder.h
+  BAI/v11/global_stats.cpp
+  BAI/v11/global_stats.h
+  BAI/v11/hex.cpp
+  BAI/v11/hex.h
+  BAI/v11/hexaction.h
+  BAI/v11/hexactmask.h
+  BAI/v11/player_stats.cpp
+  BAI/v11/player_stats.h
+  BAI/v11/render.cpp
+  BAI/v11/render.h
+  BAI/v11/stack.cpp
+  BAI/v11/stack.h
+  BAI/v11/state.cpp
+  BAI/v11/state.h
+  BAI/v11/supplementary_data.cpp
+  BAI/v11/supplementary_data.h
+  BAI/v11/util.cpp
+  BAI/v11/util.h
+
+  BAI/v12/BAI.cpp
+  BAI/v12/BAI.h
+  BAI/v12/action.cpp
+  BAI/v12/action.h
+  BAI/v12/attack_log.h
+  BAI/v12/battlefield.cpp
+  BAI/v12/battlefield.h
+  BAI/v12/encoder.cpp
+  BAI/v12/encoder.h
+  BAI/v12/global_stats.cpp
+  BAI/v12/global_stats.h
+  BAI/v12/hex.cpp
+  BAI/v12/hex.h
+  BAI/v12/hexaction.h
+  BAI/v12/hexactmask.h
+  BAI/v12/player_stats.cpp
+  BAI/v12/player_stats.h
+  BAI/v12/render.cpp
+  BAI/v12/render.h
+  BAI/v12/stack.cpp
+  BAI/v12/stack.h
+  BAI/v12/state.cpp
+  BAI/v12/state.h
+  BAI/v12/supplementary_data.cpp
+  BAI/v12/supplementary_data.h
+  BAI/v12/util.cpp
+  BAI/v12/util.h
+
+  BAI/v13/BAI.cpp
+  BAI/v13/BAI.h
+  BAI/v13/action.cpp
+  BAI/v13/action.h
+  BAI/v13/attack_log.h
+  BAI/v13/battlefield.cpp
+  BAI/v13/battlefield.h
+  BAI/v13/encoder.cpp
+  BAI/v13/encoder.h
+  BAI/v13/global_stats.cpp
+  BAI/v13/global_stats.h
+  BAI/v13/hex.cpp
+  BAI/v13/hex.h
+  BAI/v13/hexaction.h
+  BAI/v13/hexactmask.h
+  BAI/v13/link.h
+  BAI/v13/player_stats.cpp
+  BAI/v13/player_stats.h
+  BAI/v13/render.cpp
+  BAI/v13/render.h
+  BAI/v13/stack.cpp
+  BAI/v13/stack.h
+  BAI/v13/state.cpp
+  BAI/v13/state.h
+  BAI/v13/supplementary_data.cpp
+  BAI/v13/supplementary_data.h
+  BAI/v13/util.cpp
+  BAI/v13/util.h
 
   schema/schema.h
-  schema/v1/constants.h
-  schema/v1/schema.h
-  schema/v1/types.h
-  schema/v1/util.h
-  schema/v2/constants.h
-  schema/v2/schema.h
   schema/v3/constants.h
   schema/v3/schema.h
   schema/v3/types.h
   schema/v3/util.h
-  schema/v4/constants.h
-  schema/v4/schema.h
-  schema/v4/types.h
-  schema/v4/util.h
+  schema/v8/constants.h
+  schema/v8/schema.h
+  schema/v8/types.h
+  schema/v8/util.h
+  schema/v9/constants.h
+  schema/v9/schema.h
+  schema/v9/types.h
+  schema/v9/util.h
+  schema/v10/constants.h
+  schema/v10/schema.h
+  schema/v10/types.h
+  schema/v10/util.h
+  schema/v11/constants.h
+  schema/v11/schema.h
+  schema/v11/types.h
+  schema/v11/util.h
+  schema/v12/constants.h
+  schema/v12/expbin.h
+  schema/v12/linbin.h
+  schema/v12/schema.h
+  schema/v12/types.h
+  schema/v12/util.h
+
 
   MMAI.h
   StdInc.h
@@ -134,7 +256,7 @@ be used for training). More details in vcmi-gym's `requirements.txt`.
 message(STATUS "MMAI_LIBTORCH_PATH: ${MMAI_LIBTORCH_PATH}")
 
 set(MMAI_LIBS vcmi)
-set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/schema/gcem)
 
 if(MMAI_LIBTORCH_PATH)
   add_definitions(-DUSING_LIBTORCH=1)
@@ -211,7 +333,7 @@ else()
   install_torch_libs(torch torch_cpu c10)
 endif()
 
-target_link_libraries(MMAI ${MMAI_LIBS})
+target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})
 

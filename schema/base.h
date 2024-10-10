@@ -63,9 +63,9 @@ namespace MMAI::Schema {
 
     class IState {
     public:
-        virtual const ActionMask& getActionMask() const = 0;
-        virtual const AttentionMask& getAttentionMask() const = 0;
-        virtual const BattlefieldState& getBattlefieldState() const = 0;
+        virtual const ActionMask* getActionMask() const = 0;
+        virtual const AttentionMask* getAttentionMask() const = 0;
+        virtual const BattlefieldState* getBattlefieldState() const = 0;
 
         // Supplementary data may differ across versions => expose it as std::any
         // XXX: ensure the real data type has MMAI_DLL_LINKAGE to prevent std::any_cast errors

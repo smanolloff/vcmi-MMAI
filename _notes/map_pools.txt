@@ -1,0 +1,19 @@
+To extract pools:
+
+    $ unzip -p 8x512.vmap objects.json | yq | grep -Eo "pool_[a-z0-9]+" | sort -u
+
+============ Pools for gym/generated/4096/4x1024.vmap
+* 10k
+* 50k
+* 150k
+* 500k
+
+============ Pools for gym/generated/evaluation/8x512.vmap
+* 5k
+* 25k
+* 50k
+* 100k
+* 200k
+* 400k
+* 800k
+* 1600k

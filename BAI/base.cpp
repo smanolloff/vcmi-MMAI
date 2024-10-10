@@ -14,16 +14,17 @@
 // limitations under the License.
 // =============================================================================
 
-#include "StdInc.h"
-
 #include "networkPacks/PacksForClientBattle.h"
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
 
-#include "BAI/v1/BAI.h"
-#include "BAI/v2/BAI.h"
 #include "BAI/v3/BAI.h"
-#include "BAI/v4/BAI.h"
+#include "BAI/v8/BAI.h"
+#include "BAI/v9/BAI.h"
+#include "BAI/v10/BAI.h"
+#include "BAI/v11/BAI.h"
+#include "BAI/v12/BAI.h"
+#include "BAI/v13/BAI.h"
 #include "base.h"
 
 namespace MMAI::BAI {
@@ -37,14 +38,20 @@ namespace MMAI::BAI {
         auto version = model->getVersion();
 
         switch (version) {
-        break; case 1:
-            res = std::make_shared<V1::BAI>(model, version, env, cb);
-        break; case 2:
-            res = std::make_shared<V2::BAI>(model, version, env, cb);
         break; case 3:
             res = std::make_shared<V3::BAI>(model, version, env, cb);
-        break; case 4:
-            res = std::make_shared<V4::BAI>(model, version, env, cb);
+        break; case 8:
+            res = std::make_shared<V8::BAI>(model, version, env, cb);
+        break; case 9:
+            res = std::make_shared<V9::BAI>(model, version, env, cb);
+        break; case 10:
+            res = std::make_shared<V10::BAI>(model, version, env, cb);
+        break; case 11:
+            res = std::make_shared<V11::BAI>(model, version, env, cb);
+        break; case 12:
+            res = std::make_shared<V12::BAI>(model, version, env, cb);
+        break; case 13:
+            res = std::make_shared<V13::BAI>(model, version, env, cb);
         break; default:
             throw std::runtime_error("Unsupported schema version: " + std::to_string(version));
         }
@@ -68,7 +75,9 @@ namespace MMAI::BAI {
         std::ostringstream oss;
         oss << this; // Store this memory address
         addrstr = oss.str();
-        info("+++ constructor +++");
+
+        const char* envvar = std::getenv("MMAI_VERBOSE");
+        verbose = envvar != nullptr && strcmp(envvar, "1") == 0;
     }
 
     /*
@@ -121,15 +130,15 @@ namespace MMAI::BAI {
 
     void Base::battleLogMessage(const BattleID &bid, const std::vector<MetaString> &lines) {
         debug("*** battleLogMessage ***");
-        trace([&](){
+        if (verbose) {
             std::string res = "Messages:";
             for(const auto & line : lines) {
                 std::string formatted = line.toString();
                 boost::algorithm::trim(formatted);
                 res = res + "\n\t* " + formatted;
             }
-            return res;
-        });
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
+        }
     }
 
     void Base::battleNewRound(const BattleID &bid) {
@@ -146,37 +155,37 @@ namespace MMAI::BAI {
 
     void Base::battleSpellCast(const BattleID &bid, const BattleSpellCast *sc) {
         debug("*** battleSpellCast ***");
-        trace([&](){
+        if (verbose) {
             std::string res = "Spellcast info:";
             auto battle = cb->getBattle(bid);
-            auto caster = battle->battleGetStackByID(sc->casterStack);
+            auto caster = battle->battleGetStackByID(sc->casterStack, false);
 
             res += "\n\t* spell: " + sc->spellID.toSpell()->identifier;
             res += "\n\t* castByHero=" + std::to_string(sc->castByHero);
             res += "\n\t* casterStack=" + (caster ? caster->getDescription() : "");
             res += "\n\t* activeCast=" + std::to_string(sc->activeCast);
             res += "\n\t* side=" + std::to_string(EI(sc->side));
-            res += "\n\t* tile=" + std::to_string(sc->tile);
+            res += "\n\t* tile=" + std::to_string(sc->tile.toInt());
 
             res += "\n\t* affected:";
             for (auto &cid : sc->affectedCres)
-                res += "\n\t  > " + battle->battleGetStackByID(cid)->getDescription();
+                res += "\n\t  > " + battle->battleGetStackByID(cid, false)->getDescription();
 
             res += "\n\t* resisted:";
             for (auto &cid : sc->resistedCres)
-                res += "\n\t  > " + battle->battleGetStackByID(cid)->getDescription();
+                res += "\n\t  > " + battle->battleGetStackByID(cid, false)->getDescription();
 
             res += "\n\t* reflected:";
             for (auto &cid : sc->reflectedCres)
-                res += "\n\t  > " + battle->battleGetStackByID(cid)->getDescription();
+                res += "\n\t  > " + battle->battleGetStackByID(cid, false)->getDescription();
 
-            return res;
-        });
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
+        }
     }
 
-    void Base::battleStackMoved(const BattleID &bid, const CStack * stack, std::vector<BattleHex> dest, int distance, bool teleport) {
+    void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport) {
         debug("*** battleStackMoved ***");
-        trace([&](){
+        if (verbose) {
             auto battle = cb->getBattle(bid);
             std::string fmt = "Movement info:";
 
@@ -186,19 +195,20 @@ namespace MMAI::BAI {
             fmt += "\n\t* distance=%d";
             fmt += "\n\t* teleport=%d";
 
-            auto bh0 = dest.at(0);
-            auto hexid0 = V1::Hex::CalcId(dest.at(0));
-            auto [x0, y0] = V1::Hex::CalcXY(dest.at(0));
+            auto bh0 = dest.at(dest.size() - 1);
+            auto hexid0 = bh0.getX()-1 + bh0.getY()*BF_XMAX;
+            auto x0 = bh0.getX() - 1;
+            auto y0 = bh0.getY();
 
             auto res = boost::format(fmt)
                 % stack->getDescription()
                 % stack->getOwner().toString()
-                % bh0.hex % hexid0 % y0 % x0
+                % bh0 % hexid0 % y0 % x0
                 % distance
                 % teleport;
 
-            return boost::str(res);
-        });
+            std::cout << "MMAI_VERBOSE: " << boost::str(res) << "\n";
+        }
     }
 
     void Base::battleStacksAttacked(const BattleID &bid, const std::vector<BattleStackAttacked> &bsa, bool ranged) {
@@ -207,16 +217,16 @@ namespace MMAI::BAI {
 
     void Base::battleStacksEffectsSet(const BattleID &bid, const SetStackEffect & sse) {
         debug("*** battleStacksEffectsSet ***");
-        trace([&](){
+        if (verbose) {
             auto battle = cb->getBattle(bid);
 
-            std::string res = "Effects:";
+            std::string res = "Effects set:";
 
             for (auto &[unitid, bonuses] : sse.toAdd) {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
                 for (auto &bonus : bonuses) {
-                    res += "\n\t  > add bonus=" + bonus.Description();
+                    res += "\n\t  > add bonus=" + bonus.description.toString();
                 }
             }
 
@@ -224,7 +234,7 @@ namespace MMAI::BAI {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
                 for (auto &bonus : bonuses) {
-                    res += "\n\t  > remove bonus=" + bonus.Description();
+                    res += "\n\t  > remove bonus=" + bonus.description.toString();
                 }
             }
 
@@ -232,12 +242,12 @@ namespace MMAI::BAI {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
                 for (auto &bonus : bonuses) {
-                    res += "\n\t  > update bonus=" + bonus.Description();
+                    res += "\n\t  > update bonus=" + bonus.description.toString();
                 }
             }
 
-            return res;
-        });
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
+        };
     }
 
     void Base::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
@@ -248,26 +258,26 @@ namespace MMAI::BAI {
     //      negative morale just skips turn
     void Base::battleTriggerEffect(const BattleID &bid, const BattleTriggerEffect & bte) {
         debug("*** battleTriggerEffect ***");
-        trace([&](){
+        if (verbose) {
             auto battle = cb->getBattle(bid);
             auto cstack = battle->battleGetStackByID(bte.stackID);
-            std::string res = "Effect:";
+            std::string res = "Effect triggered:";
             res += "\n\t* bonus id=" + std::to_string(bte.effect);
             res += "\n\t* bonus value=" + std::to_string(bte.val);
             res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
-            return res;
-        });
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
+        }
     }
 
     void Base::battleUnitsChanged(const BattleID &bid, const std::vector<UnitChanges> &changes) {
         debug("*** battleUnitsChanged ***");
-        trace([&](){
+        if (verbose) {
             std::string res = "Changes:";
             for(const auto & change : changes) {
                 res += "\n\t* operation=" + std::to_string(EI(change.operation));
                 res += "\n\t* healthDelta=" + std::to_string(change.healthDelta);
             }
-            return res;
-        });
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
+        }
     }
 }
