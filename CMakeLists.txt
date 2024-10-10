@@ -1,8 +1,13 @@
 set(MMAI_FILES
+  AAI/AAI.cpp
+  AAI/AAI.h
+
   BAI/base.cpp
   BAI/base.h
   BAI/router.cpp
   BAI/router.h
+  BAI/scripted/summoner.cpp
+  BAI/scripted/summoner.h
   BAI/model/ScriptedModel.h
   BAI/model/ScriptedModel.cpp
   BAI/model/TorchModel.h

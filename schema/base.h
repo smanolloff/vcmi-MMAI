@@ -16,9 +16,14 @@
 
 #pragma once
 
+#include <boost/core/demangle.hpp>
+#include <boost/format.hpp>
+
 #include <any>
+#include <functional>
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 // Import + Export macro declarations
 
@@ -47,6 +52,8 @@
 #else
 #  define MMAI_DLL_LINKAGE MMAI_IMPORT
 #endif
+
+#define MMAI_RESERVED_NAME_SUMMONER "MMAI_SCRIPT_SUMMONER"
 
 namespace MMAI::Schema {
     #define EI(enum_value) static_cast<int>(enum_value)
@@ -78,6 +85,8 @@ namespace MMAI::Schema {
     enum class ModelType : int {
         SCRIPTED,       // e.g. BattleAI, StupidAI
         TORCH,          // pre-trained Torch JIT models stored in a file
+        USER,           // user-provided model, e.g. vcmi-gym trainable
+        TORCH_PATH,     // similar to TORCH, but the model is not loaded
         _count
     };
 
@@ -91,4 +100,31 @@ namespace MMAI::Schema {
 
         virtual ~IModel() = default;
     };
+
+    // The Baggage struct is converted to a std::any object, which allows to
+    // seamlessly transport MMAI-specific data through VCMI without polluting
+    // the VCMI codebase.
+    // Linkage needed due to ensure the MMAI constructor sees the proper
+    // symbol when converting the std::any object back to a Baggage struct.
+    //
+    // Baggage is used during ML training only, where functions from vcmi-gym
+    // are abstracted behind an IModel object and thus injected into VCMI.
+    struct MMAI_DLL_LINKAGE Baggage {
+        IModel* modelLeft;
+        IModel* modelRight;
+    };
+
+    inline std::string AnyCastError(const std::any any, const std::type_info &t) {
+        if (!any.has_value()) {
+            return "no value";
+        } else if (any.type() != t) {
+            return boost::str(
+                boost::format("type mismatch: want: %s/%u, have: %s/%u") \
+                % boost::core::demangle(t.name()) % t.hash_code() \
+                % boost::core::demangle(any.type().name()) % any.type().hash_code()
+            );
+        } else {
+            return "";
+        }
+    }
 }
