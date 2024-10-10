@@ -239,6 +239,15 @@ namespace MMAI::BAI {
 
     void Base::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         debug("*** battleStart ***");
+
+#ifdef ENABLE_ML
+        // XXX: hero->tempOwner is changed server-side to enable army swaps
+        // => update it client-side as well (left and right must both do this)
+        // This prevents issues like battle->playerToSide() returning the wrong side
+        auto hero = dynamic_cast<const CGHeroInstance*>(side == BattleSide::DEFENDER ? army2 : army1);
+        if(!hero) THROW_FORMAT("could not obtain army hero for side %d", EI(side));
+        const_cast<CGHeroInstance*>(hero)->tempOwner = PlayerColor(EI(side));
+#endif
     }
 
     // XXX: positive morale triggers an effect

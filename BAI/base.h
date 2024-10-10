@@ -15,6 +15,7 @@
 // =============================================================================
 #pragma once
 
+#include "battle/AICombatOptions.h"
 #include "battle/CPlayerBattleCallback.h"
 #include "callback/CBattleGameInterface.h"
 #include "callback/CBattleCallback.h"
@@ -78,8 +79,7 @@ namespace MMAI::BAI {
          * Their base implementation throws a runtime error
          * (whistleblower for developer mistakes)
          */
-        virtual void initBattleInterface(std::shared_ptr<Environment> _1, std::shared_ptr<CBattleCallback> _2) override { throw std::runtime_error("BAI (base class) received initBattleInterface call"); }
-        virtual void initBattleInterface(std::shared_ptr<Environment> _1, std::shared_ptr<CBattleCallback> _2, AutocombatPreferences _3) override { throw std::runtime_error("BAI (base class) received initBattleInterface call"); }
+        virtual void initBattleInterface(std::shared_ptr<Environment> _1, std::shared_ptr<CBattleCallback> _2, AICombatOptions _3) override { throw std::runtime_error("BAI (base class) received initBattleInterface call"); }
 
         const int version;
         const std::string name = "BAI"; // used in logging
