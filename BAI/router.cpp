@@ -114,6 +114,7 @@ namespace MMAI::BAI {
 
     Router::~Router() {
         info("--- destructor ---");
+        cb->waitTillRealize = wasWaitingForRealize;
     }
 
     void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB) {
@@ -121,6 +122,9 @@ namespace MMAI::BAI {
         env = ENV;
         cb = CB;
         colorname = cb->getPlayerID()->toString();
+        wasWaitingForRealize = cb->waitTillRealize;
+
+        cb->waitTillRealize = false;
         bai.reset();
     }
 

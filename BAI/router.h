@@ -63,6 +63,7 @@ namespace MMAI::BAI {
         void yourTacticPhase(const BattleID &bid, int distance) override;
 
     private:
+        bool wasWaitingForRealize = false;
         std::string addrstr = "?";
         std::string colorname = "?";
 
