@@ -630,6 +630,8 @@ namespace MMAI::BAI::V4 {
                         expect(v == x, "STACK.X_COORD: %d != %d", v, x);
                     break; case SA::SIDE:
                         ensureStackValueMatch(a, v, EI(cstack->unitSide()), "STACK.SIDE");
+                    break; case SA::CREATURE_ID:
+                        ensureStackValueMatch(a, v, cstack->unitType()->getId(), "STACK.SIDE");
                     break; case SA::QUANTITY:
                         ensureStackValueMatch(a, v, std::round(STACK_QTY_MAX * std::tanh(float(cstack->getCount()) / STACK_QTY_MAX)), "STACK.AI_VALUE");
                     break; case SA::ATTACK:
