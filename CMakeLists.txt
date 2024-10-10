@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.24)
 
 set(MMAI_FILES
+  AAI/AAI.cpp
+  AAI/AAI.h
+
   BAI/base.cpp
   BAI/base.h
   BAI/router.cpp
   BAI/router.h
   BAI/model/ScriptedModel.h
   BAI/model/ScriptedModel.cpp
-  # BAI/model/TorchModel.h
-  # BAI/model/TorchModel.cpp       # optionally added later
-  # BAI/model/TorchModelDummy.cpp  # optionally added later
 
   BAI/v12/BAI.cpp
   BAI/v12/BAI.h

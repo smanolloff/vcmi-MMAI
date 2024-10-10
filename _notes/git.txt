@@ -1,0 +1,19 @@
+
+Two branches for AI/MMAI:
+
+    main
+    main-ml
+
+main-ml always rebases main.
+Non-ML fixes (ie. those that need to go in both) must be ported to main.
+
+Usually, such fixes are first made in main-ml, in which case the flow is:
+    # ... Fix & commit in main-ml...
+
+    $ git h             # note fix commit hash:
+    $ git co main
+    $ git cherry-pick <commit-hash>
+    $ git co main-ml
+    $ git rebase main
+
+

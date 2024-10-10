@@ -31,6 +31,10 @@ extern "C" DLL_EXPORT void GetAiName(char * name) {
     strcpy_s(name, strlen(g_cszAiName) + 1, g_cszAiName);
 }
 
+extern "C" DLL_EXPORT void GetNewAI(std::shared_ptr<CGlobalAI> & out) {
+    out = std::make_shared<MMAI::AAI::AAI>();
+}
+
 extern "C" DLL_EXPORT void GetNewBattleAI(std::shared_ptr<CBattleGameInterface> &out) {
     out = std::make_shared<MMAI::BAI::Router>();
 }

@@ -40,6 +40,7 @@ using ScalarType = executorch::runtime::etensor::ScalarType;
 
 class TorchModel : public MMAI::Schema::IModel {
 public:
+    // XXX: this needs to be fixed to accept temperature + seed (see LT model)...
     explicit TorchModel(std::string &path);
 
     Schema::ModelType getType() override;
