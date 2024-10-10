@@ -118,6 +118,7 @@ namespace MMAI::Schema::V4 {
     constexpr int STACK_QTY_MAX = 1500;
     constexpr int STACK_VALUE_MAX = 40000;  // archangel 9K, crystal dragon 39K, azure dragon 79K
     constexpr int ARMY_VALUE_MAX = 1000000;
+    constexpr int CREATURE_ID_MAX = 149;  // H3 core has creature IDs 0..149
 
     constexpr int MAX_STACKS_PER_SIDE = std::tuple_size<Stacks::value_type>::value;
     constexpr int MAX_STACKS = 2 * MAX_STACKS_PER_SIDE;
@@ -142,6 +143,7 @@ namespace MMAI::Schema::V4 {
         E4(SA::Y_COORD,                   CE, 10),
         E4(SA::X_COORD,                   CE, 14),
         E4(SA::SIDE,                      CE, 1),        // 0=attacker, 1=defender
+        E4(SA::CREATURE_ID,               CE, CREATURE_ID_MAX),
         E4(SA::QUANTITY,                  NE, STACK_QTY_MAX),
         E4(SA::ATTACK,                    NE, 80),
         E4(SA::DEFENSE,                   NE, 80),       // azure dragon is 60 when defending

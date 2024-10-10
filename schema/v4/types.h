@@ -267,6 +267,7 @@ namespace MMAI::Schema::V4 {
         Y_COORD,
         X_COORD,
         SIDE,
+        CREATURE_ID,
         QUANTITY,
         ATTACK,
         DEFENSE,
