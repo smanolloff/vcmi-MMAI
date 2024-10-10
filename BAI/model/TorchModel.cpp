@@ -128,10 +128,13 @@ namespace MMAI::BAI {
         logAi->debug("AI action prediction: %d\n", int(res));
 
         // Also esitmate value
+        // XXX: this value is useless (seems pretty random)
+        /*
         auto vmethod = tjc->module.get_method("get_value");
         auto vinputs = std::vector<c10::IValue>{obs};
         auto vres = vmethod(vinputs).toDouble();
         logAi->debug("AI value estimation: %f\n", vres);
+        */
 
         return MMAI::Schema::Action(res);
     };
