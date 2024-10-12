@@ -37,9 +37,11 @@ namespace MMAI::BAI {
             break; case 1:
                 sizeOneHex = MMAI::Schema::V1::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V1::N_ACTIONS;
+                actionOffset = 1;
             break; case 2:
                 sizeOneHex = MMAI::Schema::V2::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V1::N_ACTIONS;
+                actionOffset = 1;
             break; case 3:
                 sizeOneHex = MMAI::Schema::V3::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V3::N_ACTIONS;
@@ -53,6 +55,7 @@ namespace MMAI::BAI {
         // XXX: jit::mobile::Module has no toModule() attribute
         //      Maybe a call to .predict() with a dummy observation would work
         //
+
         // auto out_features = tjc->module.attr("actor", c10::IValue("method_not_found:actor")).toModule().attr("out_features").toInt();
         // switch(out_features) {
         // break; case 2311: actionOffset = 1;

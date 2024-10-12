@@ -30,12 +30,15 @@ namespace MMAI::BAI::V2 {
             return;
         }
 
-        if (v > vmax)
-            THROW_FORMAT("Cannot encode value: %d (vmax=%d, a=%d, n=%d)", v % vmax % EI(a) % n);
+        int v_ = v;
+        if (v > vmax) {
+            // THROW_FORMAT("Cannot encode value: %d (vmax=%d, a=%d, n=%d)", v % vmax % EI(a) % n);
+            v_ = vmax;
+        }
 
         if (e != Schema::V1::Encoding::FLOATING)
             throw std::runtime_error("V2 encodes all values as floats");
 
-        EncodeFloating(v, vmax, vec);
+        EncodeFloating(v_, vmax, vec);
     }
 }
