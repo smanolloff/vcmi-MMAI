@@ -16,6 +16,7 @@
 
 #include "StdInc.h"
 
+#include "TerrainHandler.h"
 #include "battle/AccessibilityInfo.h"
 #include "battle/CObstacleInstance.h"
 #include "bonuses/Bonus.h"
@@ -35,6 +36,7 @@
 
 #include "./render.h"
 #include "./hex.h"
+#include <stdexcept>
 
 namespace MMAI::BAI::V4 {
     std::string PadLeft(const std::string& input, size_t desiredLength, char paddingChar) {
@@ -379,11 +381,25 @@ namespace MMAI::BAI::V4 {
                         if (aa == EAccessibility::OBSTACLE || aa == EAccessibility::ALIVE_STACK)
                             break;
 
-                        if (battle->battleGetFortifications().wallsHealth == 0)
-                            throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is neither OBSTACLE nor ALIVE_STACK (no walls)");
-
-                        expect(aa == EAccessibility::DESTRUCTIBLE_WALL || aa == EAccessibility::GATE || aa == EAccessibility::UNAVAILABLE,
-                            "HEX.STATE_MASK: PASSABLE bit not set (siege), but accessibility is %d", EI(aa));
+                        switch (aa) {
+                        break; case EAccessibility::ACCESSIBLE:
+                            throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is ACCESSIBLE");
+                        break; case EAccessibility::ALIVE_STACK:
+                        break; case EAccessibility::OBSTACLE:
+                        break; case EAccessibility::DESTRUCTIBLE_WALL:
+                        break; case EAccessibility::GATE:
+                        break; case EAccessibility::UNAVAILABLE:
+                            // only Fort and Boat battles can have unavailable hexes
+                            expect(
+                                battle->battleGetFortifications().wallsHealth > 0 || battle->battleTerrainType() == TerrainId::WATER,
+                                "Found UNAVAILABLE accessibility on non-fort, non-boat battlefield: tertype=%d", EI(battle->battleTerrainType())
+                            );
+                        break; case EAccessibility::SIDE_COLUMN:
+                            // side hexes should are not included in the observation
+                            throw std::runtime_error("HEX.STATE_MASK: SIDE_COLUMN accessibility found");
+                        break; default:
+                            throw std::runtime_error("Unexpected accessibility: " + std::to_string(EI(aa)));
+                        }
                     }
 
                     if (mask.test(EI(HexState::STOPPING))) {
