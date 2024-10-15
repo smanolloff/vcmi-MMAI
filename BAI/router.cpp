@@ -90,6 +90,8 @@ namespace MMAI::BAI {
             throw;
             #endif
 
+            // TODO: how to log a message in user interface?
+
             auto it2 = modelconfig.find("fallback");
             if (it2 == modelconfig.end() || it2->second.empty()) {
                 logAi->error("Fallback model not configured, throwing...");
