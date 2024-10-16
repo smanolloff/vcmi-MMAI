@@ -22,6 +22,13 @@
 
 #include "schema/schema.h"
 
+// Hack preventing compiler error on Ubuntu about
+// the schema/v4/types.h through schema/schema.h
+// For some reason, schema/v4/types it *not* included even
+//  an explicit #include for it is added here.
+// However, including "schema/v4/constants.h" does the trick?!
+#include "schema/v4/constants.h"
+
 // Hack preventing MSVC LNK2005 error for multiply defined std::vector::~vector symbols
 // My guess is that CAddInfo causes this by publicly inheriting std::vector
 #include "lib/bonuses/Bonus.h"
