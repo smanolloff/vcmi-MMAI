@@ -41,7 +41,7 @@ namespace MMAI::BAI::V1 {
 
         expect(battle, "no battle nothing to verify");
 
-        const CStack* astack; // XXX: can remain nullptr (for terminal obs)
+        const CStack* astack = nullptr; // XXX: can remain nullptr (for terminal obs)
 
         auto l_CStacks = std::array<const CStack*, 7>{};
         auto r_CStacks = std::array<const CStack*, 7>{};
