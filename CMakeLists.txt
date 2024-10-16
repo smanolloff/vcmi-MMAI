@@ -191,7 +191,7 @@ function(install_torch_libs)
     endif()
 
     message("Found ${libname}: ${libpath}")
-    install(FILES ${libpath} DESTINATION ${BIN_DIR})
+    install(FILES ${libpath} DESTINATION ${LIB_DIR})
   endforeach()
 endfunction(install_torch_libs)
 
