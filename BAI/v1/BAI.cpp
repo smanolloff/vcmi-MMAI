@@ -15,15 +15,16 @@
 // =============================================================================
 
 #include "StdInc.h"
-#include "lib/AI_Base.h"
-#include "battle/BattleAction.h"
 
-#include "common.h"
-#include "schema/v1/types.h"
+#include "battle/BattleAction.h"
+#include "lib/AI_Base.h"
+
 #include "BAI/v1/BAI.h"
-#include "BAI/v1/supplementary_data.h"
 #include "BAI/v1/action.h"
 #include "BAI/v1/render.h"
+#include "BAI/v1/supplementary_data.h"
+#include "common.h"
+#include "schema/v1/types.h"
 
 namespace MMAI::BAI::V1 {
     Schema::Action BAI::getNonRenderAction() {

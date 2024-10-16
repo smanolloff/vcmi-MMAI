@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../base.h"
+#include "schema/base.h"
 
 namespace MMAI::Schema::V4 {
     enum class Encoding : int {

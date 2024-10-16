@@ -17,6 +17,7 @@
 #pragma once
 
 #include "battle/ReachabilityInfo.h"
+
 #include "schema/v1/types.h"
 
 namespace MMAI::BAI::V1 {

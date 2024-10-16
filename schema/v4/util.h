@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "./types.h"
+#include "schema/v4/types.h"
 
 namespace MMAI::Schema::V4 {
     /*

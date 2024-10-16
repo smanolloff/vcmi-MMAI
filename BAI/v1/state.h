@@ -18,12 +18,13 @@
 #include "battle/BattleHex.h"
 #include "battle/CBattleInfoEssentials.h"
 #include "battle/CPlayerBattleCallback.h"
+
+#include "BAI/v1/action.h"
+#include "BAI/v1/attack_log.h"
+#include "BAI/v1/battlefield.h"
+#include "BAI/v1/supplementary_data.h"
 #include "schema/base.h"
 #include "schema/v1/types.h"
-#include "BAI/v1/supplementary_data.h"
-#include "BAI/v1/battlefield.h"
-#include "BAI/v1/attack_log.h"
-#include "BAI/v1/action.h"
 
 namespace MMAI::BAI::V1 {
     using BS = Schema::BattlefieldState;

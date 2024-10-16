@@ -17,9 +17,9 @@
 #include <memory>
 #include <stdexcept>
 
+#include "TorchModel.h"
 #include "schema/base.h"
 #include "schema/schema.h"
-#include "TorchModel.h"
 
 /*
  * Dummy implementation of TorchModel:

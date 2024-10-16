@@ -15,11 +15,12 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/CBattleInfoEssentials.h"
 
-#include "./hex.h"
-#include "./action.h"
-#include "./hexaction.h"
+#include "BAI/v4/action.h"
+#include "BAI/v4/hex.h"
+#include "BAI/v4/hexaction.h"
 
 namespace MMAI::BAI::V4 {
     // static

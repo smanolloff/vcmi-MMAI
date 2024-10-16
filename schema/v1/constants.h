@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "../base.h"
-#include "types.h"
-#include "util.h"
+#include "schema/base.h"
+#include "schema/v1/types.h"
+#include "schema/v1/util.h"
 
 namespace MMAI::Schema::V1 {
     constexpr int N_NONHEX_ACTIONS = 2;

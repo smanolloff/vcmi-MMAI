@@ -15,11 +15,12 @@
 // =============================================================================
 #pragma once
 
-#include "BAI/v1/battlefield.h"
 #include "battle/BattleHex.h"
 #include "battle/CPlayerBattleCallback.h"
-#include "schema/v1/types.h"
+
 #include "BAI/v1/attack_log.h"
+#include "BAI/v1/battlefield.h"
+#include "schema/v1/types.h"
 
 namespace MMAI::BAI::V1 {
     class SupplementaryData : public Schema::V1::ISupplementaryData {

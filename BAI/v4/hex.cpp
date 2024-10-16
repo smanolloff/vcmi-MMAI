@@ -15,14 +15,14 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "spells/CSpellHandler.h"
 #include "vcmi/spells/Service.h"
 #include "vcmi/spells/Spell.h"
 
+#include "BAI/v4/hex.h"
+#include "BAI/v4/hexactmask.h"
 #include "schema/v4/constants.h"
-
-#include "./hex.h"
-#include "./hexactmask.h"
 
 namespace MMAI::BAI::V4 {
     using A = Schema::V4::HexAttribute;

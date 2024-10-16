@@ -19,8 +19,8 @@
 #include "CStack.h"
 #include "battle/BattleHex.h"
 
-#include "schema/v1/types.h"
 #include "BAI/v1/hexactmask.h"
+#include "schema/v1/types.h"
 
 namespace MMAI::BAI::V1 {
     constexpr int ATTR_UNSET = -1;

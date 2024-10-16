@@ -19,14 +19,15 @@
 #include "CStack.h"
 #include "battle/AccessibilityInfo.h"
 #include "battle/BattleHex.h"
-
 #include "battle/CBattleInfoEssentials.h"
 #include "battle/CObstacleInstance.h"
 #include "battle/ReachabilityInfo.h"
 #include "constants/Enumerations.h"
+
+#include "BAI/v4/hexactmask.h"
+#include "BAI/v4/stack.h"
 #include "schema/v4/types.h"
-#include "./hexactmask.h"
-#include "./stack.h"
+
 #include <memory>
 
 namespace MMAI::BAI::V4 {

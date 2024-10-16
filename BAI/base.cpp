@@ -20,11 +20,11 @@
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
 
+#include "BAI/v1/BAI.h"
+#include "BAI/v2/BAI.h"
+#include "BAI/v3/BAI.h"
+#include "BAI/v4/BAI.h"
 #include "base.h"
-#include "v1/BAI.h"
-#include "v2/BAI.h"
-#include "v3/BAI.h"
-#include "v4/BAI.h"
 
 namespace MMAI::BAI {
     // static

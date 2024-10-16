@@ -17,8 +17,9 @@
 #pragma once
 
 #include "lib/AI_Base.h"
+
+#include "BAI/v3/stack.h"
 #include "schema/v3/types.h"
-#include "./stack.h"
 
 namespace MMAI::BAI::V3 {
     class AttackLog : public Schema::V3::IAttackLog {

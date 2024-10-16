@@ -20,9 +20,9 @@
 #include "schema/v4/types.h"
 #include "schema/v4/util.h"
 
+#include "BAI/v4/encoder.h"
+#include "BAI/v4/hex.h"
 #include "common.h"
-#include "./hex.h"
-#include "./encoder.h"
 
 namespace MMAI::BAI::V4 {
     using namespace Schema::V4;

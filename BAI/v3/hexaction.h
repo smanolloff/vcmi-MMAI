@@ -17,9 +17,10 @@
 #pragma once
 
 #include "battle/BattleHex.h"
+
 #include "common.h"
-#include "schema/v3/types.h"
 #include "schema/v3/constants.h"
+#include "schema/v3/types.h"
 
 // There is a cyclic dependency if those are placed in action.h:
 // action.h -> battlefield.h -> hex.h -> actmask.h -> action.h

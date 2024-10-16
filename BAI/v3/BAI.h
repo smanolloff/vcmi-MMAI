@@ -19,10 +19,10 @@
 #include "lib/AI_Base.h"
 
 #include "BAI/base.h"
-#include "./battlefield.h"
-#include "./attack_log.h"
-#include "./action.h"
-#include "./state.h"
+#include "BAI/v3/action.h"
+#include "BAI/v3/attack_log.h"
+#include "BAI/v3/battlefield.h"
+#include "BAI/v3/state.h"
 
 namespace MMAI::BAI::V3 {
     class BAI : public Base {

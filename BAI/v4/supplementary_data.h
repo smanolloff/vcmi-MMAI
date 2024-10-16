@@ -15,12 +15,13 @@
 // =============================================================================
 #pragma once
 
-#include "./battlefield.h"
 #include "battle/BattleHex.h"
 #include "battle/CPlayerBattleCallback.h"
+
+#include "BAI/v4/attack_log.h"
+#include "BAI/v4/battlefield.h"
+#include "BAI/v4/util.h"
 #include "schema/v4/types.h"
-#include "./attack_log.h"
-#include "./util.h"
 
 namespace MMAI::BAI::V4 {
     class Misc : public Schema::V4::IMisc {

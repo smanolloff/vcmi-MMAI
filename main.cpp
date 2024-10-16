@@ -16,6 +16,7 @@
 
 #include "StdInc.h"
 #include "../../lib/AI_Base.h"
+
 #include "MMAI.h"
 
 #ifdef __GNUC__

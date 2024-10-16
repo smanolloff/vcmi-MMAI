@@ -17,6 +17,7 @@
 #pragma once
 
 #include "battle/BattleHex.h"
+
 #include "common.h"
 #include "schema/v1/types.h"
 #include "schema/v1/constants.h"

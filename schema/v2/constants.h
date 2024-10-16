@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "../base.h"
-#include "../v1/types.h"
-#include "../v1/constants.h"
-#include "../v1/util.h"
+#include "schema/base.h"
+#include "schema/v1/types.h"
+#include "schema/v1/constants.h"
+#include "schema/v1/util.h"
 
 namespace MMAI::Schema::V2 {
     using A = V1::HexAttribute;

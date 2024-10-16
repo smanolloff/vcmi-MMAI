@@ -21,12 +21,11 @@
 #include "constants/EntityIdentifiers.h"
 #include "spells/CSpellHandler.h"
 
+#include "BAI/v4/hex.h"
+#include "BAI/v4/stack.h"
+#include "BAI/v4/util.h"
 #include "schema/v4/constants.h"
 #include "schema/v4/types.h"
-
-#include "./stack.h"
-#include "./hex.h"
-#include "./util.h"
 
 namespace MMAI::BAI::V4 {
     using A = Schema::V4::StackAttribute;

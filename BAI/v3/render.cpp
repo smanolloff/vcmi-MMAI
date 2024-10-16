@@ -15,6 +15,7 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/AccessibilityInfo.h"
 #include "battle/CObstacleInstance.h"
 #include "bonuses/Bonus.h"
@@ -29,11 +30,10 @@
 #include "spells/CSpellHandler.h"
 #include "vcmi/spells/Caster.h"
 
+#include "BAI/v3/hex.h"
+#include "BAI/v3/render.h"
 #include "schema/v3/constants.h"
 #include "schema/v3/types.h"
-
-#include "./render.h"
-#include "./hex.h"
 
 namespace MMAI::BAI::V3 {
     std::string PadLeft(const std::string& input, size_t desiredLength, char paddingChar) {

@@ -15,19 +15,19 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"
 #include "lib/AI_Base.h"
 
+#include "BAI/v4/BAI.h"
+#include "BAI/v4/action.h"
+#include "BAI/v4/hexaction.h"
+#include "BAI/v4/render.h"
+#include "BAI/v4/supplementary_data.h"
 #include "common.h"
 #include "schema/v4/constants.h"
 #include "schema/v4/types.h"
-
-#include "./BAI.h"
-#include "./action.h"
-#include "./hexaction.h"
-#include "./render.h"
-#include "./supplementary_data.h"
 
 namespace MMAI::BAI::V4 {
     Schema::Action BAI::getNonRenderAction() {

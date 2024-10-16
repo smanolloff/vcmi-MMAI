@@ -15,9 +15,10 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "CStack.h"
 
-#include "./general_info.h"
+#include "BAI/v4/general_info.h"
 
 namespace MMAI::BAI::V4 {
     // static

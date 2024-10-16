@@ -31,11 +31,11 @@
 #include "spells/CSpellHandler.h"
 #include "vcmi/spells/Caster.h"
 
+#include "BAI/v4/hex.h"
+#include "BAI/v4/render.h"
 #include "schema/v4/constants.h"
 #include "schema/v4/types.h"
 
-#include "./render.h"
-#include "./hex.h"
 #include <stdexcept>
 
 namespace MMAI::BAI::V4 {

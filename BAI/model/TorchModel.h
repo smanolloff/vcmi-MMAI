@@ -17,12 +17,13 @@
 #pragma once
 
 #include <mutex>
-#include "schema/base.h"
 
 #ifdef USING_LIBTORCH
 #include <torch/csrc/jit/mobile/import.h>
 #include <torch/csrc/jit/mobile/module.h>
 #endif
+
+#include "schema/base.h"
 
 namespace MMAI::BAI {
     class TorchModel : public MMAI::Schema::IModel {

@@ -16,8 +16,8 @@
 
 #include "StdInc.h"
 
-#include "schema/base.h"
 #include "ScriptedModel.h"
+#include "schema/base.h"
 
 namespace MMAI::BAI {
     const std::vector<std::string> FALLBACKS = {"StupidAI", "BattleAI"};

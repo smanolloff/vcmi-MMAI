@@ -15,9 +15,9 @@
 // =============================================================================
 #pragma once
 
+#include "BAI/v1/encoder.h"
 #include "schema/base.h"
 #include "schema/v1/types.h"
-#include "BAI/v1/encoder.h"
 
 namespace MMAI::BAI::V2 {
     using HexAttribute = Schema::V1::HexAttribute;

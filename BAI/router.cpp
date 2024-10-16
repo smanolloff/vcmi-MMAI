@@ -19,15 +19,14 @@
 #include "json/JsonUtils.h"
 #include "VCMIDirs.h"
 
-#include "schema/schema.h"
-
-#include "common.h"
 #include "AI/BattleAI/BattleAI.h"
 #include "AI/StupidAI/StupidAI.h"
-#include "BAI/model/TorchModel.h"
-#include "BAI/model/ScriptedModel.h"
-#include "BAI/router.h"
 #include "BAI/base.h"
+#include "BAI/model/ScriptedModel.h"
+#include "BAI/model/TorchModel.h"
+#include "BAI/router.h"
+#include "common.h"
+#include "schema/schema.h"
 
 namespace MMAI::BAI {
     using ConfigStorage = std::map<std::string, std::string>;

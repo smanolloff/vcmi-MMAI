@@ -16,14 +16,13 @@
 
 #include "StdInc.h"
 
-#include "common.h"
-#include "schema/base.h"
-#include "schema/v1/types.h"
-#include "schema/v1/constants.h"
+#include "BAI/v1/battlefield.h"
 #include "BAI/v1/hexaction.h"
 #include "BAI/v1/hexactmask.h"
-#include "BAI/v1/battlefield.h"
-
+#include "common.h"
+#include "schema/base.h"
+#include "schema/v1/constants.h"
+#include "schema/v1/types.h"
 
 namespace MMAI::BAI::V1 {
     using D = BattleHex::EDir;

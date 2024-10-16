@@ -16,10 +16,10 @@
 
 #include "StdInc.h"
 
-#include "TorchModel.h"
 #include <ATen/core/ivalue.h>
 #include <ATen/ops/from_blob.h>
 
+#include "TorchModel.h"
 #include "schema/schema.h"
 
 // Hack preventing compiler error on Ubuntu about
@@ -27,7 +27,7 @@
 // For some reason, schema/v4/types it *not* included even
 //  an explicit #include for it is added here.
 // However, including "schema/v4/constants.h" does the trick?!
-#include "schema/v4/constants.h"
+//#include "schema/v4/constants.h"
 
 // Hack preventing MSVC LNK2005 error for multiply defined std::vector::~vector symbols
 // My guess is that CAddInfo causes this by publicly inheriting std::vector

@@ -18,7 +18,8 @@
 
 #include "battle/CPlayerBattleCallback.h"
 #include "lib/AI_Base.h"
-#include "base.h"
+
+#include "BAI/base.h"
 
 namespace MMAI::BAI {
     class Router : public CBattleGameInterface {

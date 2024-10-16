@@ -19,9 +19,9 @@
 #include "lib/AI_Base.h"
 
 #include "BAI/base.h"
-#include "BAI/v1/battlefield.h"
-#include "BAI/v1/attack_log.h"
 #include "BAI/v1/action.h"
+#include "BAI/v1/attack_log.h"
+#include "BAI/v1/battlefield.h"
 #include "BAI/v1/state.h"
 
 namespace MMAI::BAI::V1 {

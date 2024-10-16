@@ -14,9 +14,9 @@
 // limitations under the License.
 // =============================================================================
 
-#include "schema/base.h"
 #include "BAI/v1/action.h"
 #include "BAI/v1/state.h"
+#include "schema/base.h"
 
 namespace MMAI::BAI::V1 {
     std::string Render(const Schema::IState* istate, const Action *action);

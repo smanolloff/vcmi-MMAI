@@ -16,5 +16,5 @@
 
 #pragma once
 
-#include "types.h"
-#include "constants.h"
+#include "schema/v1/types.h"
+#include "schema/v1/constants.h"

@@ -20,13 +20,12 @@
 #include "battle/IBattleState.h"
 #include "networkPacks/PacksForClientBattle.h"
 
+#include "BAI/v4/encoder.h"
+#include "BAI/v4/hexaction.h"
+#include "BAI/v4/state.h"
+#include "BAI/v4/supplementary_data.h"
 #include "schema/v4/constants.h"
 #include "schema/v4/types.h"
-
-#include "./state.h"
-#include "./encoder.h"
-#include "./hexaction.h"
-#include "./supplementary_data.h"
 
 #include <memory>
 

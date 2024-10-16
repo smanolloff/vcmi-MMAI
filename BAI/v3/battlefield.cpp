@@ -15,16 +15,15 @@
 // =============================================================================
 
 #include "StdInc.h"
+
 #include "battle/ReachabilityInfo.h"
 
+#include "BAI/v3/battlefield.h"
+#include "BAI/v3/hex.h"
 #include "common.h"
 #include "schema/base.h"
-#include "schema/v3/types.h"
 #include "schema/v3/constants.h"
-
-#include "./battlefield.h"
-#include "./hex.h"
-
+#include "schema/v3/types.h"
 
 namespace MMAI::BAI::V3 {
     using HA = HexAttribute;
