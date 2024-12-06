@@ -92,6 +92,30 @@ set(MMAI_FILES
   BAI/v4/util.cpp
   BAI/v4/util.h
 
+  BAI/v5/BAI.cpp
+  BAI/v5/BAI.h
+  BAI/v5/action.cpp
+  BAI/v5/action.h
+  BAI/v5/attack_log.h
+  BAI/v5/battlefield.cpp
+  BAI/v5/battlefield.h
+  BAI/v5/encoder.cpp
+  BAI/v5/encoder.h
+  BAI/v5/general_info.cpp
+  BAI/v5/general_info.h
+  BAI/v5/hex.cpp
+  BAI/v5/hex.h
+  BAI/v5/render.cpp
+  BAI/v5/render.h
+  BAI/v5/stack.cpp
+  BAI/v5/stack.h
+  BAI/v5/state.cpp
+  BAI/v5/state.h
+  BAI/v5/supplementary_data.cpp
+  BAI/v5/supplementary_data.h
+  BAI/v5/util.cpp
+  BAI/v5/util.h
+
   schema/schema.h
   schema/v1/constants.h
   schema/v1/schema.h
@@ -107,6 +131,10 @@ set(MMAI_FILES
   schema/v4/schema.h
   schema/v4/types.h
   schema/v4/util.h
+  schema/v5/constants.h
+  schema/v5/schema.h
+  schema/v5/types.h
+  schema/v5/util.h
 
   MMAI.h
   StdInc.h
