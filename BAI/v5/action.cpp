@@ -35,8 +35,10 @@ namespace MMAI::BAI::V5 {
         case PrimaryAction::RETREAT:
         case PrimaryAction::WAIT:
             return nullptr;
-        case PrimaryAction::MOVE:
+        case PrimaryAction::MOVE: {
+            // create a new unique_ptr with a copy of Hex
             return std::make_unique<Hex>(*bf->hexes->at(y).at(x));
+        }
         case PrimaryAction::ATTACK_0:
         case PrimaryAction::ATTACK_1:
         case PrimaryAction::ATTACK_2:
@@ -54,7 +56,6 @@ namespace MMAI::BAI::V5 {
             if (shooter && !blocked)
                 return nullptr;
 
-            // create a new unique_ptr with a copy of Hex
             return std::make_unique<Hex>(*bf->hexes->at(y).at(x));
         }
         default:

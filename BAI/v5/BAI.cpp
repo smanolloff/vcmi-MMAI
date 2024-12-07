@@ -219,7 +219,23 @@ namespace MMAI::BAI::V5 {
         std::shared_ptr<BattleAction> res = nullptr;
 
         ASSERT(action, "action is nullptr");
-        ASSERT(state->actmask.at(EI(action->primaryAction)), "Not allowed by mask: " + action->name());
+
+        auto pa = action->primaryAction;
+        if (!state->actmask.at(EI(pa))) {
+            // XXX: A shooter attempting to melee results in a confusing message:
+            //      "Shoot at #0: PrimaryAction 3 not allowed by mask"
+            //      This is because ATTACK_0 is interpreted as a ranged attack
+            error(action->name() + ": PrimaryAction " + std::to_string(EI(pa)) + " not allowed by mask");
+            state->supdata->errcode = ErrorCode::INVALID;
+            return nullptr;
+        }
+
+        auto ama = Hex::PrimaryToAMoveAction(action->primaryAction);
+        if (action->hex && !(action->hex->amovemask.test(EI(ama)))) {
+            error(action->name() + ": AMoveAction " + std::to_string(EI(ama)) + " not allowed by mask");
+            state->supdata->errcode = ErrorCode::INVALID;
+            return nullptr;
+        }
 
         switch(action->primaryAction) {
         case PrimaryAction::RETREAT:

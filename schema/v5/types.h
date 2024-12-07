@@ -333,18 +333,8 @@ namespace MMAI::Schema::V5 {
 
     enum class ErrorCode : int {
         OK,
-        ALREADY_WAITED,
-        MOVE_SELF,
-        HEX_UNAVAILABLE,
-        HEX_UNREACHABLE,
-        HEX_BLOCKED,
-        HEX_MELEE_NA,
-        STACK_NA,
-        STACK_DEAD,
-        STACK_INVALID,
-        CANNOT_SHOOT,
-        FRIENDLY_FIRE,
-        INVALID_DIR,
+        INVALID,
+        _count
     };
 
     class IMisc {
