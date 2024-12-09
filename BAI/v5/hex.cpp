@@ -234,7 +234,8 @@ namespace MMAI::BAI::V5 {
         //      returns true even if speed is insufficient => use distances.
         // NOTE: distances is 0 for the stack's main hex and 1 for its rear hex
         //       (100000 if it can't fit there)
-        if (astackinfo->rinfo->distances.at(bhex) <= astack->attr(SA::SPEED)) {
+        if (
+            astackinfo->rinfo->distances.at(bhex) <= astack->attr(SA::SPEED)) {
             amovemask.set(EI(AMoveAction::MOVE_ONLY));
         } else {
             return; // astack can't even reach this hex, abort early

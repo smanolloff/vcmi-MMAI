@@ -110,20 +110,20 @@ namespace MMAI::BAI::V5 {
         //   2. Stacks
         //   3. Hexes
 
-        auto shooting = battle->battleCanShoot(astack);
+        acanshoot = battle->battleCanShoot(astack);
 
-        encodeMisc(shooting, astack);
+        encodeMisc(astack);
         ASSERT(bfstate.size() == BATTLEFIELD_STATE_SIZE_MISC, "[1] unexpected bfstate.size(): " + std::to_string(bfstate.size()));
 
         for (auto i=0; i < battlefield->stacks->size(); i++) {
             auto &sidestacks = battlefield->stacks->at(i);
 
             static_assert(EI(Side::LEFT) == EI(BattleSide::ATTACKER));
-            if (shooting && i == EI(astack->unitSide()))
-                shooting = false;
+            if (acanshoot && i == EI(astack->unitSide()))
+                acanshoot = false;
 
             for (auto &stack : sidestacks)
-                encodeStack(stack.get(), shooting);
+                encodeStack(stack.get());
         }
 
         ASSERT(bfstate.size() == BATTLEFIELD_STATE_SIZE_MISC + BATTLEFIELD_STATE_SIZE_ALL_STACKS, "[2] unexpected bfstate.size(): " + std::to_string(bfstate.size()));
@@ -137,7 +137,7 @@ namespace MMAI::BAI::V5 {
         verify();
     }
 
-    void State::encodeMisc(bool shooting, const CStack* astack) {
+    void State::encodeMisc(const CStack* astack) {
         // mask must come first in misc encoding to ensure
         // correct indexing based on PrimaryAction enum
         static_assert(EI(MA::PRIMARY_ACTION_MASK) == 0);
@@ -151,20 +151,20 @@ namespace MMAI::BAI::V5 {
         bfstate.insert(bfstate.end(), actmask.begin(), actmask.end());
         // the ATTACK_* actions are updated later (in encodeStack and encodeHex)
 
-        Encoder::Encode(MiscAttribute::SHOOTING, shooting, bfstate);
+        Encoder::Encode(MiscAttribute::SHOOTING, acanshoot, bfstate);
         Encoder::Encode(MiscAttribute::INITIAL_ARMY_VALUE_LEFT, supdata->misc->initialArmyValueLeft, bfstate);
         Encoder::Encode(MiscAttribute::INITIAL_ARMY_VALUE_RIGHT, supdata->misc->initialArmyValueRight, bfstate);
         Encoder::Encode(MiscAttribute::CURRENT_ARMY_VALUE_LEFT, supdata->misc->currentArmyValueLeft, bfstate);
         Encoder::Encode(MiscAttribute::CURRENT_ARMY_VALUE_RIGHT, supdata->misc->currentArmyValueRight, bfstate);
     }
 
-    void State::encodeStack(Stack* stack, bool shootable) {
+    void State::encodeStack(Stack* stack) {
         if (!stack) {
             bfstate.insert(bfstate.end(), nullstack.begin(), nullstack.end());
             return;
         }
 
-        if (shootable) {
+        if (acanshoot) {
             auto i = EI(PrimaryAction::ATTACK_0) + stack->attr(SA::ID);
             actmask.at(i) = true;
             bfstate.at(i) = 1;

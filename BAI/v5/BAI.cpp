@@ -123,6 +123,9 @@ namespace MMAI::BAI::V5 {
                 return std::make_shared<BattleAction>(BattleAction::makeHeal(astack, target));
             }
         } else if (astack->creatureId() == CreatureID::CATAPULT) {
+            if (!astack->canShoot())
+                return nullptr;  // out of ammo (arrow towers have 99 shots)
+
             auto ba = std::make_shared<BattleAction>();
             ba->side = astack->unitSide();
             ba->stackNumber = astack->unitId();
@@ -148,6 +151,9 @@ namespace MMAI::BAI::V5 {
                 }
             }
         } else if (astack->creatureId() == CreatureID::ARROW_TOWERS) {
+            if (!astack->canShoot())
+                return nullptr;  // out of ammo (arrow towers have 99 shots)
+
             auto allstacks = battle->battleGetStacks(CBattleInfoEssentials::ONLY_ENEMY);
             auto target = std::max_element(allstacks.begin(), allstacks.end(), [](const CStack* a, const CStack* b) {
                 return a->unitType()->getAIValue() < b->unitType()->getAIValue();
@@ -263,7 +269,6 @@ namespace MMAI::BAI::V5 {
                 return std::make_shared<BattleAction>(BattleAction::makeShotAttack(acstack, action->stack->cstack));
             }
 
-            // melee => target hex is needed
             ASSERT(action->hex, action->name() + ", but astack can only melee");
             auto id = EI(action->primaryAction) - EI(PrimaryAction::ATTACK_0);
             auto aside = bf->astack->attr(StackAttribute::SIDE);

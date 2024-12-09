@@ -51,8 +51,8 @@ namespace MMAI::BAI::V5 {
 
         // Subsequent versions may override this if they only change
         // the data type of encoded values (i.e. have their own HEX_ENCODING)
-        virtual void encodeMisc(bool shooting, const CStack* astack);
-        virtual void encodeStack(Stack* stack, bool shootable);
+        virtual void encodeMisc(const CStack* astack);
+        virtual void encodeStack(Stack* stack);
         virtual void encodeHex(Hex* hex);
         virtual void verify();
 
@@ -63,6 +63,7 @@ namespace MMAI::BAI::V5 {
         std::unique_ptr<SupplementaryData> supdata = nullptr;
         std::vector<std::shared_ptr<AttackLog>> attackLogs = {};
         std::unique_ptr<Action> action = nullptr;
+        bool acanshoot;
         const std::pair<int, int> initialArmyValues;
         const std::string colorname;
         const CPlayerBattleCallback* const battle; // survives discard()
