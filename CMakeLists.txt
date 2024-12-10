@@ -244,7 +244,7 @@ else()
   install_torch_libs(torch torch_cpu c10)
 endif()
 
-target_link_libraries(MMAI ${MMAI_LIBS})
+target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})
 

@@ -151,6 +151,10 @@ namespace MMAI::BAI::V5 {
                     return ba;
                 }
             }
+
+            if (!astack->canShoot())
+                // no walls left
+                return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));  // out of ammo (arrow towers have 99 shots)
         } else if (astack->creatureId() == CreatureID::ARROW_TOWERS) {
             if (!astack->canShoot())
                 // out of ammo (arrow towers have 99 shots)
@@ -203,14 +207,21 @@ namespace MMAI::BAI::V5 {
 
             state->action = std::make_unique<Action>(a, state->battlefield.get(), colorname);
             info("Got action: %d (%s)", a, state->action->name());
-            auto ba = buildBattleAction();
 
-            if (ba) {
-                debug("Action is VALID: " + state->action->name());
-                cb->battleMakeUnitAction(bid, *ba);
-                break;
-            } else {
-                warn("Action is INVALID: " + state->action->name());
+            try {
+                auto ba = buildBattleAction();
+
+                if (ba) {
+                    debug("Action is VALID: " + state->action->name());
+                    cb->battleMakeUnitAction(bid, *ba);
+                    break;
+                } else {
+                    warn("Action is INVALID: " + state->action->name());
+                }
+            } catch (const std::exception& e) {
+                std::cout << Render(state.get(), state->action.get()) << "\n";
+                std::cout << "FATAL ERROR: " << e.what() << "\n";
+                throw;
             }
         }
     }
