@@ -152,9 +152,8 @@ namespace MMAI::BAI::V5 {
                 }
             }
 
-            if (!astack->canShoot())
-                // no walls left
-                return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));  // out of ammo (arrow towers have 99 shots)
+            // no walls left
+            return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));  // out of ammo (arrow towers have 99 shots)
         } else if (astack->creatureId() == CreatureID::ARROW_TOWERS) {
             if (!astack->canShoot())
                 // out of ammo (arrow towers have 99 shots)
