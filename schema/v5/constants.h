@@ -126,7 +126,7 @@ namespace MMAI::Schema::V5 {
         E4(HA::STATE_MASK,   BS, (1<<EI(HexState::_count))-1),
         E4(HA::STACK_ID,     CE, MAX_STACKS_PER_SIDE-1),
         E4(HA::STACK_SIDE,   CE, 1),
-        E4(HA::ACTION_MASK,  BZ, (1<<(2+MAX_STACKS_PER_SIDE))-1), // 2(MOVE, SHOOT) + MAX_STACKS(MELEE)
+        E4(HA::ACTION_MASK,  BZ, (1<<EI(AMoveAction::_count))-1), // 2(MOVE, SHOOT) + MAX_STACKS(MELEE)
     };
 
     constexpr StackEncoding STACK_ENCODING {

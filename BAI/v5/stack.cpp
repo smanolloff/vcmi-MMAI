@@ -37,8 +37,7 @@ namespace MMAI::BAI::V5 {
         // XXX: NULL attrs are used only for non-existing stacks
         // => don't fill with null here (as opposed to attrs in Hex)
 
-        auto id2 = id % MAX_STACKS_PER_SIDE;
-        alias = id2 + (id2 < 7 ? '0' : 'A'-7);
+        alias = id + (id < 7 ? '0' : 'A'-7);
 
         // queue pos needs to be set first to determine if stack is active
         auto qit = std::find(q.begin(), q.end(), cstack->unitId());
