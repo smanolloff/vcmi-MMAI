@@ -121,19 +121,20 @@ namespace MMAI::Schema::V5 {
     };
 
     constexpr HexEncoding HEX_ENCODING {
-        E4(HA::Y_COORD,      NS, 10),
-        E4(HA::X_COORD,      NS, 14),
+        E4(HA::Y_COORD,      CS, 10),
+        E4(HA::X_COORD,      CS, 14),
         E4(HA::STATE_MASK,   BS, (1<<EI(HexState::_count))-1),
         E4(HA::STACK_ID,     CE, MAX_STACKS_PER_SIDE-1),
         E4(HA::STACK_SIDE,   CE, 1),
         E4(HA::ACTION_MASK,  BZ, (1<<EI(AMoveAction::_count))-1), // 2(MOVE, SHOOT) + MAX_STACKS(MELEE)
+        // E4(HA::ACTION_MASK,  BZ, (1<<(2+MAX_STACKS_PER_SIDE))-1), // 2(MOVE, SHOOT) + MAX_STACKS(MELEE)
     };
 
     constexpr StackEncoding STACK_ENCODING {
         E4(SA::ID,                        CE, MAX_STACKS_PER_SIDE-1),
         E4(SA::SIDE,                      CE, 1),        // 0=attacker, 1=defender
-        E4(SA::Y_COORD,                   NE, 10),
-        E4(SA::X_COORD,                   NE, 14),
+        E4(SA::Y_COORD,                   CE, 10),
+        E4(SA::X_COORD,                   CE, 14),
         // E4(SA::CREATURE_ID,               CE, CREATURE_ID_MAX),
         E4(SA::QUANTITY,                  NZ, STACK_QTY_MAX),
         E4(SA::ATTACK,                    NZ, 80),
