@@ -174,40 +174,43 @@ namespace MMAI::Schema::V5 {
         CATEGORICAL_ZERO_NULL,
 
         /*
-         * Represent `v` as `[0, vnorm(0, vmax)]`.
+         * Normalize `v+1` exponentially with base `vmax`
+         * and represent it as `[0, vnorm]`.
          * If `v=-1` (a.k.a. "NULL"), the result will be `[1, 0]
          *
          * Examples:
-         * * `v=3`,  `vmax=10` => `[0, 0.3]`
+         * * `v=3`,  `vmax=10` => `[0, 0.6]`
          * * `v=0`,  `vmax=10` => `[0, 0]`
          * * `v=-1`, `vmax=10` => `[1, 0]`
          */
-        NORMALIZED_EXPLICIT_NULL,
+        EXPNORM_EXPLICIT_NULL,
 
         /*
-         * Normalize `v` in the range (0, vmax)
+         * Normalize `v+1` exponentially with base `vmax`.
+         * If `v=0`, en error will be thrown.
          * If `v=-1` (a.k.a. "NULL"), it will not be normalized.
          *
          * Examples:
-         * * `v=3`,  `vmax=10` => `0.3`
+         * * `v=3`,  `vmax=10` => `0.6`
          * * `v=0`,  `vmax=10` => `0`
          * * `v=-1`, `vmax=10` => `-1`
          */
-        NORMALIZED_MASKING_NULL,
+        EXPNORM_MASKING_NULL,
 
         /*
-         * Normalize `v` in the range (0, vmax)
-         * If `v=-1` (a.k.a. "NULL"), an error will be thrown.
+         * Normalize `v+1` exponentially with base `vmax`.
+         * If `v=0` or `v=-1` (a.k.a. "NULL"), an error will be thrown.
          *
          * Examples:
-         * * `v=3`,  `vmax=10` => `0.3`
+         * * `v=3`,  `vmax=10` => `0.6`
          * * `v=0`,  `vmax=10` => `0`
          * * `v=-1`, `vmax=10` => (error)
          */
-        NORMALIZED_STRICT_NULL,
+        EXPNORM_STRICT_NULL,
 
         /*
-         * Normalize `v` in the range (0, vmax)
+         * Normalize `v+1` exponentially with base `vmax`.
+         * If `v=0`, en error will be thrown.
          * If `v=-1` (a.k.a. "NULL"), it will be treated as `0`.
          *
          * Examples:
@@ -215,7 +218,53 @@ namespace MMAI::Schema::V5 {
          * * `v=0`,  `vmax=10` => `0`
          * * `v=-1`, `vmax=10` => `0`
          */
-        NORMALIZED_ZERO_NULL,
+        EXPNORM_ZERO_NULL,
+        // XXX: NORMALIZED_ZERO_NULL obsoletes NORMALIZED_IMPLICIT_NULL
+
+        /*
+         * Normalize `v` linearly in the range `(0, vmax)`.
+         * and represent it as `[0, vnorm]`.
+         * If `v=-1` (a.k.a. "NULL"), the result will be `[1, 0]
+         *
+         * Examples:
+         * * `v=3`,  `vmax=10` => `[0, 0.3]`
+         * * `v=0`,  `vmax=10` => `[0, 0]`
+         * * `v=-1`, `vmax=10` => `[1, 0]`
+         */
+        LINNORM_EXPLICIT_NULL,
+
+        /*
+         * Normalize `v` linearly in the range `(0, vmax)`.
+         * If `v=-1` (a.k.a. "NULL"), it will not be normalized.
+         *
+         * Examples:
+         * * `v=3`,  `vmax=10` => `0.3`
+         * * `v=0`,  `vmax=10` => `0`
+         * * `v=-1`, `vmax=10` => `-1`
+         */
+        LINNORM_MASKING_NULL,
+
+        /*
+         * Normalize `v` linearly in the range `(0, vmax)`.
+         * If `v=-1` (a.k.a. "NULL"), an error will be thrown.
+         *
+         * Examples:
+         * * `v=3`,  `vmax=10` => `0.3`
+         * * `v=0`,  `vmax=10` => `0`
+         * * `v=-1`, `vmax=10` => (error)
+         */
+        LINNORM_STRICT_NULL,
+
+        /*
+         * Normalize `v` linearly in the range `(0, vmax)`.
+         * If `v=-1` (a.k.a. "NULL"), it will be treated as `0`.
+         *
+         * Examples:
+         * * `v=3`,  `vmax=10` => `0.6`
+         * * `v=0`,  `vmax=10` => `0`
+         * * `v=-1`, `vmax=10` => `0`
+         */
+        LINNORM_ZERO_NULL,
         // XXX: NORMALIZED_ZERO_NULL obsoletes NORMALIZED_IMPLICIT_NULL
     };
 
@@ -284,7 +333,7 @@ namespace MMAI::Schema::V5 {
         SIDE,
         Y_COORD,
         X_COORD,
-        // CREATURE_ID,
+        CREATURE_ID,
         QUANTITY,
         ATTACK,
         DEFENSE,

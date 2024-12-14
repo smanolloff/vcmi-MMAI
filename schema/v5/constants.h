@@ -44,10 +44,15 @@ namespace MMAI::Schema::V5 {
         inline constexpr auto CS = Encoding::CATEGORICAL_STRICT_NULL;
         inline constexpr auto CZ = Encoding::CATEGORICAL_ZERO_NULL;
 
-        inline constexpr auto NE = Encoding::NORMALIZED_EXPLICIT_NULL;
-        inline constexpr auto NM = Encoding::NORMALIZED_MASKING_NULL;
-        inline constexpr auto NS = Encoding::NORMALIZED_STRICT_NULL;
-        inline constexpr auto NZ = Encoding::NORMALIZED_ZERO_NULL;
+        inline constexpr auto EE = Encoding::EXPNORM_EXPLICIT_NULL;
+        inline constexpr auto EM = Encoding::EXPNORM_MASKING_NULL;
+        inline constexpr auto ES = Encoding::EXPNORM_STRICT_NULL;
+        inline constexpr auto EZ = Encoding::EXPNORM_ZERO_NULL;
+
+        inline constexpr auto LE = Encoding::LINNORM_EXPLICIT_NULL;
+        inline constexpr auto LM = Encoding::LINNORM_MASKING_NULL;
+        inline constexpr auto LS = Encoding::LINNORM_STRICT_NULL;
+        inline constexpr auto LZ = Encoding::LINNORM_ZERO_NULL;
 
         using MA = MiscAttribute;
         using HA = HexAttribute;
@@ -94,30 +99,34 @@ namespace MMAI::Schema::V5 {
         case CS: return {a, e, vmax+1, vmax};
         case CZ: return {a, e, vmax+1, vmax};
 
-        case NE: return {a, e, 2, vmax};
-        case NM: return {a, e, 1, vmax};
-        case NS: return {a, e, 1, vmax};
-        case NZ: return {a, e, 1, vmax};
+        case EE: return {a, e, 2, vmax};
+        case EM: return {a, e, 1, vmax};
+        case ES: return {a, e, 1, vmax};
+        case EZ: return {a, e, 1, vmax};
+
+        case LE: return {a, e, 2, vmax};
+        case LM: return {a, e, 1, vmax};
+        case LS: return {a, e, 1, vmax};
+        case LZ: return {a, e, 1, vmax};
         default:
             throw std::runtime_error("Unexpected encoding: " + std::to_string(EI(e)));
         }
     }
 
-    // These MAX values are damped via tanh()
-    constexpr int STACK_QTY_MAX = 1500;
-    constexpr int STACK_VALUE_MAX = 40000;  // archangel 9K, crystal dragon 39K, azure dragon 79K
-    constexpr int ARMY_VALUE_MAX = 1000000;
+    constexpr int STACK_QTY_MAX = 5000;
+    constexpr int STACK_VALUE_MAX = 80000;  // archangel 9K, crystal dragon 39K, azure dragon 79K
+    constexpr int ARMY_VALUE_MAX = 500000;
     constexpr int CREATURE_ID_MAX = 149;  // H3 core has creature IDs 0..149
 
     constexpr int MAX_STACKS_PER_SIDE = std::tuple_size<Stacks::value_type>::value;
 
     constexpr MiscEncoding MISC_ENCODING {
         E4(MA::PRIMARY_ACTION_MASK,      BS, (1<<EI(PrimaryAction::_count))-1),
-        E4(MA::SHOOTING,                 NS, 1),
-        E4(MA::INITIAL_ARMY_VALUE_LEFT,  NS, ARMY_VALUE_MAX),
-        E4(MA::INITIAL_ARMY_VALUE_RIGHT, NS, ARMY_VALUE_MAX),
-        E4(MA::CURRENT_ARMY_VALUE_LEFT,  NS, ARMY_VALUE_MAX),
-        E4(MA::CURRENT_ARMY_VALUE_RIGHT, NS, ARMY_VALUE_MAX),
+        E4(MA::SHOOTING,                 CS, 1),
+        E4(MA::INITIAL_ARMY_VALUE_LEFT,  ES, ARMY_VALUE_MAX),
+        E4(MA::INITIAL_ARMY_VALUE_RIGHT, ES, ARMY_VALUE_MAX),
+        E4(MA::CURRENT_ARMY_VALUE_LEFT,  ES, ARMY_VALUE_MAX),
+        E4(MA::CURRENT_ARMY_VALUE_RIGHT, ES, ARMY_VALUE_MAX),
     };
 
     constexpr HexEncoding HEX_ENCODING {
@@ -126,8 +135,7 @@ namespace MMAI::Schema::V5 {
         E4(HA::STATE_MASK,   BS, (1<<EI(HexState::_count))-1),
         E4(HA::STACK_ID,     CE, MAX_STACKS_PER_SIDE-1),
         E4(HA::STACK_SIDE,   CE, 1),
-        E4(HA::ACTION_MASK,  BZ, (1<<EI(AMoveAction::_count))-1), // 2(MOVE, SHOOT) + MAX_STACKS(MELEE)
-        // E4(HA::ACTION_MASK,  BZ, (1<<(2+MAX_STACKS_PER_SIDE))-1), // 2(MOVE, SHOOT) + MAX_STACKS(MELEE)
+        E4(HA::ACTION_MASK,  BZ, (1<<EI(AMoveAction::_count))-1),
     };
 
     constexpr StackEncoding STACK_ENCODING {
@@ -135,19 +143,19 @@ namespace MMAI::Schema::V5 {
         E4(SA::SIDE,                      CE, 1),        // 0=attacker, 1=defender
         E4(SA::Y_COORD,                   CE, 10),
         E4(SA::X_COORD,                   CE, 14),
-        // E4(SA::CREATURE_ID,               CE, CREATURE_ID_MAX),
-        E4(SA::QUANTITY,                  NE, STACK_QTY_MAX),
-        E4(SA::ATTACK,                    NE, 80),
-        E4(SA::DEFENSE,                   NE, 80),       // azure dragon is 60 when defending
-        E4(SA::SHOTS,                     NE, 32),       // sharpshooter is 32
-        E4(SA::DMG_MIN,                   NE, 100),      // azure dragon is 80
-        E4(SA::DMG_MAX,                   NE, 100),      // azure dragon is 80
-        E4(SA::HP,                        NE, 1300),     // azure dragon + all artifacts is 1254
-        E4(SA::HP_LEFT,                   NE, 1300),
-        E4(SA::SPEED,                     NE, 30),       // at 19=full reach; max is... 37?
-        E4(SA::QUEUE_POS,                 NE, 15),       // 0..14, 0=active stack
+        E4(SA::CREATURE_ID,               CE, CREATURE_ID_MAX),
+        E4(SA::QUANTITY,                  EE, STACK_QTY_MAX),
+        E4(SA::ATTACK,                    EE, 80),
+        E4(SA::DEFENSE,                   EE, 80),       // azure dragon is 60 when defending
+        E4(SA::SHOTS,                     EE, 32),       // sharpshooter is 32
+        E4(SA::DMG_MIN,                   EE, 100),      // azure dragon is 80
+        E4(SA::DMG_MAX,                   EE, 100),      // azure dragon is 80
+        E4(SA::HP,                        EE, 1300),     // azure dragon + all artifacts is 1254
+        E4(SA::HP_LEFT,                   EE, 1300),
+        E4(SA::SPEED,                     EE, 30),       // at 19=full reach; max is... 37?
+        E4(SA::QUEUE_POS,                 EE, 15),       // 0..14, 0=active stack
         // E4(SA::ESTIMATED_DMG,             NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
-        E4(SA::AI_VALUE,                  NE, STACK_VALUE_MAX), // damped using tanh()
+        E4(SA::AI_VALUE,                  EE, STACK_VALUE_MAX),
         E4(SA::FLAGS,                     BE, (1<<EI(StackFlag::_count))-1),
     };
 

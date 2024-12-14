@@ -27,10 +27,10 @@ namespace MMAI::BAI::V5 {
     class Misc : public Schema::V5::IMisc {
     public:
         Misc(const Battlefield* bf)
-        : initialArmyValueLeft(Util::Damp(std::get<0>(bf->info->initialArmyValues), MMAI::BAI::V5::ARMY_VALUE_MAX))
-        , initialArmyValueRight(Util::Damp(std::get<1>(bf->info->initialArmyValues), MMAI::BAI::V5::ARMY_VALUE_MAX))
-        , currentArmyValueLeft(Util::Damp(std::get<0>(bf->info->currentArmyValues), MMAI::BAI::V5::ARMY_VALUE_MAX))
-        , currentArmyValueRight(Util::Damp(std::get<1>(bf->info->currentArmyValues), MMAI::BAI::V5::ARMY_VALUE_MAX))
+        : initialArmyValueLeft(std::get<0>(bf->info->initialArmyValues))
+        , initialArmyValueRight(std::get<1>(bf->info->initialArmyValues))
+        , currentArmyValueLeft(std::get<0>(bf->info->currentArmyValues))
+        , currentArmyValueRight(std::get<1>(bf->info->currentArmyValues))
         {}
 
         int getInitialArmyValueLeft() const override { return initialArmyValueLeft; }

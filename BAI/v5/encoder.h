@@ -48,14 +48,20 @@ namespace MMAI::BAI::V5 {
         static void EncodeCategoricalStrictNull(const int v, const int n, BS &vec);
         static void EncodeCategoricalZeroNull(const int v, const int n, BS &vec);
 
-        static void EncodeNormalizedExplicitNull(const int v, const int vmax, BS &vec);
-        static void EncodeNormalizedMaskingNull(const int v, const int vmax, BS &vec);
-        static void EncodeNormalizedStrictNull(const int v, const int vmax, BS &vec);
-        static void EncodeNormalizedZeroNull(const int v, const int vmax, BS &vec);
+        static void EncodeExpnormExplicitNull(const int v, const int vmax, BS &vec);
+        static void EncodeExpnormMaskingNull(const int v, const int vmax, BS &vec);
+        static void EncodeExpnormStrictNull(const int v, const int vmax, BS &vec);
+        static void EncodeExpnormZeroNull(const int v, const int vmax, BS &vec);
+
+        static void EncodeLinnormExplicitNull(const int v, const int vmax, BS &vec);
+        static void EncodeLinnormMaskingNull(const int v, const int vmax, BS &vec);
+        static void EncodeLinnormStrictNull(const int v, const int vmax, BS &vec);
+        static void EncodeLinnormZeroNull(const int v, const int vmax, BS &vec);
     private:
         static void EncodeAccumulating(const int v, const int n, BS &vec);
         static void EncodeBinary(const int v, const int n, BS &vec);
         static void EncodeCategorical(const int v, const int n, BS &vec);
-        static void EncodeNormalized(const int v, const int vmax, BS &vec);
+        static void EncodeExpnorm(const int v, const int vmax, BS &vec);
+        static void EncodeLinnorm(const int v, const int vmax, BS &vec);
     };
 }

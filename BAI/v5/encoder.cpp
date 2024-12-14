@@ -57,10 +57,14 @@ namespace MMAI::BAI::V5 {
         break; case Encoding::BINARY_MASKING_NULL: EncodeBinaryMaskingNull(v, n, vec);
         break; case Encoding::BINARY_STRICT_NULL: EncodeBinaryStrictNull(v, n, vec);
         break; case Encoding::BINARY_ZERO_NULL: EncodeBinaryZeroNull(v, n, vec);
-        break; case Encoding::NORMALIZED_EXPLICIT_NULL: EncodeNormalizedExplicitNull(v, vmax, vec);
-        break; case Encoding::NORMALIZED_MASKING_NULL: EncodeNormalizedMaskingNull(v, vmax, vec);
-        break; case Encoding::NORMALIZED_STRICT_NULL: EncodeNormalizedStrictNull(v, vmax, vec);
-        break; case Encoding::NORMALIZED_ZERO_NULL: EncodeNormalizedZeroNull(v, vmax, vec);
+        break; case Encoding::EXPNORM_EXPLICIT_NULL: EncodeExpnormExplicitNull(v, vmax, vec);
+        break; case Encoding::EXPNORM_MASKING_NULL: EncodeExpnormMaskingNull(v, vmax, vec);
+        break; case Encoding::EXPNORM_STRICT_NULL: EncodeExpnormStrictNull(v, vmax, vec);
+        break; case Encoding::EXPNORM_ZERO_NULL: EncodeExpnormZeroNull(v, vmax, vec);
+        break; case Encoding::LINNORM_EXPLICIT_NULL: EncodeLinnormExplicitNull(v, vmax, vec);
+        break; case Encoding::LINNORM_MASKING_NULL: EncodeLinnormMaskingNull(v, vmax, vec);
+        break; case Encoding::LINNORM_STRICT_NULL: EncodeLinnormStrictNull(v, vmax, vec);
+        break; case Encoding::LINNORM_ZERO_NULL: EncodeLinnormZeroNull(v, vmax, vec);
         break; case Encoding::CATEGORICAL_EXPLICIT_NULL: EncodeCategoricalExplicitNull(v, n, vec);
         break; case Encoding::CATEGORICAL_IMPLICIT_NULL: EncodeCategoricalImplicitNull(v, n, vec);
         break; case Encoding::CATEGORICAL_MASKING_NULL: EncodeCategoricalMaskingNull(v, n, vec);
@@ -218,32 +222,67 @@ namespace MMAI::BAI::V5 {
     }
 
     //
-    // NORMALIZED
+    // EXPNORM
     //
 
-    void Encoder::EncodeNormalizedExplicitNull(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnormExplicitNull(const int v, const int vmax, BS &vec) {
         vec.push_back(v == NULL_VALUE_UNENCODED);
-        EncodeNormalized(v, vmax, vec);
+        EncodeExpnorm(v, vmax, vec);
     }
 
-    void Encoder::EncodeNormalizedMaskingNull(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnormMaskingNull(const int v, const int vmax, BS &vec) {
         if (v == NULL_VALUE_UNENCODED) {
             vec.push_back(NULL_VALUE_ENCODED);
             return;
         }
-        EncodeNormalized(v, vmax, vec);
+        EncodeExpnorm(v, vmax, vec);
     }
 
-    void Encoder::EncodeNormalizedStrictNull(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnormStrictNull(const int v, const int vmax, BS &vec) {
         MAYBE_THROW_STRICT_ERROR(v);
-        EncodeNormalized(v, vmax, vec);
+        EncodeExpnorm(v, vmax, vec);
     }
 
-    void Encoder::EncodeNormalizedZeroNull(const int v, const int vmax, BS &vec) {
-        EncodeNormalized(v, vmax, vec);
+    void Encoder::EncodeExpnormZeroNull(const int v, const int vmax, BS &vec) {
+        EncodeExpnorm(v, vmax, vec);
     }
 
-    void Encoder::EncodeNormalized(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnorm(const int v, const int vmax, BS &vec) {
+        if (v <= 1) {
+            vec.push_back(0);
+            return;
+        }
+
+        vec.push_back(std::log(static_cast<float>(v+1)) / std::log(static_cast<float>(vmax)));
+    }
+
+    //
+    // LINNORM
+    //
+
+    void Encoder::EncodeLinnormExplicitNull(const int v, const int vmax, BS &vec) {
+        vec.push_back(v == NULL_VALUE_UNENCODED);
+        EncodeLinnorm(v, vmax, vec);
+    }
+
+    void Encoder::EncodeLinnormMaskingNull(const int v, const int vmax, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            vec.push_back(NULL_VALUE_ENCODED);
+            return;
+        }
+        EncodeLinnorm(v, vmax, vec);
+    }
+
+    void Encoder::EncodeLinnormStrictNull(const int v, const int vmax, BS &vec) {
+        MAYBE_THROW_STRICT_ERROR(v);
+        EncodeLinnorm(v, vmax, vec);
+    }
+
+    void Encoder::EncodeLinnormZeroNull(const int v, const int vmax, BS &vec) {
+        EncodeLinnorm(v, vmax, vec);
+    }
+
+    void Encoder::EncodeLinnorm(const int v, const int vmax, BS &vec) {
         if (v <= 0) {
             vec.push_back(0);
             return;
