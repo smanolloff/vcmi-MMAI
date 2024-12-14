@@ -136,19 +136,19 @@ namespace MMAI::Schema::V5 {
         E4(SA::Y_COORD,                   CE, 10),
         E4(SA::X_COORD,                   CE, 14),
         // E4(SA::CREATURE_ID,               CE, CREATURE_ID_MAX),
-        E4(SA::QUANTITY,                  NZ, STACK_QTY_MAX),
-        E4(SA::ATTACK,                    NZ, 80),
-        E4(SA::DEFENSE,                   NZ, 80),       // azure dragon is 60 when defending
-        E4(SA::SHOTS,                     NZ, 32),       // sharpshooter is 32
-        E4(SA::DMG_MIN,                   NZ, 100),      // azure dragon is 80
-        E4(SA::DMG_MAX,                   NZ, 100),      // azure dragon is 80
-        E4(SA::HP,                        NZ, 1300),     // azure dragon + all artifacts is 1254
-        E4(SA::HP_LEFT,                   NZ, 1300),
-        E4(SA::SPEED,                     NZ, 30),       // at 19=full reach; max is... 37?
-        E4(SA::QUEUE_POS,                 NZ, 15),       // 0..14, 0=active stack
+        E4(SA::QUANTITY,                  NE, STACK_QTY_MAX),
+        E4(SA::ATTACK,                    NE, 80),
+        E4(SA::DEFENSE,                   NE, 80),       // azure dragon is 60 when defending
+        E4(SA::SHOTS,                     NE, 32),       // sharpshooter is 32
+        E4(SA::DMG_MIN,                   NE, 100),      // azure dragon is 80
+        E4(SA::DMG_MAX,                   NE, 100),      // azure dragon is 80
+        E4(SA::HP,                        NE, 1300),     // azure dragon + all artifacts is 1254
+        E4(SA::HP_LEFT,                   NE, 1300),
+        E4(SA::SPEED,                     NE, 30),       // at 19=full reach; max is... 37?
+        E4(SA::QUEUE_POS,                 NE, 15),       // 0..14, 0=active stack
         // E4(SA::ESTIMATED_DMG,             NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
-        E4(SA::AI_VALUE,                  NZ, STACK_VALUE_MAX), // damped using tanh()
-        E4(SA::FLAGS,                     BZ, (1<<EI(StackFlag::_count))-1),
+        E4(SA::AI_VALUE,                  NE, STACK_VALUE_MAX), // damped using tanh()
+        E4(SA::FLAGS,                     BE, (1<<EI(StackFlag::_count))-1),
     };
 
     // Dedining encodings for each attribute by hand is error-prone
