@@ -115,7 +115,7 @@ namespace MMAI::Schema::V5 {
 
     constexpr int STACK_QTY_MAX = 5000;
     constexpr int STACK_VALUE_MAX = 80000;  // archangel 9K, crystal dragon 39K, azure dragon 79K
-    constexpr int ARMY_VALUE_MAX = 500000;
+    constexpr int ARMY_VALUE_MAX = 5000000;
     constexpr int CREATURE_ID_MAX = 149;  // H3 core has creature IDs 0..149
 
     constexpr int MAX_STACKS_PER_SIDE = std::tuple_size<Stacks::value_type>::value;

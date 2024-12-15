@@ -248,7 +248,7 @@ namespace MMAI::BAI::V5 {
     }
 
     void Encoder::EncodeExpnorm(const int v, const int vmax, BS &vec) {
-        if (v <= 1) {
+        if (v <= 0) {
             vec.push_back(0);
             return;
         }
