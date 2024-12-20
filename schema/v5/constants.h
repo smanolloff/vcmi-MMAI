@@ -143,6 +143,7 @@ namespace MMAI::Schema::V5 {
         E4(SA::SIDE,                      CE, 1),        // 0=attacker, 1=defender
         E4(SA::Y_COORD,                   CE, 10),
         E4(SA::X_COORD,                   CE, 14),
+        E4(SA::IS_ACTIVE,                 CE, 1),
         E4(SA::CREATURE_ID,               CE, CREATURE_ID_MAX),
         E4(SA::QUANTITY,                  EE, STACK_QTY_MAX),
         E4(SA::ATTACK,                    EE, 80),

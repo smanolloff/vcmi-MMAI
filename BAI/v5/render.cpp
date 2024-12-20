@@ -492,7 +492,7 @@ namespace MMAI::BAI::V5 {
                     break; case SA::CREATURE_ID:
                         ensureStackValueMatch(a, v, cstack->unitType()->getId(), "STACK.CREATURE_ID");
                     break; case SA::QUANTITY:
-                        ensureStackValueMatch(a, v, std::round(STACK_QTY_MAX * std::tanh(float(cstack->getCount()) / STACK_QTY_MAX)), "STACK.AI_VALUE");
+                        ensureStackValueMatch(a, v, std::round(STACK_QTY_MAX * float(cstack->getCount()) / STACK_QTY_MAX), "STACK.AI_VALUE");
                     break; case SA::ATTACK:
                         ensureStackValueMatch(a, v, cstack->getAttack(false), "STACK.ATTACK");
                     break; case SA::DEFENSE:
@@ -520,7 +520,7 @@ namespace MMAI::BAI::V5 {
                         else
                             expect(cstack != astack, "STACK.QUEUE_POS: =%d but is same as astack", v);
                     break; case SA::AI_VALUE:
-                        ensureStackValueMatch(a, v, std::round(STACK_VALUE_MAX * std::tanh(float(cstack->unitType()->getAIValue()) / STACK_VALUE_MAX)), "STACK.AI_VALUE");
+                        ensureStackValueMatch(a, v, std::round(STACK_VALUE_MAX * float(cstack->unitType()->getAIValue()) / STACK_VALUE_MAX), "STACK.AI_VALUE");
                     break; case SA::FLAGS:
                         for (int j=0; j<EI(StackFlag::_count); j++) {
                             auto f = StackFlag(j);

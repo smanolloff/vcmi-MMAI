@@ -319,9 +319,10 @@ namespace MMAI::BAI::V5 {
         }
 
         setattr(A::ID, id);
+        setattr(A::SIDE, EI(cstack->unitSide()));
         setattr(A::Y_COORD, y);
         setattr(A::X_COORD, x);
-        setattr(A::SIDE, EI(cstack->unitSide()));
+        setattr(A::IS_ACTIVE, qpos == 0);
         setattr(A::CREATURE_ID, cid);
         setattr(A::QUANTITY, cstack->getCount());
         setattr(A::ATTACK, cstack->getAttack(shots > 0));
