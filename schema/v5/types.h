@@ -333,7 +333,7 @@ namespace MMAI::Schema::V5 {
         SIDE,
         Y_COORD,
         X_COORD,
-        IS_ACTIVE,
+        // IS_ACTIVE,
         CREATURE_ID,
         QUANTITY,
         ATTACK,
