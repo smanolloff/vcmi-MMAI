@@ -1,0 +1,27 @@
+1. cp -R AI/MMAI/BAI/{v42,v43}
+
+2. cp -R AI/MMAI/schema/{v42,v43}
+
+3. Edit MMAI_FILES in AI/MMAI/CMakeLists.txt by adding the new files
+  (copy the two v42 file sections and replace paths to be for v43)
+
+4. Text replacements: replace all occurrances of
+- "/v42/" -> "/v43/"
+- "::V42" -> "::V43"
+
+5. Edit AI/MMAI/base.cpp and add #include + case stmt for version 43
+
+6. cp ML/user_agents/agent-{v42,v43}.cpp
+   cp ML/user_agents/agent-{v42,v43}.h
+
+7. Edit the "add_executable(mlclient-cli" line in ML/CMakeLists.txt
+  (add v43 agents)
+
+8. Edit ML/user_agents/agent-v43.cpp and .h and replace V42 with V43
+
+9. Edit ML/main.cpp add #include for v43 + replace "AgentV42" with "AgentV43"
+
+build & test
+
+$ rel/bin/mlclient-cli --headless --map gym/generated/evaluation/8x64.vmap \
+  --left-ai MMAI_USER --right-ai StupidAI --loglevel-ai error --random-heroes 1

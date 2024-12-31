@@ -21,15 +21,15 @@
 #include "constants/EntityIdentifiers.h"
 #include "spells/CSpellHandler.h"
 
-#include "BAI/v5/hex.h"
-#include "BAI/v5/stack.h"
-#include "BAI/v5/util.h"
-#include "schema/v5/constants.h"
-#include "schema/v5/types.h"
+#include "BAI/v6/hex.h"
+#include "BAI/v6/stack.h"
+#include "BAI/v6/util.h"
+#include "schema/v6/constants.h"
+#include "schema/v6/types.h"
 
-namespace MMAI::BAI::V5 {
-    using A = Schema::V5::StackAttribute;
-    using F = Schema::V5::StackFlag;
+namespace MMAI::BAI::V6 {
+    using A = Schema::V6::StackAttribute;
+    using F = Schema::V6::StackFlag;
 
     Stack::Stack(const CStack* cstack_, int id, Queue &q, bool blocked, bool blocking, DamageEstimation estdmg)
     : cstack(cstack_)
@@ -312,7 +312,7 @@ namespace MMAI::BAI::V5 {
         shots = cstack->shots.available();
 
         int cid = cstack->creatureId().num;
-        if (cid > Schema::V5::CREATURE_ID_MAX) {
+        if (cid > Schema::V6::CREATURE_ID_MAX) {
             logAi->error("MMAI error: unknown creature with: %d (%s)", cid, cstack->getDescription());
             ML(throw std::runtime_error("unknown creature id: " + std::to_string(cid)));
             cid = 122; // this is a "NOT USED (1)" creature
