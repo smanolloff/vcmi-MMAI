@@ -244,7 +244,7 @@ namespace MMAI::BAI::V6 {
                 if (acstack->waitedThisTurn) {
                     ASSERT(!state->actmask.at(EI(NonHexAction::WAIT)), "mask allowed wait when stack has already waited");
                     state->supdata->errcode = ErrorCode::ALREADY_WAITED;
-                    error("Action error: ALREADY_WAITED");
+                    error("Action error: %s (%d): ALREADY_WAITED", action->name(), EI(action->action));
                     return res;
                 }
                 res = std::make_shared<BattleAction>(BattleAction::makeWait(acstack));
@@ -347,7 +347,7 @@ namespace MMAI::BAI::V6 {
                     auto statemask = HexStateMask(hex->attr(HexAttribute::STATE_MASK));
                     ASSERT(!statemask.test(EI(HexState::PASSABLE)), "accessibility is OBSTACLE, but hex state mask has PASSABLE set: " + statemask.to_string() + debugInfo(action, acstack, nullptr));
                     state->supdata->errcode = ErrorCode::HEX_BLOCKED;
-                    error("Action error: HEX_BLOCKED");
+                    error("Action error: %s (%d): HEX_BLOCKED", action->name(), EI(action->action));
                     break;
                 } else if (a == EAccessibility::ALIVE_STACK) {
                     auto bh = action->hex->bhex;
@@ -363,7 +363,7 @@ namespace MMAI::BAI::V6 {
 
                     // means we try to move onto another stack
                     state->supdata->errcode = ErrorCode::HEX_BLOCKED;
-                    error("Action error: HEX_BLOCKED");
+                    error("Action error: %s (%d): HEX_BLOCKED", action->name(), EI(action->action));
                     break;
                 }
 
@@ -378,7 +378,7 @@ namespace MMAI::BAI::V6 {
                 } else {
                     if (!acstack->doubleWide()) {
                         state->supdata->errcode = ErrorCode::INVALID_DIR;
-                        error("Action error: INVALID_DIR");
+                        error("Action error: %s (%d): INVALID_DIR", action->name(), EI(action->action));
                         break;
                     }
 
@@ -388,7 +388,7 @@ namespace MMAI::BAI::V6 {
 
                 if (!nbh.isAvailable()) {
                     state->supdata->errcode = ErrorCode::HEX_MELEE_NA;
-                    error("Action error: HEX_MELEE_NA");
+                    error("Action error: %s (%d): HEX_MELEE_NA", action->name(), EI(action->action));
                     break;
                 }
 
@@ -396,13 +396,13 @@ namespace MMAI::BAI::V6 {
 
                 if (!estack) {
                     state->supdata->errcode = ErrorCode::STACK_NA;
-                    error("Action error: STACK_NA");
+                    error("Action error: %s (%d): STACK_NA", action->name(), EI(action->action));
                     break;
                 }
 
                 if (estack->unitSide() == acstack->unitSide()) {
                     state->supdata->errcode = ErrorCode::FRIENDLY_FIRE;
-                    error("Action error: FRIENDLY_FIRE");
+                    error("Action error: %s (%d): FRIENDLY_FIRE", action->name(), EI(action->action));
                     break;
                 }
             }
@@ -410,16 +410,16 @@ namespace MMAI::BAI::V6 {
             case HexAction::SHOOT:
                 if (!stack) {
                     state->supdata->errcode = ErrorCode::STACK_NA;
-                    error("Action error: STACK_NA");
+                    error("Action error: %s (%d): STACK_NA", action->name(), EI(action->action));
                     break;
                 } else if (stack->cstack->unitSide() == acstack->unitSide()) {
                     state->supdata->errcode = ErrorCode::FRIENDLY_FIRE;
-                    error("Action error: FRIENDLY_FIRE");
+                    error("Action error: %s (%d): FRIENDLY_FIRE", action->name(), EI(action->action));
                     break;
                 } else {
                     ASSERT(!battle->battleCanShoot(acstack, bhex), "mask prevented SHOOT at a shootable bhex " + action->hex->name());
                     state->supdata->errcode = ErrorCode::CANNOT_SHOOT;
-                    error("Action error: CANNOT_SHOOT");
+                    error("Action error: %s (%d): CANNOT_SHOOT", action->name(), EI(action->action));
                     break;
                 }
             break;
