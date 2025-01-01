@@ -422,6 +422,9 @@ namespace MMAI::BAI::V6 {
 
         ASSERT(state->supdata->errcode != ErrorCode::OK, "Could not identify why the action is invalid" + debugInfo(action, acstack, nullptr));
 
+        std::cout << Render(state.get(), state->action.get()) << "\n";
+        Verify(state.get());
+
         return res;
     }
 
