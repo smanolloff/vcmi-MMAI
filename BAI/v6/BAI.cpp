@@ -122,6 +122,10 @@ namespace MMAI::BAI::V6 {
                 return std::make_shared<BattleAction>(BattleAction::makeHeal(astack, target));
             }
         } else if (astack->creatureId() == CreatureID::CATAPULT) {
+            if (!astack->canShoot())
+                // out of ammo
+                return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));  // out of ammo (arrow towers have 99 shots)
+
             auto ba = std::make_shared<BattleAction>();
             ba->side = astack->unitSide();
             ba->stackNumber = astack->unitId();
@@ -146,7 +150,14 @@ namespace MMAI::BAI::V6 {
                     return ba;
                 }
             }
+
+            // no walls left
+            return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));  // out of ammo (arrow towers have 99 shots)
         } else if (astack->creatureId() == CreatureID::ARROW_TOWERS) {
+            if (!astack->canShoot())
+                // out of ammo (arrow towers have 99 shots)
+                return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));
+
             auto allstacks = battle->battleGetStacks(CBattleInfoEssentials::ONLY_ENEMY);
             auto target = std::max_element(allstacks.begin(), allstacks.end(), [](const CStack* a, const CStack* b) {
                 return a->unitType()->getAIValue() < b->unitType()->getAIValue();
