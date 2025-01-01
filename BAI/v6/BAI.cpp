@@ -206,14 +206,21 @@ namespace MMAI::BAI::V6 {
 
             state->action = std::make_unique<Action>(a, state->battlefield.get(), colorname);
             info("Got action: %d (%s)", a, state->action->name());
-            auto ba = buildBattleAction();
 
-            if (ba) {
-                debug("Action is VALID: " + state->action->name());
-                cb->battleMakeUnitAction(bid, *ba);
-                break;
-            } else {
-                warn("Action is INVALID: " + state->action->name());
+            try {
+                auto ba = buildBattleAction();
+
+                if (ba) {
+                    debug("Action is VALID: " + state->action->name());
+                    cb->battleMakeUnitAction(bid, *ba);
+                    break;
+                } else {
+                    warn("Action is INVALID: " + state->action->name());
+                }
+            } catch (const std::exception& e) {
+                std::cout << Render(state.get(), state->action.get()) << "\n";
+                std::cout << "FATAL ERROR: " << e.what() << "\n";
+                throw;
             }
         }
     }
@@ -421,9 +428,6 @@ namespace MMAI::BAI::V6 {
             }
 
         ASSERT(state->supdata->errcode != ErrorCode::OK, "Could not identify why the action is invalid" + debugInfo(action, acstack, nullptr));
-
-        std::cout << Render(state.get(), state->action.get()) << "\n";
-        Verify(state.get());
 
         return res;
     }
