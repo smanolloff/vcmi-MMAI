@@ -215,7 +215,8 @@ namespace MMAI::BAI::V6 {
                     cb->battleMakeUnitAction(bid, *ba);
                     break;
                 } else {
-                    warn("Action is INVALID: " + state->action->name());
+                    std::cout << Render(state.get(), state->action.get()) << "\n";
+                    error("Action is INVALID: " + state->action->name());
                 }
             } catch (const std::exception& e) {
                 std::cout << Render(state.get(), state->action.get()) << "\n";
