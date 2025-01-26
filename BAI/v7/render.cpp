@@ -16,22 +16,18 @@
 
 #include "battle/AccessibilityInfo.h"
 #include "battle/CObstacleInstance.h"
-#include "bonuses/Bonus.h"
-#include "bonuses/BonusEnum.h"
-#include "bonuses/BonusList.h"
-#include "bonuses/BonusSelector.h"
 #include "constants/EntityIdentifiers.h"
 #include "mapObjects/CGTownInstance.h"
 #include "vcmi/spells/Caster.h"
 
-#include "BAI/v6/hex.h"
-#include "BAI/v6/render.h"
-#include "schema/v6/constants.h"
-#include "schema/v6/types.h"
+#include "BAI/v7/hex.h"
+#include "BAI/v7/hexactmask.h"
+#include "BAI/v7/render.h"
+#include "schema/v7/constants.h"
+#include "schema/v7/types.h"
 
-#include <stdexcept>
-
-namespace MMAI::BAI::V6 {
+namespace MMAI::BAI::V7 {
+    using SA = StackAttribute;
     using SF = StackFlag;
 
     std::string PadLeft(const std::string& input, size_t desiredLength, char paddingChar) {
@@ -162,8 +158,11 @@ namespace MMAI::BAI::V6 {
             expect(have == want, "%s: have: %d, want: %d", attrname, have, want);
         };
 
-        auto ensureStackValueMatch = [=](StackAttribute a, int have, int want, const char* attrname) {
-            auto vmax = std::get<3>(STACK_ENCODING.at(EI(a)));
+        auto ensureStackNullOrMatch = [=](HexAttribute a, const CStack* cstack, int have, std::function<int()> wantfunc, const char* attrname) {
+            auto vmax = std::get<3>(HEX_ENCODING.at(EI(a)));
+            if (isNA(have, cstack, attrname))
+                return;
+            auto want = wantfunc();
             if (want > vmax) want = vmax;
             ensureValueMatch(have, want, attrname);
         };
@@ -176,23 +175,15 @@ namespace MMAI::BAI::V6 {
             if (mv == 1)
                 ensureReachability(bh, 1, cstack, attrname);
 
-            auto r_nbh = bh.cloneInDirection(BattleHex::EDir::RIGHT, false);
-            auto l_nbh = bh.cloneInDirection(BattleHex::EDir::LEFT, false);
             auto nbh = BattleHex{};
 
             switch (ha) {
             break; case HexAction::AMOVE_TR: nbh = bh.cloneInDirection(BattleHex::EDir::TOP_RIGHT, false);
-            break; case HexAction::AMOVE_R: nbh = r_nbh;
+            break; case HexAction::AMOVE_R: nbh = bh.cloneInDirection(BattleHex::EDir::RIGHT, false);
             break; case HexAction::AMOVE_BR: nbh = bh.cloneInDirection(BattleHex::EDir::BOTTOM_RIGHT, false);
             break; case HexAction::AMOVE_BL: nbh = bh.cloneInDirection(BattleHex::EDir::BOTTOM_LEFT, false);
-            break; case HexAction::AMOVE_L: nbh = l_nbh;
+            break; case HexAction::AMOVE_L: nbh = bh.cloneInDirection(BattleHex::EDir::LEFT, false);
             break; case HexAction::AMOVE_TL: nbh = bh.cloneInDirection(BattleHex::EDir::TOP_LEFT, false);
-            break; case HexAction::AMOVE_2TR: nbh = r_nbh.cloneInDirection(BattleHex::EDir::TOP_RIGHT, false);
-            break; case HexAction::AMOVE_2R: nbh = r_nbh.cloneInDirection(BattleHex::EDir::RIGHT, false);
-            break; case HexAction::AMOVE_2BR: nbh = r_nbh.cloneInDirection(BattleHex::EDir::BOTTOM_RIGHT, false);
-            break; case HexAction::AMOVE_2BL: nbh = l_nbh.cloneInDirection(BattleHex::EDir::BOTTOM_LEFT, false);
-            break; case HexAction::AMOVE_2L: nbh = l_nbh.cloneInDirection(BattleHex::EDir::LEFT, false);
-            break; case HexAction::AMOVE_2TL: nbh = l_nbh.cloneInDirection(BattleHex::EDir::TOP_LEFT, false);
             break; default:
                 THROW_FORMAT("Unexpected HexAction: %d", EI(ha));
               break;
@@ -205,24 +196,15 @@ namespace MMAI::BAI::V6 {
 
             auto estack = it == estacks.end() ? nullptr : *it;
 
-            // find id of `estack`
-            // can't use std::distance, as estacks can contain nullptrs
-            // for regular slots (0..6)
-            int eindex = -1;
-            for (auto &stack : estacks) {
-                if (stack && estack) ++eindex;
-                if (stack == estack) break;
-            }
-
             if (mv) {
-                expect(eindex < MAX_STACKS_PER_SIDE, "%s: =%d (bhex %d, nbhex %d), but nbhex stack has eindex=%d", attrname, bh.hex, nbh.hex, eindex);
+                expect(estack, "%s: =1 (bhex %d, nbhex %d), but estack is nullptr", attrname, bh.hex, nbh.hex);
                 // must not pass "nbh" for defender position, as it could be its rear hex
                 expect(cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =1 (bhex %d, nbhex %d), but VCMI says isMeleeAttackPossible=0", attrname, bh.hex, nbh.hex);
             }
+
             //  else {
             //     if (it != estacks.end()) {
             //         auto estack = *it;
-
             //         // MASK may prohibit attack, but hex may still be reachable
             //         if (checkReachable(bh, 1, cstack))
             //             // MASK may prohibita this specific attack from a reachable hex
@@ -243,25 +225,16 @@ namespace MMAI::BAI::V6 {
 
             auto estack = it == estacks.end() ? nullptr : *it;
 
-            // find id of `estack`
-            // can't use std::distance, as estacks can contain nullptrs
-            // for regular slots (0..6)
-            int eindex = -1;
-            for (auto &stack : estacks) {
-                if (stack && estack) ++eindex;
-                if (stack == estack) break;
-            }
-
             // XXX: the estack on `bh` might be "hidden" from the state
             //      in which case the mask for shooting will be 0 although
             //      there IS a stack to shoot on this hex
             if (v) {
-                expect(canshoot && (eindex < MAX_STACKS_PER_SIDE), "%s: =%d but canshoot=%d and eindex=%d", attrname, v, canshoot, eindex);
+                expect(estack, "%s: =%d, but estack is nullptr", attrname, bh.hex);
+                expect(canshoot, "%s: =%d but canshoot=%d", attrname, v, canshoot);
             } else {
                 // stack must be unable to shoot
                 // OR there must be no target at hex
-                // OR the target at hex must be "hidden"
-                expect(!canshoot || eindex == -1 || eindex >= MAX_STACKS_PER_SIDE, "%s: =%d but canshoot=%d and eindex=%d", attrname, v, canshoot, eindex);
+                expect(!canshoot || !estack, "%s: =%d but canshoot=%d and estack is not null", attrname, v, canshoot);
             }
         };
 
@@ -279,12 +252,6 @@ namespace MMAI::BAI::V6 {
             ensureMeleeability(bh, mask, HexAction::AMOVE_BL, cstack, (basename + "{AMOVE_BL}").c_str());
             ensureMeleeability(bh, mask, HexAction::AMOVE_L, cstack, (basename + "{AMOVE_L}").c_str());
             ensureMeleeability(bh, mask, HexAction::AMOVE_TL, cstack, (basename + "{AMOVE_TL}").c_str());
-            ensureMeleeability(bh, mask, HexAction::AMOVE_2TR, cstack, (basename + "{AMOVE_2TR}").c_str());
-            ensureMeleeability(bh, mask, HexAction::AMOVE_2R, cstack, (basename + "{AMOVE_2R}").c_str());
-            ensureMeleeability(bh, mask, HexAction::AMOVE_2BR, cstack, (basename + "{AMOVE_2BR}").c_str());
-            ensureMeleeability(bh, mask, HexAction::AMOVE_2BL, cstack, (basename + "{AMOVE_2BL}").c_str());
-            ensureMeleeability(bh, mask, HexAction::AMOVE_2L, cstack, (basename + "{AMOVE_2L}").c_str());
-            ensureMeleeability(bh, mask, HexAction::AMOVE_2TL, cstack, (basename + "{AMOVE_2TL}").c_str());
         };
 
         // ihex = 0, 1, 2, .. 164
@@ -303,6 +270,11 @@ namespace MMAI::BAI::V6 {
                 auto attr = HexAttribute(i);
                 auto v = hex->attrs.at(i);
                 auto cstack = hexstacks.at(ihex);
+
+                if (cstack)
+                    expect(!!hex->stack, "cstack is present, but hex->stack is nullptr");
+                else
+                    expect(!hex->stack, "cstack is nullptr, but hex->stack is present");
 
                 switch(attr) {
                 break; case HA::Y_COORD:
@@ -386,262 +358,121 @@ namespace MMAI::BAI::V6 {
                     //     expect(bh == BattleHex::GATE_INNER || bh == BattleHex::GATE_OUTER, "HEX.STATE_MASK: GATE bit is set on bhex#%d", bh.hex);
                     // }
                 }
-                break; case HA::STACK_ID: {
-                    // XXX: isNA may fail for ignored stacks (4th+ extra stacks)
-                    //      If cstack is nullptr => v MUST be -1
-                    //      If cstack != nullptr => v MAY be -1 (for ignored stacks)
-                    if (cstack == nullptr) {
-                        expect(v == NULL_VALUE_UNENCODED, "HEX.STACK_ID: v=%d, but cstack is nullptr", v);
-                        break;
-                    }
-
-                    auto side = cstack->unitSide();
-                    auto slot = cstack->unitSlot();
-
-                    if (slot >= 0) {
-                        // regular stack -- STACK_ID is 0..6
-                        expect(v == slot, "HEX.STACK_ID: =%d, but cstack->unitSlot()=%d", v, slot);
-                        break;
-                    }
-
-                    // special (extra) stack (summoned creature or war machine)
-                    expect(
-                        slot == SlotID::WAR_MACHINES_SLOT || slot == SlotID::SUMMONED_SLOT_PLACEHOLDER,
-                        "unexpected unitSlot: %d", slot
-                    );
-
-                    auto extras = side == BattleSide::DEFENDER ? r_CStacksExtra : l_CStacksExtra;
-                    auto it = std::find(extras.begin(), extras.end(), cstack);
-                    if (it == extras.end()) {
-                        THROW_FORMAT("HEX.STACK_ID: cstack is an extra stack (unitSlot()=%d), but did not find it among the extra stacks", slot);
-                    }
-
-                    //  A special stack has STACK_ID of either:
-                    //  a) 7..9
-                    //  b) 0..6
-                    //  c) -1 (too many other stacks in the army)
-                    //
-                    // Case a) is for when cstack is within the first 3 "extra" stacks.
-                    // Case b) is for when cstack is 4th or later "extra" stack,
-                    //          but there are free IDs 0..6 which it could use.
-                    // Case c) is same as b), but no free IDs 0..6 -- stack is ignored.
-                    //
-
-                    // First see if the extra stack a "designated" extra STACK_ID
-                    // Check a)
-                    int extraSeqNumber = std::distance(extras.begin(), it);
-                    if (extraSeqNumber < MAX_STACKS_PER_SIDE - 7) {
-                        // stack is within the first 3 "extra" stacks
-                        // => it will be assigned STACK_ID of 7..9 (or 17..19 for R side)
-                        int idForSide = 7 + extraSeqNumber;
-                        expect(v == idForSide, "HEX.STACK_ID: v=%d, but expected %d (extraSeqNumber=%d)", v, idForSide, extraSeqNumber);
-                        break;
-                    }
-
-                    // The extra stack is at least 4th or later in line
-                    // => Check b)
-                    auto regulars = cstack->unitSide() == BattleSide::DEFENDER ? r_CStacks : l_CStacks;
-                    auto regularIds = std::vector<int> {};
-                    for (auto s : regulars) if (s) regularIds.push_back(s->unitSlot());
-
-                    auto nFreeRegularIds = 7 - regularIds.size();
-                    // 4th extra stack would take first free regular id, 5th - the second, etc.
-                    auto nFreeRegularIdsNeeded = (extraSeqNumber+1) - (MAX_STACKS_PER_SIDE - 7);
-                    if (nFreeRegularIds >= nFreeRegularIdsNeeded) {
-                        // the extra stack was assigned a regular ID
-                        expect(v < 7,
-                            "HEX.STACK_ID: v=%d, but expected v < 7 (extraSeqNumber=%d, nFreeRegularIds=%d)",
-                            v, extraSeqNumber, nFreeRegularIds
-                        );
-
-                        // the ID our extra stack uses must NOT be used by a regular stack
-                        auto cstackAtID = regulars.at(v);
-                        expect(cstackAtID == nullptr, "HEX.STACK_ID: v=%d, but there's a stack at this regular id", v);
-
-                        break;
-                    }
-
-                    // There are no free regular ids to use
-                    // => Check c)
-                    expect(v == NULL_VALUE_UNENCODED,
-                        "HEX.STACK_ID: v=%d, but expected NULL (extraSeqNumber=%d, nFreeRegularIds=%d)",
-                        v, extraSeqNumber, nFreeRegularIds
-                    );
-                }
-                break; case HA::STACK_SIDE:
-                    if (cstack == nullptr) {
-                        expect(v == NULL_VALUE_UNENCODED, "HEX.STACK_SIDE: v=%d, but cstack is nullptr", v);
-                        break;
-                    }
-                    expect(v == EI(cstack->unitSide()), "HEX.STACK_SIDE: =%d, but cstack->unitSide() is %d", v, EI(cstack->unitSide()));
                 break; case HA::ACTION_MASK: {
-                    if(v == NULL_VALUE_UNENCODED) {
-                        // NULL action mask happens if there are too many stacks
-                        // and the active stack is one of the ignored stacks
-                        // XXX: cstack may be null here (this may be a blank hex)
-                        auto stacks = battle->battleGetMySide() == BattleSide::DEFENDER ? r_CStacksAll : l_CStacksAll;
-                        expect(stacks.size() > MAX_STACKS_PER_SIDE, "HEX.ACTION_MASK: is null and hex->stack is null, but n_stacks is %d", stacks.size());
-                    } else if (ended) {
+                    if (ended) {
                         expect(v == 0, "HEX.ACTION_MASK: battle ended, but action mask is %d", v);
                     } else {
                         ensureCorrectMaskOrNA(bh, v, astack, battle, "HEX.ACTION_MASK");
                     }
                 }
+                break; case HA::IS_REAR: {
+                    ensureValueMatch(v, cstack ? cstack->occupiedHex() == hex->bhex : 0, "HEX.STACK_FLAGS.IS_REAR");
+                }
+                break; case HA::STACK_SIDE:
+                    ensureStackNullOrMatch(attr, cstack, v, [&] { return EI(cstack->unitSide()); }, "HA.STACK_SIDE");
+                // break; case HA::STACK_CREATURE_ID:
+                //     ensureStackValueMatch(a, v, cstack->unitType()->getId(), "HEX.STACK_CREATURE_ID");
+                break; case HA::STACK_QUANTITY:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_QTY_MAX * float(cstack->getCount()) / STACK_QTY_MAX); }, "HEX.STACK_AI_VALUE");
+                break; case HA::STACK_ATTACK:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getAttack(false); }, "HEX.STACK_ATTACK");
+                break; case HA::STACK_DEFENSE:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getDefense(false); }, "HEX.STACK_DEFENSE");
+                break; case HA::STACK_SHOTS:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->shots.available(); }, "HEX.STACK_SHOTS");
+                break; case HA::STACK_DMG_MIN:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMinDamage(false); }, "HEX.STACK_DMG_MIN");
+                break; case HA::STACK_DMG_MAX:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxDamage(false); }, "HEX.STACK_DMG_MAX");
+                break; case HA::STACK_HP:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxHealth(); }, "HEX.STACK_HP");
+                break; case HA::STACK_HP_LEFT:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getFirstHPleft(); }, "HEX.STACK_HP_LEFT");
+                break; case HA::STACK_SPEED:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMovementRange(); }, "HEX.STACK_SPEED");
+                break; case HA::STACK_QUEUE_POS:
+                    // at battle end, queue is messed up
+                    // (the stack that dealt the killing blow is still "active", but not on 0 pos)
+                    if (ended)
+                        break;
+
+                    if (v == 0)
+                        expect(cstack == astack, "HEX.STACK_QUEUE_POS: =0 but is different from astack");
+                    else
+                        expect(cstack != astack, "HEX.STACK_QUEUE_POS: =%d but is same as astack", v);
+                break; case HA::STACK_AI_VALUE:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_VALUE_MAX * float(cstack->unitType()->getAIValue()) / STACK_VALUE_MAX); }, "HEX.STACK_AI_VALUE");
+                break; case HA::STACK_FLAGS:
+                    if (isNA(v, cstack, "HEX.STACK_FLAGS"))
+                        return;
+
+                    for (int j=0; j<EI(StackFlag::_count); j++) {
+                        auto f = StackFlag(j);
+                        auto vf = hex->stack->flag(f);
+
+                        switch(f) {
+                        break; case SF::CAN_WAIT:
+                            ensureValueMatch(vf, cstack->willMove() && !cstack->waitedThisTurn, "HEX.STACK_FLAGS.CAN_WAIT");
+                        break; case SF::WILL_ACT:
+                            ensureValueMatch(vf, cstack->willMove(), "HEX.STACK_FLAGS.WILL_ACT");
+                        break; case SF::CAN_RETALIATE:
+                            // XXX: ableToRetaliate() calls CAmmo's (i.e. CRetaliations's) canUse() method
+                            //      which takes into account relevant bonuses (e.g. NO_RETALIATION from expert Blind)
+                            //      It does *NOT* take into account the attacker's BLOCKS_RETALIATION bonus
+                            //      (if it did, what would be the correct CAN_RETALIATE value for friendly units?)
+                            ensureValueMatch(vf, cstack->ableToRetaliate(), "HEX.STACK_FLAGS.CAN_RETALIATE");
+                        break; case SF::SLEEPING:
+                            cstack->unitType()->getId() == CreatureID::AMMO_CART
+                                ? ensureValueMatch(vf, false, "HEX.STACK_FLAGS.SLEEPING")
+                                : ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NOT_ACTIVE), "HEX.STACK_FLAGS.SLEEPING");
+                        break; case SF::BLOCKED:
+                            ensureValueMatch(vf, cstack->canShoot() && battle->battleIsUnitBlocked(cstack), "HEX.STACK_FLAGS.TWO_HEX_ATTACK_BREATH");
+                        break; case SF::BLOCKING: {
+                            auto want = 0;
+                            for (auto &adjstack : battle->battleAdjacentUnits(cstack)) {
+                                if (adjstack->unitSide() != cstack->unitSide() && adjstack->canShoot() && battle->battleIsUnitBlocked(adjstack)) {
+                                    want = 1;
+                                    break;
+                                }
+                            }
+                            ensureValueMatch(vf, bool(want), "HEX.STACK_FLAGS.BLOCKING");
+                        }
+                        break; case SF::FLYING:
+                            ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "HEX.STACK_FLAGS.FLYING");
+                        break; case SF::BLIND_LIKE_ATTACK: {
+                            auto spell_after_attack_bonuses = BonusList();
+                            auto castchance = [&spell_after_attack_bonuses](std::vector<SpellID> spellids) {
+                                // TODO: what about BLOCK_MAGIC_ABOVE / BLOCK_ALL_MAGIC
+                                //       Isn't the chance always 0 then?
+                                int res = 0;
+
+                                auto sel = CSelector(Selector::subtype()(spellids.at(0)));
+                                for (auto it = spellids.begin()+1; it != spellids.end(); ++it)
+                                    sel = sel.Or(Selector::subtype()(*it));
+
+                                auto selected = BonusList();
+                                spell_after_attack_bonuses.getBonuses(selected, sel);
+                                for (auto &bonus : selected)
+                                    res += bonus->val;
+                                return res;
+                            };
+
+                            ensureValueMatch(vf, castchance({SpellID::BLIND, SpellID::STONE_GAZE, SpellID::PARALYZE}) > 0, "HEX.STACK_FLAGS.BLIND_LIKE_ATTACK");
+                        }
+                        break; case SF::ADDITIONAL_ATTACK:
+                            ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ADDITIONAL_ATTACK), "HEX.STACK_FLAGS.ADDITIONAL_ATTACK");
+                        break; case SF::NO_MELEE_PENALTY:
+                            ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NO_MELEE_PENALTY), "HEX.STACK_FLAGS.NO_MELEE_PENALTY");
+                        break; case SF::TWO_HEX_ATTACK_BREATH:
+                            ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::TWO_HEX_ATTACK_BREATH), "HEX.STACK_FLAGS.TWO_HEX_ATTACK_BREATH");
+                        break; case SF::BLOCKS_RETALIATION:
+                            ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::BLOCKS_RETALIATION), "HEX.STACK_FLAGS.BLOCKS_RETALIATION");
+                        break; default:
+                            THROW_FORMAT("Unexpected StackFlag: %d", EI(f));
+                        }
+                    }
                 break; default:
                     THROW_FORMAT("Unexpected HexAttribute: %d", EI(attr));
-                }
-            }
-        }
-
-        for (int side : {0, 1}) {
-            for (int istack=0; istack < MAX_STACKS_PER_SIDE; istack++) {
-                auto stack = state->battlefield->stacks->at(side).at(istack);
-
-                if (!stack)
-                    continue;
-
-                const CStack *cstack = stack->cstack;
-
-                expect(cstack, "cstack is nullptr, but stack is present");
-                expect(stack->cstack, "stack->cstack is nullptr, but cstack is present");
-
-                auto [x, y] = Hex::CalcXY(cstack->getPosition());
-                auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
-
-                // See docs/modders/Bonus/Bonus_Types.md
-                auto spell_after_attack_bonuses = BonusList();
-                bonuses->getBonuses(spell_after_attack_bonuses, Selector::type()(BonusType::SPELL_AFTER_ATTACK), nullptr);
-
-                auto castchance = [&spell_after_attack_bonuses](std::vector<SpellID> spellids) {
-                    // TODO: what about BLOCK_MAGIC_ABOVE / BLOCK_ALL_MAGIC
-                    //       Isn't the chance always 0 then?
-                    int res = 0;
-
-                    auto sel = CSelector(Selector::subtype()(spellids.at(0)));
-                    for (auto it = spellids.begin()+1; it != spellids.end(); ++it)
-                        sel = sel.Or(Selector::subtype()(*it));
-
-                    auto selected = BonusList();
-                    spell_after_attack_bonuses.getBonuses(selected, sel);
-                    for (auto &bonus : selected)
-                        res += bonus->val;
-                    return res;
-                };
-
-                // Now validate all attributes...
-                for (int i=0; i < EI(SA::_count); i++) {
-                    auto a = SA(i);
-                    auto v = stack->attr(a);
-                    auto [_, e, n, vmax] = STACK_ENCODING.at(i);
-                    (void)_; // Suppress unused variable warning
-
-                    int want = -666;
-
-                    switch(a) {
-                    break; case SA::ID:
-                    break; case SA::Y_COORD:
-                        expect(v == y, "STACK.Y_COORD: %d != %d", v, y);
-                    break; case SA::X_COORD:
-                        expect(v == x, "STACK.X_COORD: %d != %d", v, x);
-                    break; case SA::SIDE:
-                        ensureStackValueMatch(a, v, EI(cstack->unitSide()), "STACK.SIDE");
-                    break; case SA::CREATURE_ID:
-                        ensureStackValueMatch(a, v, cstack->unitType()->getId(), "STACK.CREATURE_ID");
-                    break; case SA::QUANTITY:
-                        ensureStackValueMatch(a, v, std::round(STACK_QTY_MAX * float(cstack->getCount()) / STACK_QTY_MAX), "STACK.AI_VALUE");
-                    break; case SA::ATTACK:
-                        ensureStackValueMatch(a, v, cstack->getAttack(false), "STACK.ATTACK");
-                    break; case SA::DEFENSE:
-                        ensureStackValueMatch(a, v, cstack->getDefense(false), "STACK.DEFENSE");
-                    break; case SA::SHOTS:
-                        ensureStackValueMatch(a, v, cstack->shots.available(), "STACK.SHOTS");
-                    break; case SA::DMG_MIN:
-                        ensureStackValueMatch(a, v, cstack->getMinDamage(false), "STACK.DMG_MIN");
-                    break; case SA::DMG_MAX:
-                        ensureStackValueMatch(a, v, cstack->getMaxDamage(false), "STACK.DMG_MAX");
-                    break; case SA::HP:
-                        ensureStackValueMatch(a, v, cstack->getMaxHealth(), "STACK.HP");
-                    break; case SA::HP_LEFT:
-                        ensureStackValueMatch(a, v, cstack->getFirstHPleft(), "STACK.HP_LEFT");
-                    break; case SA::SPEED:
-                        ensureStackValueMatch(a, v, cstack->getMovementRange(), "STACK.SPEED");
-                    break; case SA::QUEUE_POS:
-                        // at battle end, queue is messed up
-                        // (the stack that dealt the killing blow is still "active", but not on 0 pos)
-                        if (ended)
-                            break;
-
-                        if (v == 0)
-                            expect(cstack == astack, "STACK.QUEUE_POS: =0 but is different from astack");
-                        else
-                            expect(cstack != astack, "STACK.QUEUE_POS: =%d but is same as astack", v);
-                    break; case SA::AI_VALUE:
-                        ensureStackValueMatch(a, v, std::round(STACK_VALUE_MAX * float(cstack->unitType()->getAIValue()) / STACK_VALUE_MAX), "STACK.AI_VALUE");
-                    break; case SA::FLAGS:
-                        for (int j=0; j<EI(StackFlag::_count); j++) {
-                            auto f = StackFlag(j);
-                            auto vf = stack->flag(f);
-
-                            switch(f) {
-                            break; case SF::CAN_WAIT:
-                                ensureValueMatch(vf, cstack->willMove() && !cstack->waitedThisTurn, "STACK.FLAGS.CAN_WAIT");
-                            break; case SF::WILL_ACT:
-                                ensureValueMatch(vf, cstack->willMove(), "STACK.FLAGS.WILL_ACT");
-                            break; case SF::CAN_RETALIATE:
-                                // XXX: ableToRetaliate() calls CAmmo's (i.e. CRetaliations's) canUse() method
-                                //      which takes into account relevant bonuses (e.g. NO_RETALIATION from expert Blind)
-                                //      It does *NOT* take into account the attacker's BLOCKS_RETALIATION bonus
-                                //      (if it did, what would be the correct CAN_RETALIATE value for friendly units?)
-                                ensureValueMatch(vf, cstack->ableToRetaliate(), "STACK.FLAGS.CAN_RETALIATE");
-                            break; case SF::SLEEPING:
-                                cstack->unitType()->getId() == CreatureID::AMMO_CART
-                                    ? ensureValueMatch(vf, false, "STACK.FLAGS.SLEEPING")
-                                    : ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NOT_ACTIVE), "STACK.FLAGS.SLEEPING");
-                            break; case SF::BLOCKED:
-                                ensureValueMatch(vf, cstack->canShoot() && battle->battleIsUnitBlocked(cstack), "STACK.FLAGS.TWO_HEX_ATTACK_BREATH");
-                            break; case SF::BLOCKING:
-                                want = 0;
-                                for (auto &adjstack : battle->battleAdjacentUnits(cstack)) {
-                                    if (adjstack->unitSide() != cstack->unitSide() && adjstack->canShoot() && battle->battleIsUnitBlocked(adjstack)) {
-                                        want = 1;
-                                        break;
-                                    }
-                                }
-                                ensureValueMatch(vf, bool(want), "STACK.FLAGS.BLOCKING");
-                            break; case SF::IS_WIDE:
-                                ensureValueMatch(vf, cstack->occupiedHex().isAvailable(), "STACK.FLAGS.IS_WIDE");
-                            break; case SF::FLYING:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "STACK.FLAGS.FLYING");
-                            break; case SF::BLIND_LIKE_ATTACK:
-                                ensureValueMatch(vf, castchance({SpellID::BLIND, SpellID::STONE_GAZE, SpellID::PARALYZE}) > 0, "STACK.FLAGS.BLIND_LIKE_ATTACK");
-                            break; case SF::ADDITIONAL_ATTACK:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ADDITIONAL_ATTACK), "STACK.FLAGS.ADDITIONAL_ATTACK");
-                            break; case SF::NO_MELEE_PENALTY:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NO_MELEE_PENALTY), "STACK.FLAGS.NO_MELEE_PENALTY");
-                            break; case SF::TWO_HEX_ATTACK_BREATH:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::TWO_HEX_ATTACK_BREATH), "STACK.FLAGS.TWO_HEX_ATTACK_BREATH");
-                            break; case SF::BLOCKS_RETALIATION:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::BLOCKS_RETALIATION), "STACK.FLAGS.BLOCKS_RETALIATION");
-                            break; default:
-                                THROW_FORMAT("Unexpected StackFlag: %d", EI(f));
-                            }
-                        }
-                    // break; case SA::ESTIMATED_DMG:
-                    //     if (ended)
-                    //         break;
-
-                    //     if (!astack || astack->unitSide() == cstack->unitSide()) {
-                    //        want = 0;
-                    //     } else {
-                    //         auto dmgrange = battle->battleEstimateDamage(astack, cstack, 0, nullptr);
-                    //         auto dmgAsHPFrac = 0.5*(dmgrange.damage.max + dmgrange.damage.min) / cstack->getAvailableHealth();
-                    //         auto dmgAsHPPercent = static_cast<int>(std::round(100 * dmgAsHPFrac));
-                    //         want = std::clamp<int>(dmgAsHPPercent, 0, 100);
-                    //     }
-                    //     ensureStackValueMatch(a, v, want, "STACK.ESTIMATED_DMG");
-                    break; default:
-                        THROW_FORMAT("Unexpected StackAttribute: %d", EI(a));
-                    }
                 }
             }
         }
@@ -662,28 +493,23 @@ namespace MMAI::BAI::V6 {
         expect(supdata, "supdata holds a nullptr");
         auto misc = supdata->getMisc();
         auto hexes = supdata->getHexes();
-        auto allstacks = supdata->getStacks();
         auto color = supdata->getColor();
 
-        IStack* astack = nullptr;
-        auto idstacks = std::array<std::array<IStack*, MAX_STACKS_PER_SIDE>, 2>{};
+        const IStack* astack = nullptr;
 
         // find an active hex (i.e. with active stack on it)
-        for (auto &sidestacks : allstacks) {
-            for (auto &stack : sidestacks) {
-                if (stack) {
-                    idstacks.at(stack->getAttr(SA::SIDE)).at(stack->getAttr(SA::ID)) = stack;
-                    if (stack->getAttr(SA::QUEUE_POS) == 0) {
-                        // can be same stack (2-hex)
-                        expect(astack != stack, "two active stacks found");
-                        astack = stack;
-                    }
+        for (auto &row : hexes) {
+            for (auto &hex : row) {
+                auto stack = hex->getStack();
+                if (stack && stack->getFlag(SF::IS_ACTIVE)) {
+                    expect(!astack || astack == stack, "two active stacks found");
+                    astack = stack;
                 }
             }
         }
 
         if (!astack)
-            logAi->warn("could not find an active stack. Are there more than %d stacks in this army?", MAX_STACKS_PER_SIDE);
+            logAi->error("could not find an active stack.");
 
         std::string nocol = "\033[0m";
         std::string redcol = "\033[31m"; // red
@@ -752,8 +578,6 @@ namespace MMAI::BAI::V6 {
 
         // s=special; can be any number, slot is always 7 (SPECIAL), visualized A,B,C...
 
-        static_assert(MAX_STACKS_PER_SIDE == 10, "code assumes 10 stacks per side");
-
         auto tablestartrow = lines.size();
 
         lines.emplace_back() << "    ₀▏₁▏₂▏₃▏₄▏₅▏₆▏₇▏₈▏₉▏₀▏₁▏₂▏₃▏₄";
@@ -763,7 +587,7 @@ namespace MMAI::BAI::V6 {
 
         bool addspace = true;
 
-        auto seenstacks = std::array<std::bitset<MAX_STACKS_PER_SIDE>, 2>{0, 0};
+        auto seenstacks = std::map<const IStack*, IHex*>{};
         bool divlines = true;
 
         // y even "▏"
@@ -773,13 +597,7 @@ namespace MMAI::BAI::V6 {
             for (int x=0; x < BF_XMAX; x++) {
                 auto sym = std::string("?");
                 auto &hex = hexes.at(y).at(x);
-
-                IStack* stack = nullptr;
-
-                if (hex->getAttr(HA::STACK_ID) != NULL_VALUE_UNENCODED) {
-                    stack = idstacks.at(hex->getAttr(HA::STACK_SIDE)).at(hex->getAttr(HA::STACK_ID));
-                    expect(stack, "stack with side=%d and ID=%d not found", hex->getAttr(HA::STACK_SIDE), hex->getAttr(HA::STACK_ID));
-                }
+                auto stack = hex->getStack();
 
                 auto &row = (x == 0)
                     ? (lines.emplace_back() << nummap.at(y%10) << "┨" << (y % 2 == 0 ? " " : ""))
@@ -831,9 +649,9 @@ namespace MMAI::BAI::V6 {
                     sym = sym == "○" ? "◌" : sym;
                 }
 
-                if (hex->getAttr(HA::STACK_ID) >= 0) {
-                    auto seen = seenstacks.at(stack->getAttr(SA::SIDE)).test(stack->getAttr(SA::ID));
-                    auto &[_, _e, n, _vmax] = STACK_ENCODING.at(EI(SA::FLAGS));
+                if (stack) {
+                    auto seen = seenstacks.find(stack) != seenstacks.end();
+                    auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS));
                     auto flags = std::bitset<n>(stack->getAttr(SA::FLAGS));
                     sym = std::string(1, stack->getAlias());
                     col = stack->getAttr(SA::SIDE) ? bluecol : redcol;
@@ -851,7 +669,8 @@ namespace MMAI::BAI::V6 {
                         }
                     }
 
-                    seenstacks.at(stack->getAttr(SA::SIDE)).set(stack->getAttr(SA::ID));
+                    if (!seen)
+                        seenstacks.insert({stack, hex});
                 }
 
                 row << (col + sym + nocol);
@@ -930,21 +749,24 @@ namespace MMAI::BAI::V6 {
 
         using RowDef = std::tuple<StackAttribute, std::string>;
 
+        // max to show
+        constexpr int max_stacks_per_side = 10;
+
         // All cell text is aligned right
-        auto colwidths = std::array<int, 4 + 2*MAX_STACKS_PER_SIDE>{};
+        auto colwidths = std::array<int, 4 + 2*max_stacks_per_side>{};
         colwidths.fill(4); // default col width
         colwidths.at(0) = 16; // header col
 
         // Divider column indexes
-        auto divcolids = {1, MAX_STACKS_PER_SIDE+2, 2*MAX_STACKS_PER_SIDE+3};
+        auto divcolids = {1, max_stacks_per_side+2, 2*max_stacks_per_side+3};
 
         for (int i : divcolids)
             colwidths.at(i) = 2; // divider col
 
         // {Attribute, name, colwidth}
         const auto rowdefs = std::vector<RowDef> {
-            RowDef{SA::ID, "Stack #"},
-            RowDef{SA::X_COORD, ""},  // divider row
+            RowDef{SA::FLAGS, "Stack #"},  // stack alias (1..7, S or M)
+            RowDef{SA::SIDE, ""},  // divider row
             RowDef{SA::QUANTITY, "Qty"},
             RowDef{SA::ATTACK, "Attack"},
             RowDef{SA::DEFENSE, "Defense"},
@@ -957,14 +779,14 @@ namespace MMAI::BAI::V6 {
             RowDef{SA::QUEUE_POS, "Queue"},
             RowDef{SA::AI_VALUE, "Value"},
             // RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
-            RowDef{SA::Y_COORD, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
-            RowDef{SA::Y_COORD, "Attack mods"}, // "DB" = Double, Blinding
+            RowDef{SA::FLAGS, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
+            RowDef{SA::FLAGS, "Attack mods"}, // "DB" = Double, Blinding
             // 2 values per column to avoid too long table
-            RowDef{SA::Y_COORD, "Blocked/ing"},
-            RowDef{SA::Y_COORD, "Fly/Sleep"},
-            RowDef{SA::Y_COORD, "No Retal/Melee"},
-            RowDef{SA::Y_COORD, "Wide/Breath"},
-            RowDef{SA::X_COORD, ""},  // divider row
+            RowDef{SA::FLAGS, "Blocked/ing"},
+            RowDef{SA::FLAGS, "Fly/Sleep"},
+            RowDef{SA::FLAGS, "No Retal/Melee"},
+            RowDef{SA::FLAGS, "Wide/Breath"},
+            RowDef{SA::SIDE, ""},  // divider row
         };
 
         // Table with nrows and ncells, each cell a 3-element tuple
@@ -985,7 +807,7 @@ namespace MMAI::BAI::V6 {
 
         // Attribute rows
         for (auto& [a, aname] : rowdefs) {
-            if (a == SA::X_COORD) { // divider row
+            if (a == SA::SIDE) { // divider row
                 table.push_back(divrow);
                 continue;
             }
@@ -996,24 +818,28 @@ namespace MMAI::BAI::V6 {
             row.at(0) = {nocol, colwidths.at(0), aname};
 
             // Div cols
-            for (int i : {1, 2+MAX_STACKS_PER_SIDE, int(colwidths.size()-1)})
+            for (int i : {1, 2+max_stacks_per_side, int(colwidths.size()-1)})
                 row.at(i) = {nocol, colwidths.at(i), "|"};
 
             // Stack cols
             for (auto side : {0, 1}) {
-                auto &sidestacks = allstacks.at(side);
+                auto sidestacks = std::vector<std::pair<const IStack*, IHex*>>{};
+                for (const auto& [stack, hex] : seenstacks) {
+                    if (stack->getAttr(SA::SIDE) == side) {
+                        sidestacks.push_back({stack, hex});
+                    }
+                }
+
                 for (int i=0; i<sidestacks.size(); ++i) {
-                    auto stack = sidestacks.at(i);
+                    auto &[stack, hex] = sidestacks.at(i);
                     auto color = nocol;
                     std::string value = "";
 
                     if (stack) {
-                        auto &[_, _e, n, _vmax] = STACK_ENCODING.at(EI(SA::FLAGS));
+                        auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS));
                         auto flags = std::bitset<n>(stack->getAttr(SA::FLAGS));
 
                         color = stack->getAttr(SA::SIDE) ? bluecol : redcol;
-                        if (a == SA::ID) {
-                            value = std::string(1, stack->getAlias());
                         // } else if (a == SA::ACTSTATE) {
                         //     switch(StackActState(stack->getAttr(a))) {
                         //     break; case StackActState::READY: value = "R";
@@ -1022,14 +848,14 @@ namespace MMAI::BAI::V6 {
                         //     break; default:
                         //         throw std::runtime_error("Unexpected actstate:: " + std::to_string(EI(stack->getAttr(a))));
                         //     }
-                        } else if (a == SA::AI_VALUE && stack->getAttr(a) >= 1000) {
+                        if (a == SA::AI_VALUE && stack->getAttr(a) >= 1000) {
                             std::ostringstream oss;
                             oss << std::fixed << std::setprecision(1) << (stack->getAttr(a) / 1000.0);
                             value = oss.str();
                             value[value.size()-2] = 'k';
                             if (value.rfind("K0") == (value.size() - 2))
                                 value.resize(value.size() - 1);
-                        } else if (a == SA::Y_COORD) {
+                        } else if (a == SA::FLAGS) {
                             auto fmt = boost::format("%d/%d");
 
 // Y_COORD, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
@@ -1039,21 +865,22 @@ namespace MMAI::BAI::V6 {
 // Y_COORD, "No Retal/Melee"},
 // Y_COORD, "Wide/Breath"},
                             switch(specialcounter) {
-                            break; case 0: {
+                            break; case 0: value = std::string(1, stack->getAlias());
+                            break; case 1: {
                                 value = std::string("");
                                 value += flags.test(EI(SF::CAN_WAIT)) ? "W" : " ";
                                 value += flags.test(EI(SF::WILL_ACT)) ? "A" : " ";
                                 value += flags.test(EI(SF::CAN_RETALIATE)) ? "R" : " ";
                             }
-                            break; case 1: {
+                            break; case 2: {
                                 value = std::string("");
                                 value += flags.test(EI(SF::ADDITIONAL_ATTACK)) ? "D" : " ";
                                 value += flags.test(EI(SF::BLIND_LIKE_ATTACK)) ? "B" : " ";
                             }
-                            break; case 2: value = boost::str(fmt % flags.test(EI(SF::BLOCKED)) % flags.test(EI(SF::BLOCKING)));
-                            break; case 3: value = boost::str(fmt % flags.test(EI(SF::FLYING)) % flags.test(EI(SF::SLEEPING)));
-                            break; case 4: value = boost::str(fmt % flags.test(EI(SF::BLOCKS_RETALIATION)) % flags.test(EI(SF::NO_MELEE_PENALTY)));
-                            break; case 5: value = boost::str(fmt % flags.test(EI(SF::IS_WIDE)) % flags.test(EI(SF::TWO_HEX_ATTACK_BREATH)));
+                            break; case 3: value = boost::str(fmt % flags.test(EI(SF::BLOCKED)) % flags.test(EI(SF::BLOCKING)));
+                            break; case 4: value = boost::str(fmt % flags.test(EI(SF::FLYING)) % flags.test(EI(SF::SLEEPING)));
+                            break; case 5: value = boost::str(fmt % flags.test(EI(SF::BLOCKS_RETALIATION)) % flags.test(EI(SF::NO_MELEE_PENALTY)));
+                            break; case 6: value = boost::str(fmt % flags.test(EI(SF::IS_WIDE)) % flags.test(EI(SF::TWO_HEX_ATTACK_BREATH)));
                             break; default:
                                 THROW_FORMAT("Unexpected specialcounter: %d", specialcounter);
                             }
@@ -1064,12 +891,12 @@ namespace MMAI::BAI::V6 {
                         if (stack->getAttr(SA::QUEUE_POS) == 0 && !supdata->getIsBattleEnded()) color += activemod;
                     }
 
-                    auto colid = 2 + i + side + (MAX_STACKS_PER_SIDE*side);
+                    auto colid = 2 + i + side + (max_stacks_per_side*side);
                     row.at(colid) = {color, colwidths.at(colid), value};
                 }
             }
 
-            if (a == SA::Y_COORD)
+            if (a == SA::SIDE)
                 ++specialcounter;
 
             table.push_back(row);

@@ -1,3 +1,4 @@
+
 1. cp -R AI/MMAI/BAI/{v42,v43}
 
 2. cp -R AI/MMAI/schema/{v42,v43}
@@ -9,7 +10,9 @@
 - "/v42/" -> "/v43/"
 - "::V42" -> "::V43"
 
-5. Edit AI/MMAI/base.cpp and add #include + case stmt for version 43
+in AI/MMAI/BAI/v43/ and in AI/MMAI/schema/v43
+
+5. Edit AI/MMAI/BAI/base.cpp and add #include + case stmt for version 43
 
 6. cp ML/user_agents/agent-{v42,v43}.cpp
    cp ML/user_agents/agent-{v42,v43}.h
@@ -17,7 +20,7 @@
 7. Edit the "add_executable(mlclient-cli" line in ML/CMakeLists.txt
   (add v43 agents)
 
-8. Edit ML/user_agents/agent-v43.cpp and .h and replace V42 with V43
+8. Edit ML/user_agents/agent-v43.cpp and .h and replace V42 with V43 (and some integers 42 with 43)
 
 9. Edit ML/main.cpp add #include for v43 + replace "AgentV42" with "AgentV43"
 

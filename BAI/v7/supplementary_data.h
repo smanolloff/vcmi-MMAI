@@ -15,19 +15,20 @@
 // =============================================================================
 #pragma once
 
-#include "BAI/v6/attack_log.h"
-#include "BAI/v6/battlefield.h"
-#include "BAI/v6/util.h"
-#include "schema/v6/types.h"
+#include "BAI/v7/attack_log.h"
+#include "BAI/v7/battlefield.h"
+#include "BAI/v7/util.h"
+#include "schema/v7/types.h"
+#include "schema/v7/constants.h"
 
-namespace MMAI::BAI::V6 {
-    class Misc : public Schema::V6::IMisc {
+namespace MMAI::BAI::V7 {
+    class Misc : public Schema::V7::IMisc {
     public:
         Misc(const Battlefield* bf)
-        : initialArmyValueLeft(Util::Damp(std::get<0>(bf->info->initialArmyValues), MMAI::BAI::V6::ARMY_VALUE_MAX))
-        , initialArmyValueRight(Util::Damp(std::get<1>(bf->info->initialArmyValues), MMAI::BAI::V6::ARMY_VALUE_MAX))
-        , currentArmyValueLeft(Util::Damp(std::get<0>(bf->info->currentArmyValues), MMAI::BAI::V6::ARMY_VALUE_MAX))
-        , currentArmyValueRight(Util::Damp(std::get<1>(bf->info->currentArmyValues), MMAI::BAI::V6::ARMY_VALUE_MAX))
+        : initialArmyValueLeft(Util::Damp(std::get<0>(bf->info->initialArmyValues), Schema::V7::ARMY_VALUE_MAX))
+        , initialArmyValueRight(Util::Damp(std::get<1>(bf->info->initialArmyValues), Schema::V7::ARMY_VALUE_MAX))
+        , currentArmyValueLeft(Util::Damp(std::get<0>(bf->info->currentArmyValues), Schema::V7::ARMY_VALUE_MAX))
+        , currentArmyValueRight(Util::Damp(std::get<1>(bf->info->currentArmyValues), Schema::V7::ARMY_VALUE_MAX))
         {}
 
         int getInitialArmyValueLeft() const override { return initialArmyValueLeft; }
@@ -41,7 +42,7 @@ namespace MMAI::BAI::V6 {
         const int currentArmyValueRight;
     };
 
-    class SupplementaryData : public Schema::V6::ISupplementaryData {
+    class SupplementaryData : public Schema::V7::ISupplementaryData {
     public:
         SupplementaryData() = delete;
 
@@ -83,10 +84,10 @@ namespace MMAI::BAI::V6 {
         bool getIsBattleEnded() const override { return ended; };
         bool getIsVictorious() const override { return victory; };
 
-        const Schema::V6::Hexes getHexes() const override;
-        const Schema::V6::Stacks getStacks() const override;
-        const Schema::V6::AttackLogs getAttackLogs() const override;
-        const Schema::V6::IMisc* getMisc() const override { return misc.get(); }
+        const Schema::V7::Hexes getHexes() const override;
+        const Schema::V7::Stacks getStacks() const override;
+        const Schema::V7::AttackLogs getAttackLogs() const override;
+        const Schema::V7::IMisc* getMisc() const override { return misc.get(); }
         const std::string getAnsiRender() const override { return ansiRender; }
 
         const std::string colorname;

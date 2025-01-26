@@ -14,19 +14,20 @@
 // limitations under the License.
 // =============================================================================
 
+#include "CCallback.h"
 #include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"
 
-#include "BAI/v6/BAI.h"
-#include "BAI/v6/action.h"
-#include "BAI/v6/hexaction.h"
-#include "BAI/v6/render.h"
-#include "BAI/v6/supplementary_data.h"
+#include "BAI/v7/BAI.h"
+#include "BAI/v7/action.h"
+#include "BAI/v7/hexaction.h"
+#include "BAI/v7/hexactmask.h"
+#include "BAI/v7/render.h"
+#include "BAI/v7/supplementary_data.h"
 #include "common.h"
-#include "schema/v6/constants.h"
-#include "schema/v6/types.h"
+#include "schema/v7/types.h"
 
-namespace MMAI::BAI::V6 {
+namespace MMAI::BAI::V7 {
     Schema::Action BAI::getNonRenderAction() {
         // info("getNonRenderAciton called with result type: " + std::to_string(result->type));
         auto s = state.get();
@@ -35,14 +36,14 @@ namespace MMAI::BAI::V6 {
         while (action == Schema::ACTION_RENDER_ANSI) {
             if (state->supdata->ansiRender.empty()) {
                 state->supdata->ansiRender = renderANSI();
-                state->supdata->type = Schema::V6::ISupplementaryData::Type::ANSI_RENDER;
+                state->supdata->type = Schema::V7::ISupplementaryData::Type::ANSI_RENDER;
             }
 
             // info("getNonRenderAciton (loop) called with result type: " + std::to_string(res.type));
             action = model->getAction(state.get());
         }
         state->supdata->ansiRender.clear();
-        state->supdata->type = Schema::V6::ISupplementaryData::Type::REGULAR;
+        state->supdata->type = Schema::V7::ISupplementaryData::Type::REGULAR;
         return action;
     }
 
@@ -181,9 +182,9 @@ namespace MMAI::BAI::V6 {
         state->onActiveStack(astack);
 
         if (state->battlefield->astack == nullptr) {
-            warn("The current stack is not part of the state. This can happen "
-                    "if there are more than %d alive stacks in the army. "
-                    "Falling back to a wait/defend action.", MAX_STACKS_PER_SIDE);
+            error("The current stack is not part of the state. "
+                    "This should NOT happen. "
+                    "Falling back to a wait/defend action.");
             auto fa = astack->waitedThisTurn ? BattleAction::makeDefend(astack) : BattleAction::makeWait(astack);
             cb->battleMakeUnitAction(bid, fa);
             return;
@@ -289,22 +290,6 @@ namespace MMAI::BAI::V6 {
                 res = std::make_shared<BattleAction>(BattleAction::makeMeleeAttack(acstack, nbh, bhex));
             }
             break;
-            case HexAction::AMOVE_2TR:
-            case HexAction::AMOVE_2R:
-            case HexAction::AMOVE_2BR:
-            case HexAction::AMOVE_2BL:
-            case HexAction::AMOVE_2L:
-            case HexAction::AMOVE_2TL: {
-                ASSERT(acstack->doubleWide(), "got AMOVE_2 action for a single-hex stack");
-                auto &edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
-                auto obh = acstack->occupiedHex(bhex);
-                auto nbh = obh.cloneInDirection(edir, false); // neighbouring bhex
-                ASSERT(nbh.isAvailable(), "mask allowed attack to an unavailable hex #" + std::to_string(nbh.hex));
-                auto estack = battle->battleGetStackByPos(nbh);
-                ASSERT(estack, "no enemy stack for melee attack");
-                res = std::make_shared<BattleAction>(BattleAction::makeMeleeAttack(acstack, nbh, bhex));
-            }
-            break;
             default:
                 THROW_FORMAT("Unexpected hexaction: %d", EI(action->hexaction));
             }
@@ -333,12 +318,6 @@ namespace MMAI::BAI::V6 {
             case HexAction::AMOVE_BL:
             case HexAction::AMOVE_L:
             case HexAction::AMOVE_TL:
-            case HexAction::AMOVE_2TR:
-            case HexAction::AMOVE_2R:
-            case HexAction::AMOVE_2BR:
-            case HexAction::AMOVE_2BL:
-            case HexAction::AMOVE_2L:
-            case HexAction::AMOVE_2TL:
             case HexAction::MOVE: {
                 auto a = ainfo.at(action->hex->bhex);
                 if (a == EAccessibility::OBSTACLE) {
@@ -368,21 +347,8 @@ namespace MMAI::BAI::V6 {
                 // only remaining is ACCESSIBLE
                 expect(a == EAccessibility::ACCESSIBLE, "accessibility should've been ACCESSIBLE, was: %d", a);
 
-                auto nbh = BattleHex{};
-
-                if (action->hexaction < HexAction::AMOVE_2TR) {
-                    auto edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
-                    nbh = bhex.cloneInDirection(edir, false);
-                } else {
-                    if (!acstack->doubleWide()) {
-                        state->supdata->errcode = ErrorCode::INVALID_DIR;
-                        error("Action error: %s (%d): INVALID_DIR", action->name(), EI(action->action));
-                        break;
-                    }
-
-                    auto edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
-                    nbh = acstack->occupiedHex().cloneInDirection(edir, false);
-                }
+                auto edir = AMOVE_TO_EDIR.at(EI(action->hexaction));
+                auto nbh = acstack->occupiedHex().cloneInDirection(edir, false);
 
                 if (!nbh.isAvailable()) {
                     state->supdata->errcode = ErrorCode::HEX_MELEE_NA;

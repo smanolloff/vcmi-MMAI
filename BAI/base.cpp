@@ -14,8 +14,6 @@
 // limitations under the License.
 // =============================================================================
 
-#include "StdInc.h"
-
 #include "networkPacks/PacksForClientBattle.h"
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
@@ -26,6 +24,7 @@
 #include "BAI/v4/BAI.h"
 #include "BAI/v5/BAI.h"
 #include "BAI/v6/BAI.h"
+#include "BAI/v7/BAI.h"
 #include "base.h"
 
 namespace MMAI::BAI {
@@ -51,6 +50,8 @@ namespace MMAI::BAI {
             res = std::make_shared<V5::BAI>(model, version, env, cb);
         break; case 6:
             res = std::make_shared<V6::BAI>(model, version, env, cb);
+        break; case 7:
+            res = std::make_shared<V7::BAI>(model, version, env, cb);
         break; default:
             throw std::runtime_error("Unsupported schema version: " + std::to_string(version));
         }
