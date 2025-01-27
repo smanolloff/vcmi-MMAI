@@ -411,6 +411,16 @@ namespace MMAI::BAI::V7 {
                         auto vf = hex->stack->flag(f);
 
                         switch(f) {
+                        break; case SF::IS_ACTIVE:
+                            // at battle end, queue is messed up
+                            // (the stack that dealt the killing blow is still "active", but not on 0 pos)
+                            if (ended)
+                                break;
+
+                            if (vf == 0)
+                                expect(cstack != astack, "HEX.STACK_FLAGS.IS_ACTIVE: =0 but cstack == astack");
+                            else
+                                expect(cstack == astack, "HEX.STACK_FLAGS.IS_ACTIVE: =%d but cstack != astack", vf);
                         break; case SF::CAN_WAIT:
                             ensureValueMatch(vf, cstack->willMove() && !cstack->waitedThisTurn, "HEX.STACK_FLAGS.CAN_WAIT");
                         break; case SF::WILL_ACT:
@@ -437,10 +447,14 @@ namespace MMAI::BAI::V7 {
                             }
                             ensureValueMatch(vf, bool(want), "HEX.STACK_FLAGS.BLOCKING");
                         }
+                        break; case SF::IS_WIDE:
+                            ensureValueMatch(vf, cstack->doubleWide(), "HEX.STACK_FLAGS.IS_WIDE");
                         break; case SF::FLYING:
                             ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "HEX.STACK_FLAGS.FLYING");
                         break; case SF::BLIND_LIKE_ATTACK: {
                             auto spell_after_attack_bonuses = BonusList();
+                            auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
+                            bonuses->getBonuses(spell_after_attack_bonuses, Selector::type()(BonusType::SPELL_AFTER_ATTACK), nullptr);
                             auto castchance = [&spell_after_attack_bonuses](std::vector<SpellID> spellids) {
                                 // TODO: what about BLOCK_MAGIC_ABOVE / BLOCK_ALL_MAGIC
                                 //       Isn't the chance always 0 then?
@@ -823,10 +837,18 @@ namespace MMAI::BAI::V7 {
 
             // Stack cols
             for (auto side : {0, 1}) {
-                auto sidestacks = std::vector<std::pair<const IStack*, IHex*>>{};
+                auto sidestacks = std::array<std::pair<const IStack*, IHex*>, max_stacks_per_side>{};
+                auto extracounter = 0;
                 for (const auto& [stack, hex] : seenstacks) {
                     if (stack->getAttr(SA::SIDE) == side) {
-                        sidestacks.push_back({stack, hex});
+                        int slot = stack->getAlias() >= '0' && stack->getAlias() <= '6'
+                            ? stack->getAlias() - '0'
+                            : 7 + extracounter;
+
+                        if (slot < max_stacks_per_side)
+                            sidestacks.at(slot) = {stack, hex};
+
+                        if (slot >= 7) extracounter += 1;
                     }
                 }
 
@@ -896,7 +918,7 @@ namespace MMAI::BAI::V7 {
                 }
             }
 
-            if (a == SA::SIDE)
+            if (a == SA::FLAGS)
                 ++specialcounter;
 
             table.push_back(row);

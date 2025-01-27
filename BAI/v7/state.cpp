@@ -49,7 +49,6 @@ namespace MMAI::BAI::V7 {
         auto res = std::vector<float> {};
         for (int i=0; i<EI(StackAttribute::_count); ++i)
             Encoder::Encode(HexAttribute(STACK_ATTR_OFFSET + i), NULL_VALUE_UNENCODED, res);
-        ASSERT(res.size() == res.capacity(), "incorrectly initialized nullstack");
         return res;
     };
 

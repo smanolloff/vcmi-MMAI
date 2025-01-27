@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "BAI/v7/general_info.h"
 #include "battle/IBattleInfoCallback.h"
 #include "battle/ReachabilityInfo.h"
 
@@ -27,10 +28,12 @@ namespace MMAI::BAI::V7 {
     using SA = StackAttribute;
 
     Battlefield::Battlefield(
+        std::shared_ptr<GeneralInfo> info_,
         std::shared_ptr<Hexes> hexes_,
         Stacks stacks_,
         const Stack* astack_
-    ) : hexes(hexes_)
+    ) : info(info_)
+      , hexes(hexes_)
       , stacks(stacks_)
       , astack(astack_) {};
 
@@ -43,8 +46,9 @@ namespace MMAI::BAI::V7 {
     ) {
         auto stacks = InitStacks(battle, acstack, isMorale);
         auto [hexes, astack] = InitHexes(battle, acstack, stacks);
+        auto info = std::make_shared<GeneralInfo>(battle, av);
 
-        return std::make_shared<const Battlefield>(hexes, stacks, astack);
+        return std::make_shared<const Battlefield>(info, hexes, stacks, astack);
     }
 
     // static
@@ -110,12 +114,14 @@ namespace MMAI::BAI::V7 {
                 if (bh.isAvailable())
                     hexobstacles.at(Hex::CalcId(bh)).push_back(obstacle);;
 
-        ASSERT(astack, "Active stack not found");
-        astackinfo = std::make_shared<ActiveStackInfo>(
-            astack,
-            battle->battleCanShoot(astack->cstack),
-            std::make_shared<ReachabilityInfo>(battle->getReachability(astack->cstack))
-        );
+        if (astack) {
+            // astack can be nullptr if battle just begun (no turns yet)
+            astackinfo = std::make_shared<ActiveStackInfo>(
+                astack,
+                battle->battleCanShoot(astack->cstack),
+                std::make_shared<ReachabilityInfo>(battle->getReachability(astack->cstack))
+            );
+        }
 
         auto gatestate = battle->battleGetGateState();
 

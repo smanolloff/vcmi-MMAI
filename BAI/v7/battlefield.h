@@ -39,6 +39,7 @@ namespace MMAI::BAI::V7 {
         );
 
         Battlefield(
+            std::shared_ptr<GeneralInfo> info,
             std::shared_ptr<Hexes> hexes,
             Stacks stacks,
             const Stack* astack
