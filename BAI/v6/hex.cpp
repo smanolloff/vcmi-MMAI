@@ -37,7 +37,7 @@ namespace MMAI::BAI::V6 {
 
     // static
     int Hex::CalcId(const BattleHex &bh) {
-        ASSERT(bh.isAvailable(), "Hex unavailable: " + std::to_string(bh.hex));
+        ASSERT(bh.isAvailable(), "Hex unavailable: " + std::to_string(bh.toInt()));
         return bh.getX()-1 + bh.getY()*BF_XMAX;
     }
 
@@ -242,7 +242,7 @@ namespace MMAI::BAI::V6 {
         break; case EAccessibility::UNAVAILABLE:
             statemask &= ~S_PASSABLE;
         break; default:
-            THROW_FORMAT("Unexpected hex accessibility for bhex %d: %d", bhex.hex % EI(accessibility));
+            THROW_FORMAT("Unexpected hex accessibility for bhex %d: %d", bhex.toInt() % EI(accessibility));
         }
 
         // if (bhex == BattleHex::GATE_INNER || bhex == BattleHex::GATE_OUTER)
@@ -262,7 +262,7 @@ namespace MMAI::BAI::V6 {
         //      returns true even if speed is insufficient => use distances.
         // NOTE: distances is 0 for the stack's main hex and 1 for its rear hex
         //       (100000 if it can't fit there)
-        if (astackinfo->rinfo->distances.at(bhex) <= astack->attr(SA::SPEED))
+        if (astackinfo->rinfo->distances.at(bhex.toInt()) <= astack->attr(SA::SPEED))
             actmask.set(EI(HexAction::MOVE));
         else
             // astack can't MOVE here => AMOVE_* will never be possible

@@ -83,7 +83,7 @@ namespace MMAI::BAI::V1 {
         //      if v=1, returns true when reachable
         //
         auto checkReachable = [=](BattleHex bh, int v, const CStack* stack) {
-            auto distance = rinfos.at(stack).distances.at(bh);
+            auto distance = rinfos.at(stack).distances.at(bh.toInt());
             auto canreach = (stack->getMovementRange() >= distance);
             if (v == 0)
                 return !canreach;
@@ -94,7 +94,7 @@ namespace MMAI::BAI::V1 {
         };
 
         auto ensureReachability = [=](BattleHex bh, int v, const CStack* stack, const char* attrname) {
-            expect(checkReachable(bh, v, stack), "%s: (bhex=%d) reachability expected: %d", attrname, bh.hex, v);
+            expect(checkReachable(bh, v, stack), "%s: (bhex=%d) reachability expected: %d", attrname, bh.toInt(), v);
         };
 
         auto ensureReachabilityOrNA = [=](BattleHex bh, int v, const CStack* stack, const char* attrname) {
@@ -150,8 +150,8 @@ namespace MMAI::BAI::V1 {
             auto res = std::vector<int>{};
 
             for (auto &nbh : nbhs)
-                if (nbh.isAvailable() && rinfos.at(stack).distances.at(nbh) <= stack->getMovementRange())
-                    res.push_back(nbh);
+                if (nbh.isAvailable() && rinfos.at(stack).distances.at(nbh.toInt()) <= stack->getMovementRange())
+                    res.push_back(nbh.toInt());
 
             return res;
         };
@@ -202,7 +202,7 @@ namespace MMAI::BAI::V1 {
                 for (auto estack : estacks) {
                     if (!estack) continue;
                     if (!checkReachable(bh, 1, estack)) continue;
-                    expect(!estack->isMeleeAttackPossible(estack, cstack, bh), "%s: =%d (bhex %d), but isAttackPossible=1", attrname, v, bh.hex);
+                    expect(!estack->isMeleeAttackPossible(estack, cstack, bh), "%s: =%d (bhex %d), but isAttackPossible=1", attrname, v, bh.toInt());
                 }
             } else {
                 // find at least 1 enemy stack
@@ -213,7 +213,7 @@ namespace MMAI::BAI::V1 {
                         && estack->isMeleeAttackPossible(estack, cstack, bh);
                 });
 
-                expect(it != estacks.end(), "%s: =%d (bhex %d), stack is not attackable by any enemy stack", attrname, bh.hex);
+                expect(it != estacks.end(), "%s: =%d (bhex %d), stack is not attackable by any enemy stack", attrname, bh.toInt());
 
                 int mindist = -1;
                 for (auto &cbh : cstack->getHexes()) {
@@ -222,9 +222,9 @@ namespace MMAI::BAI::V1 {
                 }
 
                 if (v == 1) { // =FAR
-                    expect(mindist == 2, "%s: =1=FAR (bhex %d), but real distance is %d", attrname, bh.hex, mindist);
+                    expect(mindist == 2, "%s: =1=FAR (bhex %d), but real distance is %d", attrname, bh.toInt(), mindist);
                 } else { // =NEAR
-                    expect(mindist == 1, "%s: =2=NEAR (bhex %d), but real distance is %d", attrname, bh.hex, mindist);
+                    expect(mindist == 1, "%s: =2=NEAR (bhex %d), but real distance is %d", attrname, bh.toInt(), mindist);
                 }
             }
         };
@@ -269,10 +269,10 @@ namespace MMAI::BAI::V1 {
             });
 
             if (mv) {
-                expect(it != estacks.end(), "%s: =%d (bhex %d, nbhex %d), but there's no stack on nbhex", attrname, bh.hex, nbh.hex);
+                expect(it != estacks.end(), "%s: =%d (bhex %d, nbhex %d), but there's no stack on nbhex", attrname, bh.toInt(), nbh.toInt());
                 auto estack = *it;
                 // must not pass "nbh" for defender position, as it could be its rear hex
-                expect(cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =1 (bhex %d, nbhex %d), but VCMI says isMeleeAttackPossible=0", attrname, bh.hex, nbh.hex);
+                expect(cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =1 (bhex %d, nbhex %d), but VCMI says isMeleeAttackPossible=0", attrname, bh.toInt(), nbh.toInt());
             }
             //  else {
             //     if (it != estacks.end()) {
@@ -282,7 +282,7 @@ namespace MMAI::BAI::V1 {
             //         if (checkReachable(bh, 1, cstack))
             //             // MASK may prohibita this specific attack from a reachable hex
             //             // it does not mean any attack is impossible
-            //             expect(!cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =0 (bhex %d, nbhex %d), but bhex is reachable and VCMI says isMeleeAttackPossible=1", attrname, bh.hex, nbh.hex);
+            //             expect(!cstack->isMeleeAttackPossible(cstack, estack, bh), "%s: =0 (bhex %d, nbhex %d), but bhex is reachable and VCMI says isMeleeAttackPossible=1", attrname, bh.toInt(), nbh.toInt());
             //     }
             // }
         };
@@ -339,7 +339,7 @@ namespace MMAI::BAI::V1 {
 
             // auto rinfo = battle->getReachability(cstack);
             auto ainfo = battle->getAccessibility();
-            auto aa = ainfo.at(bh);
+            auto aa = ainfo.at(bh.toInt());
 
             // Now validate all attributes...
             for (int i=0; i < EI(A::_count); i++) {

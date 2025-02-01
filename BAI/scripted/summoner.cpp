@@ -2,6 +2,7 @@
 
 #include "CCallback.h"
 #include "battle/AICombatOptions.h"
+#include "battle/BattleHexArray.h"
 #include "battle/ReachabilityInfo.h"
 #include "lib/AI_Base.h"
 #include "lib/CCreatureHandler.h"
@@ -96,7 +97,7 @@ namespace MMAI::BAI::Scripted {
 
         for(int i = 0; i < 2; i++)
         {
-            for (auto & neighbour : (i ? h2 : h1).neighbouringTiles())
+            for (auto & neighbour : (i ? h2 : h1).getNeighbouringTiles())
                 if(const auto * s = cb->getBattle(battleID)->battleGetUnitByPos(neighbour))
                     if(s->isShooter())
                         shooters[i]++;
@@ -135,7 +136,7 @@ namespace MMAI::BAI::Scripted {
         print("activeStack called for " + stack->nodeName());
         ReachabilityInfo dists = cb->getBattle(battleID)->getReachability(stack);
         bool canshoot = cb->getBattle(battleID)->battleCanShoot(stack);
-        std::vector<BattleHex> avHexes = cb->getBattle(battleID)->battleGetAvailableHexes(dists, stack, false);
+        const BattleHexArray avHexes = cb->getBattle(battleID)->battleGetAvailableHexes(dists, stack, false);
         std::map<const CStack*, EnemyInfo> enemiesShootable;
         std::map<const CStack*, EnemyInfo> enemiesReachable;
         std::map<const CStack*, EnemyInfo> enemiesUnreachable;
@@ -276,7 +277,7 @@ namespace MMAI::BAI::Scripted {
         castThisRound = false;
     }
 
-    void Summoner::battleStackMoved(const BattleID & battleID, const CStack * stack, std::vector<BattleHex> dest, int distance, bool teleport)
+    void Summoner::battleStackMoved(const BattleID & battleID, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport)
     {
         print("battleStackMoved called");
     }
@@ -343,16 +344,16 @@ namespace MMAI::BAI::Scripted {
         logAi->debug("Summoner  [%p]: %s", this, text);
     }
 
-    BattleAction Summoner::goTowards(const BattleID & battleID, const CStack * stack, std::vector<BattleHex> hexes, const ReachabilityInfo &reachability, std::vector<BattleHex> &avHexes) const
+    BattleAction Summoner::goTowards(const BattleID & battleID, const CStack * stack, BattleHexArray hexes, const ReachabilityInfo &reachability, BattleHexArray avHexes) const
     {
         if(!avHexes.size() || !hexes.size()) //we are blocked or dest is blocked
         {
             return BattleAction::makeDefend(stack);
         }
 
-        std::sort(hexes.begin(), hexes.end(), [&](BattleHex h1, BattleHex h2) -> bool
+        hexes.sort([&](const BattleHex & h1, const BattleHex & h2) -> bool
         {
-            return reachability.distances[h1] < reachability.distances[h2];
+            return reachability.distances[h1.toInt()] < reachability.distances[h2.toInt()];
         });
 
         for(auto hex : hexes)
@@ -370,7 +371,7 @@ namespace MMAI::BAI::Scripted {
 
         BattleHex bestNeighbor = hexes.front();
 
-        if(reachability.distances[bestNeighbor] > GameConstants::BFIELD_SIZE)
+        if(reachability.distances[bestNeighbor.toInt()] > GameConstants::BFIELD_SIZE)
         {
             return BattleAction::makeDefend(stack);
         }
@@ -400,7 +401,7 @@ namespace MMAI::BAI::Scripted {
                 if(vstd::contains(avHexes, currentDest))
                     return BattleAction::makeMove(stack, currentDest);
 
-                currentDest = reachability.predecessors[currentDest];
+                currentDest = reachability.predecessors[currentDest.toInt()];
             }
         }
     }

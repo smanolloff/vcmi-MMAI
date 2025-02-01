@@ -146,7 +146,7 @@ namespace MMAI::BAI::V4 {
                 auto i = y*15 + x;
                 auto bh = BattleHex(x+1, y);
                 res->at(y).at(x) = std::make_unique<Hex>(
-                    bh, ainfo.at(bh), gatestate, hexobstacles.at(i),
+                    bh, ainfo.at(bh.toInt()), gatestate, hexobstacles.at(i),
                     hexstacks, astackinfo
                 );
             }

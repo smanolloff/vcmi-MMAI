@@ -80,7 +80,7 @@ namespace MMAI::BAI::V3 {
             THROW_FORMAT("Unexpected HexAction: %d", EI(ha));
         }
 
-        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.hex));
+        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.toInt()));
 
         auto [x, y] = Hex::CalcXY(nbh);
 

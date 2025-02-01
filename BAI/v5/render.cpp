@@ -154,7 +154,7 @@ namespace MMAI::BAI::V5 {
         };
 
         auto checkReachable = [=](BattleHex bh, bool v, const CStack* stack) {
-            auto distance = rinfos.at(stack).distances.at(bh);
+            auto distance = rinfos.at(stack).distances.at(bh.toInt());
             auto canreach = (stack->getMovementRange() >= distance);
 
             // XXX: if v=false, returns true when UNreachable
@@ -163,7 +163,7 @@ namespace MMAI::BAI::V5 {
         };
 
         auto ensureReachability = [=](BattleHex bh, bool v, const CStack* stack, const char* attrname) {
-            expect(checkReachable(bh, v, stack), "%s: (bhex=%d) reachability expected: %d", attrname, bh.hex, v);
+            expect(checkReachable(bh, v, stack), "%s: (bhex=%d) reachability expected: %d", attrname, bh.toInt(), v);
         };
 
         auto ensureValueMatch = [=](int have, int want, const char* attrname) {
@@ -178,7 +178,7 @@ namespace MMAI::BAI::V5 {
 
         auto ensureMeleeability = [=](BattleHex bh, HexAmoveMask mask, const CPlayerBattleCallback* battle, AMoveAction ama, const CStack* cstack, const char* flagname) {
             auto mvalue = mask.test(EI(ama));
-            auto distance = rinfos.at(cstack).distances.at(bh);
+            auto distance = rinfos.at(cstack).distances.at(bh.toInt());
             auto canreach = (cstack->getMovementRange() >= distance);
 
             static_assert(EI(Side::LEFT) == EI(BattleSide::ATTACKER));
@@ -198,7 +198,7 @@ namespace MMAI::BAI::V5 {
             auto msg = boost::str(boost::format("%s=%d, bhex=%d, estack=(ID=%d, slot=%s), canreach=%d, canmelee=%d, canshoot=%d")
                 % flagname
                 % mvalue
-                % bh.hex
+                % bh.toInt()
                 % id
                 % (estack ? std::to_string(estack->cstack->unitSlot()) : "")
                 % canreach
@@ -241,7 +241,7 @@ namespace MMAI::BAI::V5 {
             expect(bh == BattleHex(x+1, y), "hex->bhex mismatch");
 
             auto ainfo = battle->getAccessibility();
-            auto aa = ainfo.at(bh);
+            auto aa = ainfo.at(bh.toInt());
 
             for (int i=0; i < EI(HexAttribute::_count); i++) {
                 auto attr = HexAttribute(i);
@@ -327,7 +327,7 @@ namespace MMAI::BAI::V5 {
 
                     // if (mask.test(EI(HexState::GATE))) {
                     //     expect(battle->battleGetSiegeLevel(), "HEX.STATE_MASK: GATE bit is set, but there is no fort");
-                    //     expect(bh == BattleHex::GATE_INNER || bh == BattleHex::GATE_OUTER, "HEX.STATE_MASK: GATE bit is set on bhex#%d", bh.hex);
+                    //     expect(bh == BattleHex::GATE_INNER || bh == BattleHex::GATE_OUTER, "HEX.STATE_MASK: GATE bit is set on bhex#%d", bh.toInt());
                     // }
                 }
                 break; case HA::STACK_ID: {

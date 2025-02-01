@@ -1,3 +1,12 @@
+1.5 -> 1.6 speedup (mlclient-cli --benchmark):
+
+8x64 BattleAI 59.3  -> 277
+8x64 StupidAI 600   -> 907
+
+A1   BattleAI 421   -> 1073
+A1   StupidAI 1292  -> 1937
+
+
 === Developer notes ===
 
 ==== Adding a new version of BAI ===

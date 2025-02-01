@@ -216,7 +216,7 @@ namespace MMAI::BAI {
         bai->battleSpellCast(bid, sc);
     }
 
-    void Router::battleStackMoved(const BattleID &bid, const CStack * stack, std::vector<BattleHex> dest, int distance, bool teleport) {
+    void Router::battleStackMoved(const BattleID &bid, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport) {
         bai->battleStackMoved(bid, stack, dest, distance, teleport);
     }
 

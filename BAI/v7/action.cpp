@@ -56,7 +56,7 @@ namespace MMAI::BAI::V7 {
         auto edir = AMOVE_TO_EDIR.at(EI(ha));
         auto nbh = bh.cloneInDirection(edir);
 
-        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.hex));
+        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.toInt()));
 
         auto [x, y] = Hex::CalcXY(nbh);
 

@@ -57,7 +57,7 @@ namespace MMAI::BAI::V1 {
             THROW_FORMAT("Unexpected action: %d", EI(action));
         }
 
-        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.hex));
+        ASSERT(nbh.isAvailable(), "unavailable AMOVE target hex #" + std::to_string(nbh.toInt()));
         return nbh;
     }
 
@@ -72,7 +72,7 @@ namespace MMAI::BAI::V1 {
         //
         // distances is 0 for the stack's main hex, 1 for its "back" hex
         // (100000 if it can't fit there)
-        return stackinfo.rinfo->distances.at(bh) <= stackinfo.speed;
+        return stackinfo.rinfo->distances.at(bh.toInt()) <= stackinfo.speed;
     }
 
     //
@@ -151,7 +151,7 @@ namespace MMAI::BAI::V1 {
         hex->setX(x);
         hex->setY(y);
 
-        switch(ainfo.at(bh.hex)) {
+        switch(ainfo.at(bh.toInt())) {
         break; case EAccessibility::ACCESSIBLE: hex->setState(HexState::FREE);
         break; case EAccessibility::OBSTACLE: hex->setState(HexState::OBSTACLE);
         break; case EAccessibility::ALIVE_STACK: hex->setState(HexState::OCCUPIED);
@@ -161,7 +161,7 @@ namespace MMAI::BAI::V1 {
         // case EAccessibility::UNAVAILABLE:
         // case EAccessibility::SIDE_COLUMN:
         break; default:
-            THROW_FORMAT("Unexpected hex accessibility for hex %d: %d", bh.hex % static_cast<int>(ainfo.at(bh.hex)));
+            THROW_FORMAT("Unexpected hex accessibility for hex %d: %d", bh.toInt() % static_cast<int>(ainfo.at(bh.toInt())));
         }
 
         //

@@ -442,7 +442,7 @@ namespace MMAI::AAI {
         battleAI->battleSpellCast(bid, sc);
     }
 
-    void AAI::battleStackMoved(const BattleID &bid, const CStack *stack, std::vector<BattleHex> dest, int distance, bool teleport) {
+    void AAI::battleStackMoved(const BattleID &bid, const CStack *stack, const BattleHexArray & dest, int distance, bool teleport) {
         battleAI->battleStackMoved(bid, stack, dest, distance, teleport);
     }
 

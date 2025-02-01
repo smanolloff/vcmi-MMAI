@@ -123,7 +123,7 @@ namespace MMAI::AAI {
         void battleNewRoundFirst(const BattleID &bid) override;
         void battleObstaclesChanged(const BattleID &bid, const std::vector<ObstacleChanges> &obstacles) override;
         void battleSpellCast(const BattleID &bid, const BattleSpellCast *sc) override;
-        void battleStackMoved(const BattleID &bid, const CStack *stack, std::vector<BattleHex> dest, int distance, bool teleport) override;
+        void battleStackMoved(const BattleID &bid, const CStack *stack, const BattleHexArray & dest, int distance, bool teleport) override;
         void battleStacksAttacked(const BattleID &bid, const std::vector<BattleStackAttacked> &bsa, bool ranged) override;
         void battleStacksEffectsSet(const BattleID &bid, const SetStackEffect &sse) override;
         void battleTriggerEffect(const BattleID &bid, const BattleTriggerEffect &bte) override; //called for various one-shot effects

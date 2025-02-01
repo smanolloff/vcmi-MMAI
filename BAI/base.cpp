@@ -163,7 +163,7 @@ namespace MMAI::BAI {
             res += "\n\t* casterStack=" + (caster ? caster->getDescription() : "");
             res += "\n\t* activeCast=" + std::to_string(sc->activeCast);
             res += "\n\t* side=" + std::to_string(EI(sc->side));
-            res += "\n\t* tile=" + std::to_string(sc->tile);
+            res += "\n\t* tile=" + std::to_string(sc->tile.toInt());
 
             res += "\n\t* affected:";
             for (auto &cid : sc->affectedCres)
@@ -181,7 +181,7 @@ namespace MMAI::BAI {
         });
     }
 
-    void Base::battleStackMoved(const BattleID &bid, const CStack * stack, std::vector<BattleHex> dest, int distance, bool teleport) {
+void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport) {
         debug("*** battleStackMoved ***");
         trace([&](){
             auto battle = cb->getBattle(bid);
@@ -200,7 +200,7 @@ namespace MMAI::BAI {
             auto res = boost::format(fmt)
                 % stack->getDescription()
                 % stack->getOwner().toString()
-                % bh0.hex % hexid0 % y0 % x0
+                % bh0 % hexid0 % y0 % x0
                 % distance
                 % teleport;
 
@@ -223,7 +223,7 @@ namespace MMAI::BAI {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
                 for (auto &bonus : bonuses) {
-                    res += "\n\t  > add bonus=" + bonus.Description();
+                    res += "\n\t  > add bonus=" + bonus.description.toString();
                 }
             }
 
@@ -231,7 +231,7 @@ namespace MMAI::BAI {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
                 for (auto &bonus : bonuses) {
-                    res += "\n\t  > remove bonus=" + bonus.Description();
+                    res += "\n\t  > remove bonus=" + bonus.description.toString();
                 }
             }
 
@@ -239,7 +239,7 @@ namespace MMAI::BAI {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
                 for (auto &bonus : bonuses) {
-                    res += "\n\t  > update bonus=" + bonus.Description();
+                    res += "\n\t  > update bonus=" + bonus.description.toString();
                 }
             }
 

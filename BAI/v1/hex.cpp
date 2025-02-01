@@ -22,7 +22,7 @@
 namespace MMAI::BAI::V1 {
     // static
     int Hex::CalcId(const BattleHex &bh) {
-        ASSERT(bh.isAvailable(), "Hex unavailable: " + std::to_string(bh.hex));
+        ASSERT(bh.isAvailable(), "Hex unavailable: " + std::to_string(bh.toInt()));
         return bh.getX()-1 + bh.getY()*BF_XMAX;
     }
 
