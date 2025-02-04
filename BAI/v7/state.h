@@ -29,6 +29,13 @@
 namespace MMAI::BAI::V7 {
     using BS = Schema::BattlefieldState;
 
+    class StackStats {
+        int dmgDealtNow = 0;
+        int dmgDealtTotal = 0;
+        int dmgReceivedNow = 0;
+        int dmgReceivedTotal = 0;
+    }
+
     class State : public Schema::IState {
     public:
         // IState impl
@@ -65,6 +72,7 @@ namespace MMAI::BAI::V7 {
         const CPlayerBattleCallback* const battle; // survives discard()
         const BattleSide side;
         std::shared_ptr<const Battlefield> battlefield;
+        std::map<const CStack*, StackStats> stacksStats;
         bool isMorale = false;
 
         static std::vector<float> InitNullStack();

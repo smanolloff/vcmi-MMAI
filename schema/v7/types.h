@@ -297,6 +297,20 @@ namespace MMAI::Schema::V7 {
         _count
     };
 
+    enum class MiscAttribute : int {
+        INITIAL_ARMY_VALUE_LEFT,
+        INITIAL_ARMY_VALUE_RIGHT,
+        CURRENT_ARMY_VALUE_LEFT,
+        CURRENT_ARMY_VALUE_RIGHT,
+        DMG_DEALT,
+        DMG_TAKEN,
+        DMG_NET,
+        VALUE_KILLED,
+        VALUE_LOST,
+        VALUE_NET,
+        _count
+    };
+
     // For description on each attribute, see the comments for HEX_ENCODING
     enum class HexAttribute : int {
         Y_COORD,
@@ -319,7 +333,10 @@ namespace MMAI::Schema::V7 {
         // STACK_ESTIMATED_DMG,
         STACK_AI_VALUE,
         STACK_FLAGS,
-
+        STACK_DMG_DEALT_NOW,
+        STACK_DMG_DEALT_TOTAL,
+        STACK_DMG_RECEIVED_NOW,
+        STACK_DMG_RECEIVED_TOTAL,
         _count
     };
 
