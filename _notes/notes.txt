@@ -1,13 +1,30 @@
-1.5 -> 1.6 speedup (mlclient-cli --benchmark):
-
-8x64 BattleAI 59.3  -> 277
-8x64 StupidAI 600   -> 907
-
-A1   BattleAI 421   -> 1073
-A1   StupidAI 1292  -> 1937
-
-
 === Developer notes ===
+
+==== 1.5 -> 1.6 speedup ====
+
+===== VCMI raw benchmarks (mlclient-cli):
+8x64 BattleAI 59.3  -> 277  [steps/s]  aka. 0.0169 [s/step] -> 0.0036 [s/step] = -0.0133 => 425% proj. speedup
+8x64 StupidAI 600   -> 907  [steps/s]  aka. 0.0017 [s/step] -> 0.0011 [s/step] = -0.0006 => 115% proj. speedup
+
+A1   BattleAI 421   -> 1073 [steps/s] = 0.0009 [s/step]
+A1   StupidAI 1292  -> 1937 [steps/s] = 0.0005 [s/step]
+
+===== Training benchmarks
+StupidAI, 1.5               ->  BattleAI, 1.6
+22366208                    ->  31766016
+26553344                    ->  34319360
+10h                         ->  9h
+= 418713.6  [steps/h]       ->  = 283705    [steps/h]
+= 116       [steps/s]       ->  = 79        [steps/s]
+= 0.0086s   [s/step]        ->  = 0.0127    [s/step]
+= 148% of the new speed     ->  = 68% of the old speed
+-----------
+
+0.0127 [s/step] w/o training
+0.0086 [s/step] with training
+=>
+0.0041 [s/step] training overhead
+
 
 ==== Adding a new version of BAI ===
 

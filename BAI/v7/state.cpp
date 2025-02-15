@@ -75,14 +75,15 @@ namespace MMAI::BAI::V7 {
         int valueKilled = 0;
 
         for (auto &al : attackLogs) {
-            ASSERT(al->defender, "attackLog defender is nullptr");
-            if (al->attacker) {
-                stacksStats[al->attacker->cstack].dmdDealtNow += al->dmg;
-                stacksStats[al->attacker->cstack].dmdDealtTotal += al->dmg;
-            }
+            // note: in VCMI there is no excess dmg if stack is killed
 
-            stacksStats[al->attacker->cstack].dmdReceivedNow += al->dmg;
-            stacksStats[al->attacker->cstack].dmdReceivedTotal += al->dmg;
+            // XXX: defender can be nullptr if excluded from obs
+            //      In this case, we must ignore the log as well as we can't
+            //      tell if this was damage received or dealt
+            //      (even if attacker is friendly, the defender might still be
+            //       friendly, i.e. dragon breath friendly fire)
+            if (al->defender == nullptr)
+                continue;
 
             if (al->defender->attr(SA::SIDE) == EI(side)) {
                 dmgReceived += al->dmg;
@@ -93,7 +94,6 @@ namespace MMAI::BAI::V7 {
                 unitsKilled += al->units;
                 valueKilled += al->value;
             }
-
         }
 
         battlefield = Battlefield::Create(battle, astack, initialArmyValues, isMorale);
@@ -116,13 +116,6 @@ namespace MMAI::BAI::V7 {
         bfstate.clear();
         actmask.clear();
         // attnmask.clear();
-
-        for (auto &[cstack, ss] : stacksStats) {
-            ss.dmgDealtNow = 0
-            ss.dmgReceivedNow = 0
-        }
-        stacksStats[al->attacker->cstack].dmdReceivedNow += al->dmg;
-
 
         for (int i=0; i<EI(NonHexAction::count); i++) {
             switch (NonHexAction(i)) {

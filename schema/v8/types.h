@@ -18,7 +18,7 @@
 
 #include "schema/base.h"
 
-namespace MMAI::Schema::V7 {
+namespace MMAI::Schema::V8 {
     enum class Encoding : int {
         /*
          * Represent `v` as `n` bits, where `bits[1..v+1]=1`.
@@ -297,6 +297,37 @@ namespace MMAI::Schema::V7 {
         _count
     };
 
+    enum class MiscAttribute : int {
+        BFIELD_VALUE_NOW_REL0,       // bfield_value_now             / bfield_value_at_start
+
+        ARMY_VALUE_L_NOW_REL,        // left_army_value_now          / bfield_value_now
+        ARMY_VALUE_R_NOW_REL,        // right_army_value_no          / bfield_value_now
+        ARMY_VALUE_L_NOW_REL0,       // left_army_value_now          / bfield_value_at_start
+        ARMY_VALUE_R_NOW_REL0,       // right_army_value_no          / bfield_value_at_start
+
+        VALUE_KILLED_LEFT_REL,       // left_value_killed_this_turn  / bfield_value_last_turn
+        VALUE_KILLED_RIGHT_REL,      // right_value_killed_this_turn / bfield_value_last_turn
+        VALUE_KILLED_LEFT_ACC_REL0,  // left_value_killed_lifetime   / bfield_value_at_start
+        VALUE_KILLED_RIGHT_ACC_REL0, // right_value_killed_lifetime  / bfield_value_at_start
+
+        VALUE_LOST_LEFT_REL,         // left_value_lost_this_turn    / bfield_value_last_turn
+        VALUE_LOST_RIGHT_REL,        // right_value_lost_this_turn   / bfield_value_last_turn
+        VALUE_LOST_LEFT_ACC_REL0,    // left_value_lost_lifetime     / bfield_value_at_start
+        VALUE_LOST_RIGHT_ACC_REL0,   // right_value_lost_lifetime    / bfield_value_at_start
+
+        DMG_DEALT_LEFT_REL,          // left_dmg_dealt_this_turn     / bfield_hp_last_turn
+        DMG_DEALT_RIGHT_REL,         // right_dmg_dealt_this_turn    / bfield_hp_last_turn
+        DMG_DEALT_LEFT_ACC_REL0,     // left_dmg_dealt_lifetime      / bfield_hp_at_start
+        DMG_DEALT_RIGHT_ACC_REL0,    // right_dmg_dealt_lifetime     / bfield_hp_at_start
+
+        DMG_TAKEN_LEFT_REL,          // left_dmg_taken_this_turn     / bfield_hp_last_turn
+        DMG_TAKEN_RIGHT_REL,         // right_dmg_taken_this_turn    / bfield_hp_last_turn
+        DMG_TAKEN_LEFT_ACC_REL0,     // left_dmg_taken_lifetime      / bfield_hp_at_start
+        DMG_TAKEN_RIGHT_ACC_REL0,    // right_dmg_taken_lifetime     / bfield_hp_at_start
+
+        _count
+    };
+
     // For description on each attribute, see the comments for HEX_ENCODING
     enum class HexAttribute : int {
         Y_COORD,
@@ -317,8 +348,19 @@ namespace MMAI::Schema::V7 {
         STACK_SPEED,
         STACK_QUEUE_POS,
         // STACK_ESTIMATED_DMG,
-        STACK_AI_VALUE,
+        STACK_VALUE_ONE,
         STACK_FLAGS,
+
+        STACK_REL_VALUE,
+        STACK_REL0_VALUE,
+        STACK_REL_VALUE_KILLED,
+        STACK_REL0_VALUE_KILLED_ACC,
+        STACK_REL_VALUE_LOST,
+        STACK_REL0_VALUE_LOST_ACC,
+        STACK_REL_DMG_DEALT,
+        STACK_REL0_DMG_DEALT_ACC,
+        STACK_REL_DMG_RECEIVED,
+        STACK_REL0_DMG_RECEIVED_ACC,
 
         _count
     };
@@ -336,8 +378,21 @@ namespace MMAI::Schema::V7 {
         SPEED,
         QUEUE_POS,
         // ESTIMATED_DMG,
-        AI_VALUE,
+        VALUE_ONE,
         FLAGS,
+
+
+        // RELATIVE values
+        REL_VALUE,               // stack_value_now          / bfield_value_now
+        REL0_VALUE,              // stack_value_now          / bfield_value_at_start
+        REL_VALUE_KILLED,        // value_killed_this_turn   / bfield_value_last_turn
+        REL0_VALUE_KILLED_ACC,   // value_killed_lifetime    / bfield_value_at_start
+        REL_VALUE_LOST,          // value_lost_this_turn     / bfield_value_last_turn
+        REL0_VALUE_LOST_ACC,     // value_lost_lifetime      / bfield_value_at_start
+        REL_DMG_DEALT,           // dmg_dealt_this_turn      / bfield_hp_last_turn
+        REL0_DMG_DEALT_ACC,      // dmg_dealt_lifetime       / bfield_hp_at_start
+        REL_DMG_RECEIVED,        // dmg_received_this_turn   / bfield_hp_last_turn
+        REL0_DMG_RECEIVED_ACC,   // dmg_received_lifetime    / bfield_hp_at_start
         _count
     };
 
@@ -375,13 +430,24 @@ namespace MMAI::Schema::V7 {
         INVALID_DIR,
     };
 
-    class IMisc {
+    class IGlobalStats {
     public:
-        virtual int getInitialArmyValueLeft() const = 0;
-        virtual int getInitialArmyValueRight() const = 0;
-        virtual int getCurrentArmyValueLeft() const = 0;
-        virtual int getCurrentArmyValueRight() const = 0;
-        virtual ~IMisc() = default;
+
+        virtual int getValueStart() const = 0;
+        virtual int getValueNow() const = 0;
+        virtual int getHPStart() const = 0;
+        virtual int getHPNow() const = 0;
+
+        virtual int getDmgDealtNow() const = 0;
+        virtual int getDmgDealtTotal() const = 0;
+        virtual int getDmgReceivedNow() const = 0;
+        virtual int getDmgReceivedTotal() const = 0;
+        virtual int getValueKilledNow() const = 0;
+        virtual int getValueKilledTotal() const = 0;
+        virtual int getValueLostNow() const = 0;
+        virtual int getValueLostTotal() const = 0;
+
+        virtual ~IGlobalStats() = default;
     };
 
     using HexAttrs = std::array<int, static_cast<int>(HexAttribute::_count)>;
@@ -431,15 +497,10 @@ namespace MMAI::Schema::V7 {
         virtual Side getSide() const = 0;
         virtual std::string getColor() const = 0;
         virtual ErrorCode getErrorCode() const = 0;
-        virtual int getDmgDealt() const = 0;
-        virtual int getDmgReceived() const = 0;
-        virtual int getUnitsLost() const = 0;
-        virtual int getUnitsKilled() const = 0;
-        virtual int getValueLost() const = 0;
-        virtual int getValueKilled() const = 0;
         virtual bool getIsBattleEnded() const = 0;
         virtual bool getIsVictorious() const = 0;
-        virtual const IMisc* getMisc() const = 0;
+        virtual const IGlobalStats* getGlobalStatsLeft() const = 0;
+        virtual const IGlobalStats* getGlobalStatsRight() const = 0;
         virtual const Hexes getHexes() const = 0;
         virtual const Stacks getStacks() const = 0;
         virtual const AttackLogs getAttackLogs() const = 0;

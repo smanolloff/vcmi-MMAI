@@ -19,24 +19,26 @@
 #include "battle/CPlayerBattleCallback.h"
 #include "networkPacks/PacksForClientBattle.h"
 
-#include "BAI/v7/action.h"
-#include "BAI/v7/attack_log.h"
-#include "BAI/v7/battlefield.h"
-#include "BAI/v7/supplementary_data.h"
+#include "BAI/v8/action.h"
+#include "BAI/v8/attack_log.h"
+#include "BAI/v8/battlefield.h"
+#include "BAI/v8/global_stats.h"
+#include "BAI/v8/supplementary_data.h"
 #include "schema/base.h"
-#include "schema/v7/types.h"
+#include "schema/v8/types.h"
 
-namespace MMAI::BAI::V7 {
+namespace MMAI::BAI::V8 {
     using BS = Schema::BattlefieldState;
 
     class State : public Schema::IState {
     public:
+
         // IState impl
         const Schema::ActionMask& getActionMask() const override { return actmask; };
         const Schema::AttentionMask& getAttentionMask() const override { return attnmask; }
         const Schema::BattlefieldState& getBattlefieldState() const override { return bfstate; }
         const std::any getSupplementaryData() const override {
-            return static_cast<const MMAI::Schema::V7::ISupplementaryData*>(supdata.get());
+            return static_cast<const MMAI::Schema::V8::ISupplementaryData*>(supdata.get());
         }
         int version() const override { return version_; }
 
@@ -50,6 +52,7 @@ namespace MMAI::BAI::V7 {
 
         // Subsequent versions may override this if they only change
         // the data type of encoded values (i.e. have their own HEX_ENCODING)
+        void encodeMisc();
         virtual void encodeHex(Hex* hex);
         virtual void verify();
 
@@ -60,11 +63,14 @@ namespace MMAI::BAI::V7 {
         std::unique_ptr<SupplementaryData> supdata = nullptr;
         std::vector<std::shared_ptr<AttackLog>> attackLogs = {};
         std::unique_ptr<Action> action = nullptr;
+        std::unique_ptr<GlobalStats> lgstats = nullptr;
+        std::unique_ptr<GlobalStats> rgstats = nullptr;
         const std::pair<int, int> initialArmyValues;
         const std::string colorname;
-        const CPlayerBattleCallback* const battle; // survives discard()
+        const CPlayerBattleCallback* const battle;
         const BattleSide side;
         std::shared_ptr<const Battlefield> battlefield;
+        std::map<const CStack*, Stack::Stats> stacksStats;
         bool isMorale = false;
 
         static std::vector<float> InitNullStack();
