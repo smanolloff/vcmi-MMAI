@@ -14,34 +14,6 @@ set(MMAI_FILES
   # BAI/model/TorchModel.cpp       # optionally added later
   # BAI/model/TorchModelDummy.cpp  # optionally added later
 
-  BAI/v1/BAI.cpp
-  BAI/v1/BAI.h
-  BAI/v1/action.cpp
-  BAI/v1/action.h
-  BAI/v1/attack_log.h
-  BAI/v1/battlefield.cpp
-  BAI/v1/battlefield.h
-  BAI/v1/encoder.cpp
-  BAI/v1/encoder.h
-  BAI/v1/hex.cpp
-  BAI/v1/hex.h
-  BAI/v1/hexaction.h
-  BAI/v1/hexactmask.h
-  BAI/v1/render.cpp
-  BAI/v1/render.h
-  BAI/v1/stackinfo.h
-  BAI/v1/state.cpp
-  BAI/v1/state.h
-  BAI/v1/supplementary_data.cpp
-  BAI/v1/supplementary_data.h
-
-  BAI/v2/BAI.cpp
-  BAI/v2/BAI.h
-  BAI/v2/encoder.cpp
-  BAI/v2/encoder.h
-  BAI/v2/state.cpp
-  BAI/v2/state.h
-
   BAI/v3/BAI.cpp
   BAI/v3/BAI.h
   BAI/v3/action.cpp
@@ -65,82 +37,6 @@ set(MMAI_FILES
   BAI/v3/state.h
   BAI/v3/supplementary_data.cpp
   BAI/v3/supplementary_data.h
-
-  BAI/v4/BAI.cpp
-  BAI/v4/BAI.h
-  BAI/v4/action.cpp
-  BAI/v4/action.h
-  BAI/v4/attack_log.h
-  BAI/v4/battlefield.cpp
-  BAI/v4/battlefield.h
-  BAI/v4/encoder.cpp
-  BAI/v4/encoder.h
-  BAI/v4/general_info.cpp
-  BAI/v4/general_info.h
-  BAI/v4/hex.cpp
-  BAI/v4/hex.h
-  BAI/v4/hexaction.h
-  BAI/v4/hexactmask.h
-  BAI/v4/render.cpp
-  BAI/v4/render.h
-  BAI/v4/stack.cpp
-  BAI/v4/stack.h
-  BAI/v4/state.cpp
-  BAI/v4/state.h
-  BAI/v4/supplementary_data.cpp
-  BAI/v4/supplementary_data.h
-  BAI/v4/util.cpp
-  BAI/v4/util.h
-
-  BAI/v5/BAI.cpp
-  BAI/v5/BAI.h
-  BAI/v5/action.cpp
-  BAI/v5/action.h
-  BAI/v5/attack_log.h
-  BAI/v5/battlefield.cpp
-  BAI/v5/battlefield.h
-  BAI/v5/encoder.cpp
-  BAI/v5/encoder.h
-  BAI/v5/general_info.cpp
-  BAI/v5/general_info.h
-  BAI/v5/hex.cpp
-  BAI/v5/hex.h
-  BAI/v5/render.cpp
-  BAI/v5/render.h
-  BAI/v5/stack.cpp
-  BAI/v5/stack.h
-  BAI/v5/state.cpp
-  BAI/v5/state.h
-  BAI/v5/supplementary_data.cpp
-  BAI/v5/supplementary_data.h
-  BAI/v5/util.cpp
-  BAI/v5/util.h
-
-  BAI/v6/BAI.cpp
-  BAI/v6/BAI.h
-  BAI/v6/action.cpp
-  BAI/v6/action.h
-  BAI/v6/attack_log.h
-  BAI/v6/battlefield.cpp
-  BAI/v6/battlefield.h
-  BAI/v6/encoder.cpp
-  BAI/v6/encoder.h
-  BAI/v6/general_info.cpp
-  BAI/v6/general_info.h
-  BAI/v6/hex.cpp
-  BAI/v6/hex.h
-  BAI/v6/hexaction.h
-  BAI/v6/hexactmask.h
-  BAI/v6/render.cpp
-  BAI/v6/render.h
-  BAI/v6/stack.cpp
-  BAI/v6/stack.h
-  BAI/v6/state.cpp
-  BAI/v6/state.h
-  BAI/v6/supplementary_data.cpp
-  BAI/v6/supplementary_data.h
-  BAI/v6/util.cpp
-  BAI/v6/util.h
 
   BAI/v7/BAI.cpp
   BAI/v7/BAI.h
@@ -178,7 +74,6 @@ set(MMAI_FILES
   BAI/v8/encoder.cpp
   BAI/v8/encoder.h
   BAI/v8/global_stats.h
-  BAI/v8/global_stats.cpp
   BAI/v8/hex.cpp
   BAI/v8/hex.h
   BAI/v8/hexaction.h
@@ -195,28 +90,10 @@ set(MMAI_FILES
   BAI/v8/util.h
 
   schema/schema.h
-  schema/v1/constants.h
-  schema/v1/schema.h
-  schema/v1/types.h
-  schema/v1/util.h
-  schema/v2/constants.h
-  schema/v2/schema.h
   schema/v3/constants.h
   schema/v3/schema.h
   schema/v3/types.h
   schema/v3/util.h
-  schema/v4/constants.h
-  schema/v4/schema.h
-  schema/v4/types.h
-  schema/v4/util.h
-  schema/v5/constants.h
-  schema/v5/schema.h
-  schema/v5/types.h
-  schema/v5/util.h
-  schema/v6/constants.h
-  schema/v6/schema.h
-  schema/v6/types.h
-  schema/v6/util.h
   schema/v7/constants.h
   schema/v7/schema.h
   schema/v7/types.h

@@ -34,20 +34,15 @@ namespace MMAI::BAI {
         version = tjc->module.get_method("get_version")({}).toInt();
 
         switch(version) {
-            break; case 1:
-                sizeOneHex = MMAI::Schema::V1::BATTLEFIELD_STATE_SIZE_ONE_HEX;
-                nactions = MMAI::Schema::V1::N_ACTIONS;
-                actionOffset = 1;
-            break; case 2:
-                sizeOneHex = MMAI::Schema::V2::BATTLEFIELD_STATE_SIZE_ONE_HEX;
-                nactions = MMAI::Schema::V1::N_ACTIONS;
-                actionOffset = 1;
             break; case 3:
                 sizeOneHex = MMAI::Schema::V3::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V3::N_ACTIONS;
-            break; case 4:
-                sizeOneHex = MMAI::Schema::V4::BATTLEFIELD_STATE_SIZE_ONE_HEX;
-                nactions = MMAI::Schema::V4::N_ACTIONS;
+            break; case 7:
+                sizeOneHex = MMAI::Schema::V7::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V7::N_ACTIONS;
+            break; case 8:
+                sizeOneHex = MMAI::Schema::V8::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V8::N_ACTIONS;
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }
@@ -82,13 +77,12 @@ namespace MMAI::BAI {
         auto ended = false;
 
         switch(version) {
-            break; case 1:
-                   case 2:
-                ended = std::any_cast<const MMAI::Schema::V1::ISupplementaryData*>(any)->getIsBattleEnded();
             break; case 3:
                 ended = std::any_cast<const MMAI::Schema::V3::ISupplementaryData*>(any)->getIsBattleEnded();
-            break; case 4:
-                ended = std::any_cast<const MMAI::Schema::V4::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 7:
+                ended = std::any_cast<const MMAI::Schema::V7::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 8:
+                ended = std::any_cast<const MMAI::Schema::V8::ISupplementaryData*>(any)->getIsBattleEnded();
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }

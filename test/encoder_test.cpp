@@ -1,11 +1,11 @@
-#include "BAI/v5/encoder.h"
-#include "schema/v5/constants.h"
-#include "schema/v5/types.h"
+#include "BAI/v8/encoder.h"
+#include "schema/v8/constants.h"
+#include "schema/v8/types.h"
 #include "test/googletest/googletest/include/gtest/gtest.h"
 #include <stdexcept>
 
-using Encoder = MMAI::BAI::V5::Encoder;
-using namespace MMAI::Schema::V5;
+using Encoder = MMAI::BAI::V8::Encoder;
+using namespace MMAI::Schema::V8;
 
 
 TEST(Encoder, Encode) {

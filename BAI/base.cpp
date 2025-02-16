@@ -18,12 +18,7 @@
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
 
-#include "BAI/v1/BAI.h"
-#include "BAI/v2/BAI.h"
 #include "BAI/v3/BAI.h"
-#include "BAI/v4/BAI.h"
-#include "BAI/v5/BAI.h"
-#include "BAI/v6/BAI.h"
 #include "BAI/v7/BAI.h"
 #include "BAI/v8/BAI.h"
 #include "base.h"
@@ -39,18 +34,8 @@ namespace MMAI::BAI {
         auto version = model->getVersion();
 
         switch (version) {
-        break; case 1:
-            res = std::make_shared<V1::BAI>(model, version, env, cb);
-        break; case 2:
-            res = std::make_shared<V2::BAI>(model, version, env, cb);
         break; case 3:
             res = std::make_shared<V3::BAI>(model, version, env, cb);
-        break; case 4:
-            res = std::make_shared<V4::BAI>(model, version, env, cb);
-        break; case 5:
-            res = std::make_shared<V5::BAI>(model, version, env, cb);
-        break; case 6:
-            res = std::make_shared<V6::BAI>(model, version, env, cb);
         break; case 7:
             res = std::make_shared<V7::BAI>(model, version, env, cb);
         break; case 8:
@@ -197,8 +182,9 @@ void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const Bat
             fmt += "\n\t* teleport=%d";
 
             auto bh0 = dest.at(0);
-            auto hexid0 = V1::Hex::CalcId(dest.at(0));
-            auto [x0, y0] = V1::Hex::CalcXY(dest.at(0));
+            auto hexid0 = bh0.getX()-1 + bh0.getY()*BF_XMAX;
+            auto x0 = bh0.getX() - 1;
+            auto y0 = bh0.getY();
 
             auto res = boost::format(fmt)
                 % stack->getDescription()
