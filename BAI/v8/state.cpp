@@ -46,16 +46,16 @@ namespace MMAI::BAI::V8 {
     static_assert(EI(HA::STACK_QUEUE_POS)               == EI(SA::QUEUE_POS) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_VALUE_ONE)               == EI(SA::VALUE_ONE) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_FLAGS)                   == EI(SA::FLAGS) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL_VALUE)               == EI(SA::REL_VALUE) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL0_VALUE)              == EI(SA::REL0_VALUE) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL_VALUE_KILLED)        == EI(SA::REL_VALUE_KILLED) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL0_VALUE_KILLED_ACC)   == EI(SA::REL0_VALUE_KILLED_ACC) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL_VALUE_LOST)          == EI(SA::REL_VALUE_LOST) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL0_VALUE_LOST_ACC)     == EI(SA::REL0_VALUE_LOST_ACC) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL_DMG_DEALT)           == EI(SA::REL_DMG_DEALT) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL0_DMG_DEALT_ACC)      == EI(SA::REL0_DMG_DEALT_ACC) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL_DMG_RECEIVED)        == EI(SA::REL_DMG_RECEIVED) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_REL0_DMG_RECEIVED_ACC)   == EI(SA::REL0_DMG_RECEIVED_ACC) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_VALUE_REL)               == EI(SA::VALUE_REL) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_VALUE_REL0)              == EI(SA::VALUE_REL0) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_VALUE_KILLED_REL)        == EI(SA::VALUE_KILLED_REL) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_VALUE_KILLED_ACC_REL0)   == EI(SA::VALUE_KILLED_ACC_REL0) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_VALUE_LOST_REL)          == EI(SA::VALUE_LOST_REL) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_VALUE_LOST_ACC_REL0)     == EI(SA::VALUE_LOST_ACC_REL0) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_DMG_DEALT_REL)           == EI(SA::DMG_DEALT_REL) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_DMG_DEALT_ACC_REL0)      == EI(SA::DMG_DEALT_ACC_REL0) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_DMG_RECEIVED_REL)        == EI(SA::DMG_RECEIVED_REL) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_DMG_RECEIVED_ACC_REL0)   == EI(SA::DMG_RECEIVED_ACC_REL0) + STACK_ATTR_OFFSET);
 
     // static
     std::vector<float> State::InitNullStack() {
@@ -71,12 +71,16 @@ namespace MMAI::BAI::V8 {
         int hl = 0;
         int hr = 0;
         for (auto &stack : battle->battleGetStacks()) {
+            auto v = stack->getCount() * Stack::CalcValue(stack->unitType());
+            auto h = stack->getAvailableHealth();
+            // std::cout << "[" << EI(stack->unitSide()) << "] v=" << v << ", h=" << h << ", vl=" << vl << ", vr=" << vr << "\n";
+
             if (stack->unitSide() == BattleSide::ATTACKER) {
-                vl += stack->getCount() * stack->unitType()->getAIValue();
-                hl += stack->getAvailableHealth();
+                vl += v;
+                hl += h;
             } else {
-                vr += stack->getCount() * stack->unitType()->getAIValue();
-                hr += stack->getCount() * stack->unitType()->getAIValue();
+                vr += v;
+                hr += h;
             }
         }
 
@@ -91,13 +95,12 @@ namespace MMAI::BAI::V8 {
     , nullstack(InitNullStack())
     {
         auto [vl, vr, hl, hr] = CalcGlobalStats(battle);
-        lgstats = std::make_unique<GlobalStats>(vl, vr);
-        rgstats = std::make_unique<GlobalStats>(hl, hr);
+        lgstats = std::make_unique<GlobalStats>(vl, hl);
+        rgstats = std::make_unique<GlobalStats>(vr, hr);
         battlefield = Battlefield::Create(battle_, nullptr, lgstats.get(), rgstats.get(), {}, false);
 
         bfstate.reserve(Schema::V8::BATTLEFIELD_STATE_SIZE);
         actmask.reserve(Schema::V8::N_ACTIONS);
-        // attnmask.reserve(165 * 165);
     }
 
     void State::onActiveStack(const CStack* astack) {
@@ -178,7 +181,6 @@ namespace MMAI::BAI::V8 {
         attackLogs.clear(); // accumulate new logs until next turn
         bfstate.clear();
         actmask.clear();
-        // attnmask.clear();
 
         for (int i=0; i<EI(NonHexAction::count); i++) {
             switch (NonHexAction(i)) {
@@ -200,50 +202,41 @@ namespace MMAI::BAI::V8 {
     }
 
     void State::encodeMisc() {
-        auto l_v = lgstats->valueNow;
-        auto r_v = rgstats->valueNow;
-        auto v = l_v + r_v;
-        auto v0 = lgstats->valueStart + rgstats->valueStart;
+        Encoder::Encode(MA::BATTLE_SIDE, EI(battle->battleGetMySide()), bfstate);
 
-        auto l_vk = lgstats->valueKilledNow;
-        auto r_vk = rgstats->valueKilledNow;
-        auto l_vk_tot = lgstats->valueKilledTotal;
-        auto r_vk_tot = rgstats->valueKilledTotal;
-        auto l_vl = lgstats->valueLostNow;
-        auto r_vl = rgstats->valueLostNow;
-        auto l_vl_tot = lgstats->valueLostTotal;
-        auto r_vl_tot = rgstats->valueLostTotal;
-        auto l_dd = lgstats->dmgDealtNow;
-        auto r_dd = rgstats->dmgDealtNow;
-        auto l_dd_tot = lgstats->dmgDealtTotal;
-        auto r_dd_tot = rgstats->dmgDealtTotal;
-        auto l_dr = lgstats->dmgReceivedNow;
-        auto r_dr = rgstats->dmgReceivedNow;
-        auto l_dr_tot = lgstats->dmgReceivedTotal;
-        auto r_dr_tot = rgstats->dmgReceivedTotal;
+        if (supdata->ended) {
+            auto winner = EI(battle->battleGetMySide()) ? supdata->victory : !supdata->victory;
+            Encoder::Encode(MA::BATTLE_WINNER, winner, bfstate);
+        } else {
+            Encoder::Encode(MA::BATTLE_WINNER, NULL_VALUE_UNENCODED, bfstate);
+        }
 
+        auto l = lgstats.get();
+        auto r = rgstats.get();
+        auto bf_valueNow = l->valueNow + r->valueNow;
+        auto bf_valueStart = l->valueStart + rgstats->valueStart;
 
-        Encoder::Encode(MiscAttribute::REL0_VALUE,                  v / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL_VALUE_LEFT,              l_v / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL_VALUE_RIGHT,             r_v / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_VALUE_LEFT,             l_v / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_VALUE_RIGHT,            r_v / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL_VALUE_KILLED_LEFT,       l_vk / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL_VALUE_KILLED_RIGHT,      r_vk / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_VALUE_KILLED_LEFT_ACC,  l_vk_tot / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_VALUE_KILLED_RIGHT_ACC, r_vk_tot / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL_VALUE_LOST_LEFT,         l_vl / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL_VALUE_LOST_RIGHT,        r_vl / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_VALUE_LOST_LEFT_ACC,    l_vl_tot / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_VALUE_LOST_RIGHT_ACC,   r_vl_tot / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL_DMG_DEALT_LEFT,          l_dd / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL_DMG_DEALT_RIGHT,         r_dd / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_DMG_DEALT_LEFT_ACC,     l_dd_tot / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_DMG_DEALT_RIGHT_ACC,    r_dd_tot / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL_DMG_TAKEN_LEFT,          l_dr / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL_DMG_TAKEN_RIGHT,         r_dr / v, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_DMG_TAKEN_LEFT_ACC,     l_dr_tot / v0, bfstate);
-        Encoder::Encode(MiscAttribute::REL0_DMG_TAKEN_RIGHT_ACC,    r_dr_tot / v0, bfstate);
+        Encoder::Encode(MA::BFIELD_VALUE_NOW_REL0,       bf_valueNow / bf_valueStart, bfstate);
+        Encoder::Encode(MA::ARMY_VALUE_L_NOW_REL,        l->valueNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::ARMY_VALUE_R_NOW_REL,        r->valueNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::ARMY_VALUE_L_NOW_REL0,       l->valueNow / bf_valueStart, bfstate);
+        Encoder::Encode(MA::ARMY_VALUE_R_NOW_REL0,       r->valueNow / bf_valueStart, bfstate);
+        Encoder::Encode(MA::VALUE_KILLED_LEFT_REL,       l->valueKilledNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::VALUE_KILLED_RIGHT_REL,      r->valueKilledNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::VALUE_KILLED_LEFT_ACC_REL0,  l->valueKilledTotal / bf_valueStart, bfstate);
+        Encoder::Encode(MA::VALUE_KILLED_RIGHT_ACC_REL0, r->valueKilledTotal / bf_valueStart, bfstate);
+        Encoder::Encode(MA::VALUE_LOST_LEFT_REL,         l->valueLostNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::VALUE_LOST_RIGHT_REL,        r->valueLostNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::VALUE_LOST_LEFT_ACC_REL0,    l->valueLostTotal / bf_valueStart, bfstate);
+        Encoder::Encode(MA::VALUE_LOST_RIGHT_ACC_REL0,   r->valueLostTotal / bf_valueStart, bfstate);
+        Encoder::Encode(MA::DMG_DEALT_LEFT_REL,          l->dmgDealtNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::DMG_DEALT_RIGHT_REL,         r->dmgDealtNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::DMG_DEALT_LEFT_ACC_REL0,     l->dmgDealtTotal / bf_valueStart, bfstate);
+        Encoder::Encode(MA::DMG_DEALT_RIGHT_ACC_REL0,    r->dmgDealtTotal / bf_valueStart, bfstate);
+        Encoder::Encode(MA::DMG_TAKEN_LEFT_REL,          l->dmgReceivedNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::DMG_TAKEN_RIGHT_REL,         r->dmgReceivedNow / bf_valueNow, bfstate);
+        Encoder::Encode(MA::DMG_TAKEN_LEFT_ACC_REL0,     l->dmgReceivedTotal / bf_valueStart, bfstate);
+        Encoder::Encode(MA::DMG_TAKEN_RIGHT_ACC_REL0,    r->dmgReceivedTotal / bf_valueStart, bfstate);
     }
 
     void State::encodeHex(Hex* hex) {
@@ -254,30 +247,11 @@ namespace MMAI::BAI::V8 {
         // Action mask
         for (int m=0; m<hex->actmask.size(); ++m)
             actmask.push_back(hex->actmask.test(m));
-
-        // // Attention mask
-        // // (not used)
-        // if (hex->cstack) {
-        //     auto side = hex->attrs.at(EI(HA::STACK_SIDE));
-        //     auto slot = hex->attrs.at(EI(HA::STACK_SLOT));
-        //     for (auto &hexrow1 : bf.hexes) {
-        //         for (auto &hex1 : hexrow1) {
-        //             if (hex1.hexactmasks.at(side).at(slot).any()) {
-        //                 attnmask.push_back(0);
-        //             } else {
-        //                 attnmask.push_back(std::numeric_limits<float>::lowest());
-        //             }
-        //         }
-        //     }
-        // } else {
-        //     attnmask.insert(attnmask.end(), 165, std::numeric_limits<float>::lowest());
-        // }
     }
 
     void State::verify() {
         ASSERT(bfstate.size() == BATTLEFIELD_STATE_SIZE, "unexpected bfstate.size(): " + std::to_string(bfstate.size()));
         ASSERT(actmask.size() == N_ACTIONS, "unexpected actmask.size(): " + std::to_string(actmask.size()));
-        // ASSERT(attnmask.size() == 165*165, "unexpected attnmask.size(): " + std::to_string(attnmask.size()));
     }
 
     void State::onBattleStacksAttacked(const std::vector<BattleStackAttacked> &bsa) {
@@ -306,7 +280,7 @@ namespace MMAI::BAI::V8 {
                 defender != stacks.end() ? *defender : nullptr,
                 elem.damageAmount,
                 elem.killedAmount,
-                elem.killedAmount * cdefender->unitType()->getAIValue()
+                elem.killedAmount * Stack::CalcValue(cdefender->unitType())
             ));
         }
     }

@@ -114,16 +114,16 @@ namespace MMAI::BAI::V8 {
             {A::STACK_VALUE_ONE,             SA::VALUE_ONE},
             {A::STACK_FLAGS,                 SA::FLAGS},
 
-            {A::STACK_REL_VALUE,             SA::REL_VALUE},
-            {A::STACK_REL0_VALUE,            SA::REL0_VALUE},
-            {A::STACK_REL_VALUE_KILLED,      SA::REL_VALUE_KILLED},
-            {A::STACK_REL0_VALUE_KILLED_ACC, SA::REL0_VALUE_KILLED_ACC},
-            {A::STACK_REL_VALUE_LOST,        SA::REL_VALUE_LOST},
-            {A::STACK_REL0_VALUE_LOST_ACC,   SA::REL0_VALUE_LOST_ACC},
-            {A::STACK_REL_DMG_DEALT,         SA::REL_DMG_DEALT},
-            {A::STACK_REL0_DMG_DEALT_ACC,    SA::REL0_DMG_DEALT_ACC},
-            {A::STACK_REL_DMG_RECEIVED,      SA::REL_DMG_RECEIVED},
-            {A::STACK_REL0_DMG_RECEIVED_ACC, SA::REL0_DMG_RECEIVED_ACC},
+            {A::STACK_VALUE_REL,             SA::VALUE_REL},
+            {A::STACK_VALUE_REL0,            SA::VALUE_REL0},
+            {A::STACK_VALUE_KILLED_REL,      SA::VALUE_KILLED_REL},
+            {A::STACK_VALUE_KILLED_ACC_REL0, SA::VALUE_KILLED_ACC_REL0},
+            {A::STACK_VALUE_LOST_REL,        SA::VALUE_LOST_REL},
+            {A::STACK_VALUE_LOST_ACC_REL0,   SA::VALUE_LOST_ACC_REL0},
+            {A::STACK_DMG_DEALT_REL,         SA::DMG_DEALT_REL},
+            {A::STACK_DMG_DEALT_ACC_REL0,    SA::DMG_DEALT_ACC_REL0},
+            {A::STACK_DMG_RECEIVED_REL,      SA::DMG_RECEIVED_REL},
+            {A::STACK_DMG_RECEIVED_ACC_REL0, SA::DMG_RECEIVED_ACC_REL0},
         };
 
         if (stack) {

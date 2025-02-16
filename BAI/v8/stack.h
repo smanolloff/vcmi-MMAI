@@ -31,7 +31,7 @@ namespace MMAI::BAI::V8 {
      */
     class Stack : public Schema::V8::IStack {
     public:
-        static float CalcValue(const CCreature* creature);
+        static int CalcValue(const CCreature* creature);
 
         struct Stats {
             int dmgDealtNow = 0;
@@ -47,7 +47,8 @@ namespace MMAI::BAI::V8 {
         Stack(
             const CStack* cstack,
             Queue &q,
-            const GlobalStats* gstats,
+            const GlobalStats* lgstats,
+            const GlobalStats* rgstats,
             const Stats stats,
             bool blocked,
             bool blocking,

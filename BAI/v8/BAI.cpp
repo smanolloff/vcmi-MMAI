@@ -158,7 +158,7 @@ namespace MMAI::BAI::V8 {
 
             auto allstacks = battle->battleGetStacks(CBattleInfoEssentials::ONLY_ENEMY);
             auto target = std::max_element(allstacks.begin(), allstacks.end(), [](const CStack* a, const CStack* b) {
-                return a->unitType()->getAIValue() < b->unitType()->getAIValue();
+                return Stack::CalcValue(a->unitType()) < Stack::CalcValue(b->unitType());
             });
 
             ASSERT(target != allstacks.end(), "Could not find an enemy stack to attack. Falling back to a defend.");

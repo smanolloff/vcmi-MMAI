@@ -273,10 +273,12 @@ namespace MMAI::BAI::V8 {
                 auto v = hex->attrs.at(i);
                 auto cstack = hexstacks.at(ihex);
 
-                if (cstack)
+                if (cstack) {
                     expect(!!hex->stack, "cstack is present, but hex->stack is nullptr");
-                else
+                    expect(hex->stack->cstack == cstack, "hex->cstack != cstack");
+                } else {
                     expect(!hex->stack, "cstack is nullptr, but hex->stack is present");
+                }
 
                 switch(attr) {
                 break; case HA::Y_COORD:
@@ -404,27 +406,34 @@ namespace MMAI::BAI::V8 {
                         expect(cstack != astack, "HEX.STACK_QUEUE_POS: =%d but is same as astack", v);
 
                 break; case HA::STACK_VALUE_ONE: {
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_VALUE_ONE_MAX * float(cstack->unitType()->getAIValue()) / STACK_VALUE_ONE_MAX); }, "HEX.STACK_VALUE_ONE");
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return Stack::CalcValue(cstack->unitType()); }, "HEX.STACK_VALUE_ONE");
                 }
-                break; case HA::STACK_VALUE:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_VALUE_ONE_MAX * float(cstack->getCount() * cstack->unitType()->getAIValue()) / STACK_VALUE_ONE_MAX); }, "HEX.STACK_VALUE");
                 break; case HA::STACK_VALUE_REL: {
                     int tot = 0;
                     for (auto &s : allstacks)
-                        tot += s->getCount() * s->unitType()->getAIValue();
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_VALUE_ONE_MAX * float(cstack->getCount() * cstack->unitType()->getAIValue()) / tot / STACK_VALUE_ONE_MAX); }, "HEX.STACK_VALUE_REL");
+                        tot += s->getCount() * Stack::CalcValue(s->unitType());
+
+                    // if (cstack) {
+                    //     std::cout << "Stack type: ";
+                    //     std::cout << cstack->unitType()->getNameSingularTextID();
+                    //     auto vv = 100.0 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot;
+                    //     std::cout << "Have: " << v << ", want: " << vv;
+                    //     std::cout << "\n";
+                    // }
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return 100 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot; }, "HEX.STACK_VALUE_REL");
                 }
 
                 // These require historical information
                 // (CPlayerCallback does not provide such)
-                break; case HA::STACK_DMG_DEALT_NOW:
-                break; case HA::STACK_DMG_DEALT_TOTAL:
-                break; case HA::STACK_DMG_RECEIVED_NOW:
-                break; case HA::STACK_DMG_RECEIVED_TOTAL:
-                break; case HA::STACK_VALUE_KILLED_NOW:
-                break; case HA::STACK_VALUE_KILLED_TOTAL:
-                break; case HA::STACK_VALUE_LOST_NOW:
-                break; case HA::STACK_VALUE_LOST_TOTAL:
+                break; case HA::STACK_VALUE_REL0:
+                break; case HA::STACK_VALUE_KILLED_REL:
+                break; case HA::STACK_VALUE_KILLED_ACC_REL0:
+                break; case HA::STACK_VALUE_LOST_REL:
+                break; case HA::STACK_VALUE_LOST_ACC_REL0:
+                break; case HA::STACK_DMG_DEALT_REL:
+                break; case HA::STACK_DMG_DEALT_ACC_REL0:
+                break; case HA::STACK_DMG_RECEIVED_REL:
+                break; case HA::STACK_DMG_RECEIVED_ACC_REL0:
 
                 break; case HA::STACK_FLAGS: {
                     if (!isNA(v, cstack, "HEX.STACK_FLAGS")) {
@@ -529,7 +538,9 @@ namespace MMAI::BAI::V8 {
         expect(supdata_.type() == typeid(const ISupplementaryData*), "supdata_ of unexpected type");
         auto supdata = std::any_cast<const ISupplementaryData*>(supdata_);
         expect(supdata, "supdata holds a nullptr");
-        auto gstats = supdata->getGlobalStats();
+        auto lgstats = supdata->getGlobalStatsLeft();
+        auto rgstats = supdata->getGlobalStatsLeft();
+        auto mystats = EI(supdata->getSide()) ? supdata->getGlobalStatsRight() : supdata->getGlobalStatsLeft();
         auto hexes = supdata->getHexes();
         auto color = supdata->getColor();
 
@@ -747,10 +758,10 @@ namespace MMAI::BAI::V8 {
             break; case 2:
                 name = "Last action";
                 value = action ? action->name() + " [" + std::to_string(action->action) + "]" : "";
-            break; case 3: name = "DMG dealt"; value = boost::str(boost::format("%d (%d since start)") % gstats->getDmgDealtNow() % gstats->getDmgDealtTotal());
-            break; case 4: name = "DMG received"; value = boost::str(boost::format("%d (%d since start)") % gstats->getDmgReceivedNow() % gstats->getDmgReceivedTotal());
-            break; case 5: name = "Value killed"; value = boost::str(boost::format("%d (%d since start)") % gstats->getValueKilledNow() % gstats->getValueKilledTotal());
-            break; case 6: name = "Value lost"; value = boost::str(boost::format("%d (%d since start)") % gstats->getValueLostNow() % gstats->getValueLostTotal());
+            break; case 3: name = "DMG dealt"; value = boost::str(boost::format("%d (%d since start)") % mystats->getDmgDealtNow() % mystats->getDmgDealtTotal());
+            break; case 4: name = "DMG received"; value = boost::str(boost::format("%d (%d since start)") % mystats->getDmgReceivedNow() % mystats->getDmgReceivedTotal());
+            break; case 5: name = "Value killed"; value = boost::str(boost::format("%d (%d since start)") % mystats->getValueKilledNow() % mystats->getValueKilledTotal());
+            break; case 6: name = "Value lost"; value = boost::str(boost::format("%d (%d since start)") % mystats->getValueLostNow() % mystats->getValueLostTotal());
             break; case 7: {
                 // XXX: if there's a draw, this text will be incorrect
                 auto restext = supdata->getIsVictorious()
@@ -759,8 +770,8 @@ namespace MMAI::BAI::V8 {
 
                 name = "Battle result"; value = supdata->getIsBattleEnded() ? (restext + nocol) : "";
             }
-            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%d remaining)") % gstats->getValueStartLeft() % gstats->getValueNowLeft());
-            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%d remaining)") % gstats->getValueStartRight() % gstats->getValueNowRight());
+            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%d remaining)") % lgstats->getValueStart() % lgstats->getValueNow());
+            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%d remaining)") % rgstats->getValueStart() % rgstats->getValueNow());
             break; default:
                 continue;
             }
@@ -813,15 +824,15 @@ namespace MMAI::BAI::V8 {
             RowDef{SA::HP_LEFT, "HP left"},
             RowDef{SA::SPEED, "Speed"},
             RowDef{SA::QUEUE_POS, "Queue"},
-            RowDef{SA::VALUE, "Value"},
-            RowDef{SA::VALUE_REL, "Value %"},
+            RowDef{SA::VALUE_ONE, "Value (one)"},
+            RowDef{SA::VALUE_REL, "Value (%)"},
             // RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
             RowDef{SA::FLAGS, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
             RowDef{SA::FLAGS, "Attack mods"}, // "DB" = Double, Blinding
             // 2 values per column to avoid too long table
             RowDef{SA::FLAGS, "Blocked/ing"},
             RowDef{SA::FLAGS, "Fly/Sleep"},
-            RowDef{SA::FLAGS, "No Retal/Melee"},
+            RowDef{SA::FLAGS, "NoRetal/NoMelee"},
             RowDef{SA::FLAGS, "Wide/Breath"},
             RowDef{SA::SIDE, ""},  // divider row
         };
@@ -893,7 +904,7 @@ namespace MMAI::BAI::V8 {
                         //     break; default:
                         //         throw std::runtime_error("Unexpected actstate:: " + std::to_string(EI(stack->getAttr(a))));
                         //     }
-                        if (a == SA::VALUE && stack->getAttr(a) >= 1000) {
+                        if (a == SA::VALUE_ONE && stack->getAttr(a) >= 1000) {
                             std::ostringstream oss;
                             oss << std::fixed << std::setprecision(1) << (stack->getAttr(a) / 1000.0);
                             value = oss.str();

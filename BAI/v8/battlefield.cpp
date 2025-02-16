@@ -38,11 +38,12 @@ namespace MMAI::BAI::V8 {
     std::shared_ptr<const Battlefield> Battlefield::Create(
         const CPlayerBattleCallback* battle,
         const CStack* acstack,
-        const GlobalStats* gstats,
+        const GlobalStats* lgstats,
+        const GlobalStats* rgstats,
         std::map<const CStack*, Stack::Stats> stacksStats,
         bool isMorale
     ) {
-        auto stacks = InitStacks(battle, acstack, gstats, stacksStats, isMorale);
+        auto stacks = InitStacks(battle, acstack, lgstats, rgstats, stacksStats, isMorale);
         auto [hexes, astack] = InitHexes(battle, acstack, stacks);
 
         return std::make_shared<const Battlefield>(hexes, stacks, astack);
@@ -141,7 +142,8 @@ namespace MMAI::BAI::V8 {
     Stacks Battlefield::InitStacks(
         const CPlayerBattleCallback* battle,
         const CStack* astack,
-        const GlobalStats* gstats,
+        const GlobalStats* lgstats,
+        const GlobalStats* rgstats,
         std::map<const CStack*, Stack::Stats> stacksStats,
         bool isMorale
     ) {
@@ -216,7 +218,8 @@ namespace MMAI::BAI::V8 {
             auto stack = std::make_shared<Stack>(
                 cstack,
                 queue,
-                gstats,
+                lgstats,
+                rgstats,
                 stacksStats[cstack],  // creates new record if missing
                 blocked[cstack],
                 blocking[cstack],

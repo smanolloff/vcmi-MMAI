@@ -54,7 +54,8 @@ namespace MMAI::BAI::V8 {
         static Stacks InitStacks(
             const CPlayerBattleCallback* battle,
             const CStack* astack,
-            const GlobalStats* gstats,
+            const GlobalStats* lgstats,
+            const GlobalStats* rgstats,
             const std::map<const CStack*, Stack::Stats> stacksStats,
             bool isMorale
         );

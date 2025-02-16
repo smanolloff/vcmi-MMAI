@@ -124,35 +124,53 @@ namespace MMAI::Schema::V8 {
     }
 
     // Values above MAX are simply capped
-    constexpr int ARMY_VALUE_MAX = 500000;      // 4x1096 has 500K pools; 8x64 has 1600K pools
+    constexpr int STACK_VALUE_ONE_MAX = 180000;     // archangel ~50K, crystal dragon ~110K, azure dragon ~180K
     constexpr int STACK_QTY_MAX = 1500;
     constexpr int STACK_DMG_DEALT_MAX = 10000;  // 4x1096 has 98 Ghost dragons => ~4K dmg => 8K (+19 attack)
     constexpr int STACK_VALUE_KILLED_MAX = 100000;  // maxdmg(10K) / cerberus(25) = 400 kills * 200 value = 80K
     constexpr int STACK_HP_TOTAL_MAX = 30000;  // 98 Ghost dragons * 200HP = 20K
     constexpr int CREATURE_ID_MAX = 149;  // H3 core has creature IDs 0..149
 
+    // NOTE: the generated maps use old AIValue() which is 4-6x LOWER
+    //       than the one calculated by MMAI (in Stack::CalcValue())
+    //       => a map with 100K pools corresponds to 400K..600K pools now
+    // The biggest pools are:
+    //   (1) 4x1096  => 500K pools (old)  => 3000K (new) => total = 6000K  (new)
+    //   (2) 8x64    => 800K pools (old)  => 4800K (new) => total = 9600K  (new)
+    //   (3) 8x64    => 1600K pools (old) => 9600K (new) => total = 19200K (new)
+    // Since (1) is used for training while (2) and (3) are for evaluation, we
+    // set max=10000K=10M (new) in order to:
+    // - test higher-than-trained values via (2), but within limits,
+    // - test higher-than-trained values via (3), but outside limits
+    //
+    // XXX: THIS IS NOW LEFT UNUSED (switched to relative values instead)
+    // constexpr int ARMY_VALUE_MAX = 10 * 1000 * 1000; // 10M
+
+
     constexpr MiscEncoding MISC_ENCODING {
-        E4(MA::REL0_VALUE,                  LE, 100),       // bfield_value_now             / bfield_value_at_start
-        E4(MA::REL_VALUE_LEFT,              LE, 100),       // left_army_value_now          / bfield_value_now
-        E4(MA::REL_VALUE_RIGHT,             LE, 100),       // right_army_value_no          / bfield_value_now
-        E4(MA::REL0_VALUE_LEFT,             LE, 100),       // left_army_value_now          / bfield_value_at_start
-        E4(MA::REL0_VALUE_RIGHT,            LE, 100),       // right_army_value_no          / bfield_value_at_start
-        E4(MA::REL_VALUE_KILLED_LEFT,       LE, 100),       // left_value_killed_this_turn  / bfield_value_last_turn
-        E4(MA::REL_VALUE_KILLED_RIGHT,      LE, 100),       // right_value_killed_this_turn / bfield_value_last_turn
-        E4(MA::REL0_VALUE_KILLED_LEFT_ACC,  LE, 100),       // left_value_killed_lifetime   / bfield_value_at_start
-        E4(MA::REL0_VALUE_KILLED_RIGHT_ACC, LE, 100),       // right_value_killed_lifetime  / bfield_value_at_start
-        E4(MA::REL_VALUE_LOST_LEFT,         LE, 100),       // left_value_lost_this_turn    / bfield_value_last_turn
-        E4(MA::REL_VALUE_LOST_RIGHT,        LE, 100),       // right_value_lost_this_turn   / bfield_value_last_turn
-        E4(MA::REL0_VALUE_LOST_LEFT_ACC,    LE, 100),       // left_value_lost_lifetime     / bfield_value_at_start
-        E4(MA::REL0_VALUE_LOST_RIGHT_ACC,   LE, 100),       // right_value_lost_lifetime    / bfield_value_at_start
-        E4(MA::REL_DMG_DEALT_LEFT,          LE, 100),       // left_dmg_dealt_this_turn     / bfield_hp_last_turn
-        E4(MA::REL_DMG_DEALT_RIGHT,         LE, 100),       // right_dmg_dealt_this_turn    / bfield_hp_last_turn
-        E4(MA::REL0_DMG_DEALT_LEFT_ACC,     LE, 100),       // left_dmg_dealt_lifetime      / bfield_hp_at_start
-        E4(MA::REL0_DMG_DEALT_RIGHT_ACC,    LE, 100),       // right_dmg_dealt_lifetime     / bfield_hp_at_start
-        E4(MA::REL_DMG_TAKEN_LEFT,          LE, 100),       // left_dmg_taken_this_turn     / bfield_hp_last_turn
-        E4(MA::REL_DMG_TAKEN_RIGHT,         LE, 100),       // right_dmg_taken_this_turn    / bfield_hp_last_turn
-        E4(MA::REL0_DMG_TAKEN_LEFT_ACC,     LE, 100),       // left_dmg_taken_lifetime      / bfield_hp_at_start
-        E4(MA::REL0_DMG_TAKEN_RIGHT_ACC,    LE, 100),       // right_dmg_taken_lifetime     / bfield_hp_at_start
+        E4(MA::BATTLE_SIDE,                 CS, 1),
+        E4(MA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
+        E4(MA::BFIELD_VALUE_NOW_REL0,       LS, 100),       // bfield_value_now             / bfield_value_at_start
+        E4(MA::ARMY_VALUE_L_NOW_REL,        LS, 100),       // left_army_value_now          / bfield_value_now
+        E4(MA::ARMY_VALUE_R_NOW_REL,        LS, 100),       // right_army_value_no          / bfield_value_now
+        E4(MA::ARMY_VALUE_L_NOW_REL0,       LS, 100),       // left_army_value_now          / bfield_value_at_start
+        E4(MA::ARMY_VALUE_R_NOW_REL0,       LS, 100),       // right_army_value_no          / bfield_value_at_start
+        E4(MA::VALUE_KILLED_LEFT_REL,       LS, 100),       // left_value_killed_this_turn  / bfield_value_last_turn
+        E4(MA::VALUE_KILLED_RIGHT_REL,      LS, 100),       // right_value_killed_this_turn / bfield_value_last_turn
+        E4(MA::VALUE_KILLED_LEFT_ACC_REL0,  LS, 100),       // left_value_killed_lifetime   / bfield_value_at_start
+        E4(MA::VALUE_KILLED_RIGHT_ACC_REL0, LS, 100),       // right_value_killed_lifetime  / bfield_value_at_start
+        E4(MA::VALUE_LOST_LEFT_REL,         LS, 100),       // left_value_lost_this_turn    / bfield_value_last_turn
+        E4(MA::VALUE_LOST_RIGHT_REL,        LS, 100),       // right_value_lost_this_turn   / bfield_value_last_turn
+        E4(MA::VALUE_LOST_LEFT_ACC_REL0,    LS, 100),       // left_value_lost_lifetime     / bfield_value_at_start
+        E4(MA::VALUE_LOST_RIGHT_ACC_REL0,   LS, 100),       // right_value_lost_lifetime    / bfield_value_at_start
+        E4(MA::DMG_DEALT_LEFT_REL,          LS, 100),       // left_dmg_dealt_this_turn     / bfield_hp_last_turn
+        E4(MA::DMG_DEALT_RIGHT_REL,         LS, 100),       // right_dmg_dealt_this_turn    / bfield_hp_last_turn
+        E4(MA::DMG_DEALT_LEFT_ACC_REL0,     LS, 100),       // left_dmg_dealt_lifetime      / bfield_hp_at_start
+        E4(MA::DMG_DEALT_RIGHT_ACC_REL0,    LS, 100),       // right_dmg_dealt_lifetime     / bfield_hp_at_start
+        E4(MA::DMG_TAKEN_LEFT_REL,          LS, 100),       // left_dmg_taken_this_turn     / bfield_hp_last_turn
+        E4(MA::DMG_TAKEN_RIGHT_REL,         LS, 100),       // right_dmg_taken_this_turn    / bfield_hp_last_turn
+        E4(MA::DMG_TAKEN_LEFT_ACC_REL0,     LS, 100),       // left_dmg_taken_lifetime      / bfield_hp_at_start
+        E4(MA::DMG_TAKEN_RIGHT_ACC_REL0,    LS, 100),       // right_dmg_taken_lifetime     / bfield_hp_at_start
 
     };
 
@@ -175,19 +193,19 @@ namespace MMAI::Schema::V8 {
         E4(HA::STACK_SPEED,             EE, 30),       // at 19=full reach; max is... 37?
         E4(HA::STACK_QUEUE_POS,         EE, 15),       // 0..14, 0=active stack
         // H4(SSTACK_A::ESTIMATED_DMG,  NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
-        E4(HA::STACK_VALUE_ONE,         EE, 18000),    // archangel ~5K, crystal dragon ~11K, azure dragon ~18K
+        E4(HA::STACK_VALUE_ONE,         EE, STACK_VALUE_ONE_MAX),
         E4(HA::STACK_FLAGS,             BE, (1<<EI(StackFlag::_count))-1),
 
-        E4(HA::STACK_REL_VALUE,             LE, 100),
-        E4(HA::STACK_REL0_VALUE,            LE, 100),
-        E4(HA::STACK_REL_VALUE_KILLED,      LE, 100),
-        E4(HA::STACK_REL0_VALUE_KILLED_ACC, LE, 100),
-        E4(HA::STACK_REL_VALUE_LOST,        LE, 100),
-        E4(HA::STACK_REL0_VALUE_LOST_ACC,   LE, 100),
-        E4(HA::STACK_REL_DMG_DEALT,         LE, 100),
-        E4(HA::STACK_REL0_DMG_DEALT_ACC,    LE, 100),
-        E4(HA::STACK_REL_DMG_RECEIVED,      LE, 100),
-        E4(HA::STACK_REL0_DMG_RECEIVED_ACC, LE, 100),
+        E4(HA::STACK_VALUE_REL,             LE, 100),
+        E4(HA::STACK_VALUE_REL0,            LE, 100),
+        E4(HA::STACK_VALUE_KILLED_REL,      LE, 100),
+        E4(HA::STACK_VALUE_KILLED_ACC_REL0, LE, 100),
+        E4(HA::STACK_VALUE_LOST_REL,        LE, 100),
+        E4(HA::STACK_VALUE_LOST_ACC_REL0,   LE, 100),
+        E4(HA::STACK_DMG_DEALT_REL,         LE, 100),
+        E4(HA::STACK_DMG_DEALT_ACC_REL0,    LE, 100),
+        E4(HA::STACK_DMG_RECEIVED_REL,      LE, 100),
+        E4(HA::STACK_DMG_RECEIVED_ACC_REL0, LE, 100),
     };
 
     // Dedining encodings for each attribute by hand is error-prone

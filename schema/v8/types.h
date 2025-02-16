@@ -298,12 +298,15 @@ namespace MMAI::Schema::V8 {
     };
 
     enum class MiscAttribute : int {
+        BATTLE_SIDE,                 // 0=left, 1=right
+        BATTLE_WINNER,               // 0=left, 1=right (NA = battle not finished)
+
         BFIELD_VALUE_NOW_REL0,       // bfield_value_now             / bfield_value_at_start
 
         ARMY_VALUE_L_NOW_REL,        // left_army_value_now          / bfield_value_now
-        ARMY_VALUE_R_NOW_REL,        // right_army_value_no          / bfield_value_now
+        ARMY_VALUE_R_NOW_REL,        // right_army_value_now         / bfield_value_now
         ARMY_VALUE_L_NOW_REL0,       // left_army_value_now          / bfield_value_at_start
-        ARMY_VALUE_R_NOW_REL0,       // right_army_value_no          / bfield_value_at_start
+        ARMY_VALUE_R_NOW_REL0,       // right_army_value_now         / bfield_value_at_start
 
         VALUE_KILLED_LEFT_REL,       // left_value_killed_this_turn  / bfield_value_last_turn
         VALUE_KILLED_RIGHT_REL,      // right_value_killed_this_turn / bfield_value_last_turn
@@ -351,16 +354,16 @@ namespace MMAI::Schema::V8 {
         STACK_VALUE_ONE,
         STACK_FLAGS,
 
-        STACK_REL_VALUE,
-        STACK_REL0_VALUE,
-        STACK_REL_VALUE_KILLED,
-        STACK_REL0_VALUE_KILLED_ACC,
-        STACK_REL_VALUE_LOST,
-        STACK_REL0_VALUE_LOST_ACC,
-        STACK_REL_DMG_DEALT,
-        STACK_REL0_DMG_DEALT_ACC,
-        STACK_REL_DMG_RECEIVED,
-        STACK_REL0_DMG_RECEIVED_ACC,
+        STACK_VALUE_REL,
+        STACK_VALUE_REL0,
+        STACK_VALUE_KILLED_REL,
+        STACK_VALUE_KILLED_ACC_REL0,
+        STACK_VALUE_LOST_REL,
+        STACK_VALUE_LOST_ACC_REL0,
+        STACK_DMG_DEALT_REL,
+        STACK_DMG_DEALT_ACC_REL0,
+        STACK_DMG_RECEIVED_REL,
+        STACK_DMG_RECEIVED_ACC_REL0,
 
         _count
     };
@@ -383,16 +386,16 @@ namespace MMAI::Schema::V8 {
 
 
         // RELATIVE values
-        REL_VALUE,               // stack_value_now          / bfield_value_now
-        REL0_VALUE,              // stack_value_now          / bfield_value_at_start
-        REL_VALUE_KILLED,        // value_killed_this_turn   / bfield_value_last_turn
-        REL0_VALUE_KILLED_ACC,   // value_killed_lifetime    / bfield_value_at_start
-        REL_VALUE_LOST,          // value_lost_this_turn     / bfield_value_last_turn
-        REL0_VALUE_LOST_ACC,     // value_lost_lifetime      / bfield_value_at_start
-        REL_DMG_DEALT,           // dmg_dealt_this_turn      / bfield_hp_last_turn
-        REL0_DMG_DEALT_ACC,      // dmg_dealt_lifetime       / bfield_hp_at_start
-        REL_DMG_RECEIVED,        // dmg_received_this_turn   / bfield_hp_last_turn
-        REL0_DMG_RECEIVED_ACC,   // dmg_received_lifetime    / bfield_hp_at_start
+        VALUE_REL,               // stack_value_now          / bfield_value_now
+        VALUE_REL0,              // stack_value_now          / bfield_value_at_start
+        VALUE_KILLED_REL,        // value_killed_this_turn   / bfield_value_last_turn
+        VALUE_KILLED_ACC_REL0,   // value_killed_lifetime    / bfield_value_at_start
+        VALUE_LOST_REL,          // value_lost_this_turn     / bfield_value_last_turn
+        VALUE_LOST_ACC_REL0,     // value_lost_lifetime      / bfield_value_at_start
+        DMG_DEALT_REL,           // dmg_dealt_this_turn      / bfield_hp_last_turn
+        DMG_DEALT_ACC_REL0,      // dmg_dealt_lifetime       / bfield_hp_at_start
+        DMG_RECEIVED_REL,        // dmg_received_this_turn   / bfield_hp_last_turn
+        DMG_RECEIVED_ACC_REL0,   // dmg_received_lifetime    / bfield_hp_at_start
         _count
     };
 

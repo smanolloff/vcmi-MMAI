@@ -30,12 +30,14 @@
 namespace MMAI::BAI::V8 {
     using BS = Schema::BattlefieldState;
 
+    static const auto DUMMY_ATTNMASK = Schema::AttentionMask();
+
     class State : public Schema::IState {
     public:
 
         // IState impl
         const Schema::ActionMask& getActionMask() const override { return actmask; };
-        const Schema::AttentionMask& getAttentionMask() const override { return attnmask; }
+        const Schema::AttentionMask& getAttentionMask() const override { return DUMMY_ATTNMASK; }
         const Schema::BattlefieldState& getBattlefieldState() const override { return bfstate; }
         const std::any getSupplementaryData() const override {
             return static_cast<const MMAI::Schema::V8::ISupplementaryData*>(supdata.get());
@@ -59,7 +61,6 @@ namespace MMAI::BAI::V8 {
         const int version_;
         Schema::BattlefieldState bfstate = {};
         Schema::ActionMask actmask = {};
-        Schema::AttentionMask attnmask = {};
         std::unique_ptr<SupplementaryData> supdata = nullptr;
         std::vector<std::shared_ptr<AttackLog>> attackLogs = {};
         std::unique_ptr<Action> action = nullptr;

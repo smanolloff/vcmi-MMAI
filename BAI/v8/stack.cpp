@@ -31,13 +31,13 @@ namespace MMAI::BAI::V8 {
     auto ValueCache = std::map<const CCreature*, float> {};
 
     // static
-    float Stack::CalcValue(const CCreature* cr) {
+    int Stack::CalcValue(const CCreature* cr) {
         auto it = ValueCache.find(cr);
         if (it != ValueCache.end())
             return it->second;
 
         // Formula:
-        // (A + B) * C * D1 * D2 * ... * Dn
+        // 10 * (A + B) * C * D1 * D2 * ... * Dn
         //
 
         // A = <offensive factor>
@@ -53,8 +53,8 @@ namespace MMAI::BAI::V8 {
         auto shooter = cr->hasBonusOfType(BonusType::SHOOTER);
         auto bonuses = cr->getAllBonuses(Selector::all, nullptr);
 
-        auto a = 3*dmg * (1 + std::min(0.05*att, 4.0));
-        auto b = hp / (1 - std::min(0.025*def, 0.7));
+        auto a = 3*dmg * (1 + std::min(4.0, 0.05*att));
+        auto b = hp / (1 - std::min(0.7, 0.025*def));
         auto c = std::log(spd*2);
         auto d = shooter ? 1.5 : 1.0;
 
@@ -138,7 +138,9 @@ namespace MMAI::BAI::V8 {
             }
         }
 
-        ValueCache[cr] = (a + b) * c * d;
+        // Multiply by 10 to reduce the integer rounding for weak units
+        // (e.g. peasant 7.48 => 8 is a lot, 74.8 => 75 is OK)
+        ValueCache[cr] = static_cast<int>(std::round(10 * (a + b) * c * d));
         // std::cout << "\n" << ValueCache[cr] << " " << cr->getNameSingularTextID() << "(a=" << a << ", b=" << b << ", c=" << c << ", d=" << d << ")\n";
         return ValueCache[cr];
     }
@@ -146,7 +148,8 @@ namespace MMAI::BAI::V8 {
     Stack::Stack(
         const CStack* cstack_,
         Queue &q,
-        const GlobalStats *gstats,
+        const GlobalStats *lgstats,
+        const GlobalStats *rgstats,
         const Stats stats,
         bool blocked,
         bool blocking,
@@ -412,7 +415,6 @@ namespace MMAI::BAI::V8 {
         // double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
         // auto dmgPercentHP = std::clamp<int>(std::round(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
 
-
         if (cstack->willMove()) {
             setflag(F::WILL_ACT);
             // XXX: do NOT use cstack->waited()
@@ -445,7 +447,7 @@ namespace MMAI::BAI::V8 {
             cid = 122; // this is a "NOT USED (1)" creature
         }
 
-        auto value = CalcValue(cstack->unitType());
+        auto valueOne = CalcValue(cstack->unitType());
 
         setattr(A::SIDE, EI(cstack->unitSide()));
         // setattr(A::CREATURE_ID, cid);
@@ -461,22 +463,29 @@ namespace MMAI::BAI::V8 {
         setattr(A::QUEUE_POS, qpos);
         // setattr(A::ESTIMATED_DMG, dmgPercentHP);
 
-        auto bfv = gstats->valueNowLeft + gstats->valueNowRight;
-        auto bfv0 = gstats->valueStartLeft + gstats->valueStartRight;
-        auto bfhp = gstats->hpNowLeft + gstats->hpNowRight;
-        auto bfhp0 = gstats->hpStartLeft + gstats->hpStartRight;
+        // std::cout << "lgstats->valueNow:" << lgstats->valueNow << ", rgstats->valueNow: " << rgstats->valueNow << "\n";
+        auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
+        auto bf_valueStart = lgstats->valueStart + rgstats->valueStart;
+        auto bf_hpNow = lgstats->hpNow + rgstats->hpNow;
+        auto bf_hpStart = lgstats->hpStart + rgstats->hpStart;
+        auto value = valueOne * cstack->getCount();
 
-        setattr(A::VALUE_ONE, value);
-        setattr(A::REL_VALUE,             100 * value / bfv);
-        setattr(A::REL0_VALUE,            100 * value / bfv0);
-        setattr(A::REL_VALUE_KILLED,      100 * stats.valueKilledNow / bfv);
-        setattr(A::REL0_VALUE_KILLED_ACC, 100 * stats.valueKilledTotal / bfv0);
-        setattr(A::REL_VALUE_LOST,        100 * stats.valueLostNow / bfv);
-        setattr(A::REL0_VALUE_LOST_ACC,   100 * stats.valueLostTotal / bfv0);
-        setattr(A::REL_DMG_DEALT,         100 * stats.dmgDealtNow / bfhp);
-        setattr(A::REL0_DMG_DEALT_ACC,    100 * stats.dmgDealtTotal / bfhp0);
-        setattr(A::REL_DMG_RECEIVED,      100 * stats.dmgReceivedNow / bfhp);
-        setattr(A::REL0_DMG_RECEIVED_ACC, 100 * stats.dmgReceivedTotal / bfhp0);
+        // std::cout << "VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
+        auto percent = [](int v1, int v2) {
+            return static_cast<int>(std::round(100 * v1 / v2));
+        };
+
+        setattr(A::VALUE_ONE, valueOne);
+        setattr(A::VALUE_REL,             percent(value, bf_valueNow));
+        setattr(A::VALUE_REL0,            percent(value, bf_valueStart));
+        setattr(A::VALUE_KILLED_REL,      percent(stats.valueKilledNow, bf_valueNow));
+        setattr(A::VALUE_KILLED_ACC_REL0, percent(stats.valueKilledTotal, bf_valueStart));
+        setattr(A::VALUE_LOST_REL,        percent(stats.valueLostNow, bf_valueNow));
+        setattr(A::VALUE_LOST_ACC_REL0,   percent(stats.valueLostTotal, bf_valueStart));
+        setattr(A::DMG_DEALT_REL,         percent(stats.dmgDealtNow, bf_hpNow));
+        setattr(A::DMG_DEALT_ACC_REL0,    percent(stats.dmgDealtTotal, bf_hpStart));
+        setattr(A::DMG_RECEIVED_REL,      percent(stats.dmgReceivedNow, bf_hpNow));
+        setattr(A::DMG_RECEIVED_ACC_REL0, percent(stats.dmgReceivedTotal, bf_hpStart));
 
         finalize();
     }
