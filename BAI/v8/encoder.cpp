@@ -82,8 +82,13 @@ namespace MMAI::BAI::V8 {
         Encode(EI(a), e, n, v, vmax, vec);
     }
 
-    void Encoder::Encode(const MiscAttribute a, const int v, BS &vec) {
-        auto &[_, e, n, vmax] = MISC_ENCODING.at(EI(a));
+    void Encoder::Encode(const PlayerAttribute a, const int v, BS &vec) {
+        auto &[_, e, n, vmax] = PLAYER_ENCODING.at(EI(a));
+        Encode(EI(a), e, n, v, vmax, vec);
+    }
+
+    void Encoder::Encode(const GlobalAttribute a, const int v, BS &vec) {
+        auto &[_, e, n, vmax] = GLOBAL_ENCODING.at(EI(a));
         Encode(EI(a), e, n, v, vmax, vec);
     }
 

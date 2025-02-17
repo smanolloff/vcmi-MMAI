@@ -47,14 +47,15 @@ namespace MMAI::BAI::V8 {
         State() = delete;
         State(const int version_, const std::string colorname, const CPlayerBattleCallback* battle_);
 
-        void onActiveStack(const CStack* astack);
+        void onActiveStack(const CStack* astack, BattleSide winner = BattleSide::NONE);
         void onBattleStacksAttacked(const std::vector<BattleStackAttacked> &bsa);
         void onBattleTriggerEffect(const BattleTriggerEffect &bte);
         void onBattleEnd(const BattleResult *br);
 
         // Subsequent versions may override this if they only change
         // the data type of encoded values (i.e. have their own HEX_ENCODING)
-        void encodeMisc();
+        void encodeGlobal();
+        void encodePlayer(GlobalStats* s);
         virtual void encodeHex(Hex* hex);
         virtual void verify();
 

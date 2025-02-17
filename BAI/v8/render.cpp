@@ -129,6 +129,7 @@ namespace MMAI::BAI::V8 {
             // at battle-end, even regardless of the actual active stack,
             // battlefield->astack must be nullptr
             expect(!state->battlefield->astack, "ended, but battlefield->astack is not NULL");
+            expect(state->supdata->getIsBattleEnded(), "ended, but state->supdata->getIsBattleEnded() is false");
         }
 
         // Return (attr == N/A), but after performing some checks
@@ -417,7 +418,7 @@ namespace MMAI::BAI::V8 {
                     //     std::cout << "Stack type: ";
                     //     std::cout << cstack->unitType()->getNameSingularTextID();
                     //     auto vv = 100.0 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot;
-                    //     std::cout << "Have: " << v << ", want: " << vv;
+                    //     std::cout << " Have: " << v << ", want: " << vv;
                     //     std::cout << "\n";
                     // }
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return 100 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot; }, "HEX.STACK_VALUE_REL");
@@ -539,7 +540,7 @@ namespace MMAI::BAI::V8 {
         auto supdata = std::any_cast<const ISupplementaryData*>(supdata_);
         expect(supdata, "supdata holds a nullptr");
         auto lgstats = supdata->getGlobalStatsLeft();
-        auto rgstats = supdata->getGlobalStatsLeft();
+        auto rgstats = supdata->getGlobalStatsRight();
         auto mystats = EI(supdata->getSide()) ? supdata->getGlobalStatsRight() : supdata->getGlobalStatsLeft();
         auto hexes = supdata->getHexes();
         auto color = supdata->getColor();
@@ -597,7 +598,7 @@ namespace MMAI::BAI::V8 {
             row << " attacks ";
             row << defcol << "#" << defalias << nocol;
             row << " for " << alog->getDamageDealt() << " dmg";
-            row << " (kills: " << alog->getUnitsKilled() << ", value: " << alog->getValueKilled() << ")";
+            row << " (kills: " << alog->getUnitsKilled() << ", value: " << alog->getValueKilled() << " / " << alog->getValueKilledPercent() << "%)";
 
             lines.push_back(std::move(row));
         }
@@ -770,8 +771,8 @@ namespace MMAI::BAI::V8 {
 
                 name = "Battle result"; value = supdata->getIsBattleEnded() ? (restext + nocol) : "";
             }
-            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%d remaining)") % lgstats->getValueStart() % lgstats->getValueNow());
-            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%d remaining)") % rgstats->getValueStart() % rgstats->getValueNow());
+            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % lgstats->getValueNow() % (100.0 * lgstats->getValueNow() / (lgstats->getValueNow() + rgstats->getValueNow())));
+            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % rgstats->getValueNow() % (100.0 * rgstats->getValueNow() / (lgstats->getValueNow() + rgstats->getValueNow())));
             break; default:
                 continue;
             }

@@ -23,16 +23,30 @@ namespace MMAI::BAI::V8 {
     class AttackLog : public Schema::V8::IAttackLog {
     public:
         AttackLog(
-            std::shared_ptr<Stack> attacker_, std::shared_ptr<Stack> defender_,
-            int dmg_, int units_, int value_
-        ) : attacker(attacker_), defender(defender_), dmg(dmg_), units(units_), value(value_) {}
+            std::shared_ptr<Stack> attacker_,
+            std::shared_ptr<Stack> defender_,
+            int dmg_,
+            int dmgPercent_,
+            int units_,
+            int value_,
+            int valuePercent_
+        ) : attacker(attacker_)
+          , defender(defender_)
+          , dmg(dmg_)
+          , dmgPercent(dmgPercent_)
+          , units(units_)
+          , value(value_)
+          , valuePercent(valuePercent_)
+        {}
 
         // IAttackLog impl
         Stack* getAttacker() const override { return attacker.get(); }
         Stack* getDefender() const override { return defender.get(); }
         int getDamageDealt() const override { return dmg; }
+        int getDamageDealtPercent() const override { return dmgPercent; }
         int getUnitsKilled() const override { return units; }
         int getValueKilled() const override { return value; }
+        int getValueKilledPercent() const override { return valuePercent; }
 
 
         /*
@@ -47,10 +61,12 @@ namespace MMAI::BAI::V8 {
         const std::shared_ptr<Stack> attacker;  // XXX: can be nullptr if dmg is not from creature
         const std::shared_ptr<Stack> defender;
         const int dmg;
+        const int dmgPercent;
         const int units;
 
         // NOTE: "value" is hard-coded in original H3 and can be found online:
         // https://heroes.thelazy.net/index.php/List_of_creatures
         const int value;
+        const int valuePercent;
     };
 }

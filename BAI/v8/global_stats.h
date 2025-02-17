@@ -21,8 +21,10 @@ namespace MMAI::BAI::V8 {
     class GlobalStats : public Schema::V8::IGlobalStats {
     public:
         int getValueStart() const override { return valueStart; }
-        int getValueNow() const override { return valueNow; }
+        int getValueNow() const override { return valuePrev; }
+        int getValuePrev() const override { return valueNow; }
         int getHPStart() const override { return  hpStart; }
+        int getHPPrev() const override { return hpPrev; }
         int getHPNow() const override { return hpNow; }
 
         int getDmgDealtNow() const override { return dmgDealtNow; }
@@ -35,8 +37,11 @@ namespace MMAI::BAI::V8 {
         int getValueLostTotal() const override { return valueLostTotal; }
 
         const int valueStart;
-        const int hpStart;
+        int valuePrev = 0;
         int valueNow = 0;
+
+        const int hpStart;
+        int hpPrev = 0;
         int hpNow = 0;
 
         int dmgDealtNow = 0;
@@ -50,9 +55,11 @@ namespace MMAI::BAI::V8 {
 
         GlobalStats(int totalValue, int totalHP)
         : valueStart(totalValue)
+        , valuePrev(totalValue)
+        , valueNow(totalValue)
         , hpStart(totalHP)
-        , valueNow(valueStart)
-        , hpNow(hpStart)
+        , hpPrev(totalHP)
+        , hpNow(totalHP)
         {}
     };
 }

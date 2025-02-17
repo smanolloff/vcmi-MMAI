@@ -67,18 +67,21 @@ namespace MMAI::Schema::V8 {
         inline constexpr auto LS = Encoding::LINNORM_STRICT_NULL;
         inline constexpr auto LZ = Encoding::LINNORM_ZERO_NULL;
 
-        using MA = MiscAttribute;
+        using GA = GlobalAttribute;
+        using PA = PlayerAttribute;
         using HA = HexAttribute;
 
         /*
          * The encoding schema `{a, e, n, vmax}`, where:
          * `a`=attribute, `e`=encoding, `n`=size, `vmax`=max_value.
          */
-        using E4M = std::tuple<MiscAttribute, Encoding, int, int>;
+        using E4G = std::tuple<GlobalAttribute, Encoding, int, int>;
+        using E4P = std::tuple<PlayerAttribute, Encoding, int, int>;
         using E4H = std::tuple<HexAttribute, Encoding, int, int>;
     }
 
-    using MiscEncoding = std::array<E4M, EI(MiscAttribute::_count)>;
+    using GlobalEncoding = std::array<E4G, EI(GlobalAttribute::_count)>;
+    using PlayerEncoding = std::array<E4P, EI(PlayerAttribute::_count)>;
     using HexEncoding = std::array<E4H, EI(HexAttribute::_count)>;
 
     /*
@@ -147,31 +150,23 @@ namespace MMAI::Schema::V8 {
     // constexpr int ARMY_VALUE_MAX = 10 * 1000 * 1000; // 10M
 
 
-    constexpr MiscEncoding MISC_ENCODING {
-        E4(MA::BATTLE_SIDE,                 CS, 1),
-        E4(MA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
-        E4(MA::BFIELD_VALUE_NOW_REL0,       LS, 100),       // bfield_value_now             / bfield_value_at_start
-        E4(MA::ARMY_VALUE_L_NOW_REL,        LS, 100),       // left_army_value_now          / bfield_value_now
-        E4(MA::ARMY_VALUE_R_NOW_REL,        LS, 100),       // right_army_value_no          / bfield_value_now
-        E4(MA::ARMY_VALUE_L_NOW_REL0,       LS, 100),       // left_army_value_now          / bfield_value_at_start
-        E4(MA::ARMY_VALUE_R_NOW_REL0,       LS, 100),       // right_army_value_no          / bfield_value_at_start
-        E4(MA::VALUE_KILLED_LEFT_REL,       LS, 100),       // left_value_killed_this_turn  / bfield_value_last_turn
-        E4(MA::VALUE_KILLED_RIGHT_REL,      LS, 100),       // right_value_killed_this_turn / bfield_value_last_turn
-        E4(MA::VALUE_KILLED_LEFT_ACC_REL0,  LS, 100),       // left_value_killed_lifetime   / bfield_value_at_start
-        E4(MA::VALUE_KILLED_RIGHT_ACC_REL0, LS, 100),       // right_value_killed_lifetime  / bfield_value_at_start
-        E4(MA::VALUE_LOST_LEFT_REL,         LS, 100),       // left_value_lost_this_turn    / bfield_value_last_turn
-        E4(MA::VALUE_LOST_RIGHT_REL,        LS, 100),       // right_value_lost_this_turn   / bfield_value_last_turn
-        E4(MA::VALUE_LOST_LEFT_ACC_REL0,    LS, 100),       // left_value_lost_lifetime     / bfield_value_at_start
-        E4(MA::VALUE_LOST_RIGHT_ACC_REL0,   LS, 100),       // right_value_lost_lifetime    / bfield_value_at_start
-        E4(MA::DMG_DEALT_LEFT_REL,          LS, 100),       // left_dmg_dealt_this_turn     / bfield_hp_last_turn
-        E4(MA::DMG_DEALT_RIGHT_REL,         LS, 100),       // right_dmg_dealt_this_turn    / bfield_hp_last_turn
-        E4(MA::DMG_DEALT_LEFT_ACC_REL0,     LS, 100),       // left_dmg_dealt_lifetime      / bfield_hp_at_start
-        E4(MA::DMG_DEALT_RIGHT_ACC_REL0,    LS, 100),       // right_dmg_dealt_lifetime     / bfield_hp_at_start
-        E4(MA::DMG_TAKEN_LEFT_REL,          LS, 100),       // left_dmg_taken_this_turn     / bfield_hp_last_turn
-        E4(MA::DMG_TAKEN_RIGHT_REL,         LS, 100),       // right_dmg_taken_this_turn    / bfield_hp_last_turn
-        E4(MA::DMG_TAKEN_LEFT_ACC_REL0,     LS, 100),       // left_dmg_taken_lifetime      / bfield_hp_at_start
-        E4(MA::DMG_TAKEN_RIGHT_ACC_REL0,    LS, 100),       // right_dmg_taken_lifetime     / bfield_hp_at_start
+    constexpr GlobalEncoding GLOBAL_ENCODING {
+        E4(GA::BATTLE_SIDE,                 CS, 1),
+        E4(GA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
+        E4(GA::BFIELD_VALUE_NOW_REL0,       LS, 100),       // bfield_value_now             / bfield_value_at_start
+    };
 
+    constexpr PlayerEncoding PLAYER_ENCODING {
+        E4(PA::ARMY_VALUE_NOW_REL,     LS, 100),       // army_value_now          / global_value_now
+        E4(PA::ARMY_VALUE_NOW_REL0,    LS, 100),       // army_value_now          / global_value_at_start
+        E4(PA::VALUE_KILLED_REL,       LS, 100),       // value_killed_this_turn  / global_value_last_turn
+        E4(PA::VALUE_KILLED_ACC_REL0,  LS, 100),       // value_killed_lifetime   / global_value_at_start
+        E4(PA::VALUE_LOST_REL,         LS, 100),       // value_lost_this_turn    / global_value_last_turn
+        E4(PA::VALUE_LOST_ACC_REL0,    LS, 100),       // value_lost_lifetime     / global_value_at_start
+        E4(PA::DMG_DEALT_REL,          LS, 100),       // dmg_dealt_this_turn     / global_hp_last_turn
+        E4(PA::DMG_DEALT_ACC_REL0,     LS, 100),       // dmg_dealt_lifetime      / global_hp_at_start
+        E4(PA::DMG_RECEIVED_REL,       LS, 100),       // dmg_received_this_turn  / global_hp_last_turn
+        E4(PA::DMG_RECEIVED_ACC_REL0,  LS, 100),       // dmg_received_lifetime   / global_hp_at_start
     };
 
     constexpr HexEncoding HEX_ENCODING {
@@ -210,17 +205,26 @@ namespace MMAI::Schema::V8 {
 
     // Dedining encodings for each attribute by hand is error-prone
     // The below compile-time asserts are essential.
-    static_assert(UninitializedEncodingAttributes(MISC_ENCODING) == 0, "Found uninitialized elements");
+    static_assert(UninitializedEncodingAttributes(GLOBAL_ENCODING) == 0, "Found uninitialized elements");
+    static_assert(UninitializedEncodingAttributes(PLAYER_ENCODING) == 0, "Found uninitialized elements");
     static_assert(UninitializedEncodingAttributes(HEX_ENCODING) == 0, "Found uninitialized elements");
-    static_assert(DisarrayedEncodingAttributeIndex(MISC_ENCODING) == -1, "Found wrong element at this index");
+    static_assert(DisarrayedEncodingAttributeIndex(GLOBAL_ENCODING) == -1, "Found wrong element at this index");
+    static_assert(DisarrayedEncodingAttributeIndex(PLAYER_ENCODING) == -1, "Found wrong element at this index");
     static_assert(DisarrayedEncodingAttributeIndex(HEX_ENCODING) == -1, "Found wrong element at this index");
-    static_assert(MiscalculatedBinaryAttributeIndex(MISC_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
+    static_assert(MiscalculatedBinaryAttributeIndex(GLOBAL_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
+    static_assert(MiscalculatedBinaryAttributeIndex(PLAYER_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
     static_assert(MiscalculatedBinaryAttributeIndex(HEX_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
-    static_assert(MiscalculatedBinaryAttributeUnusedValues(MISC_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
+    static_assert(MiscalculatedBinaryAttributeUnusedValues(GLOBAL_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
+    static_assert(MiscalculatedBinaryAttributeUnusedValues(PLAYER_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
     static_assert(MiscalculatedBinaryAttributeUnusedValues(HEX_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
 
-    constexpr int BATTLEFIELD_STATE_SIZE_MISC = EncodedSize(MISC_ENCODING);
+    constexpr int BATTLEFIELD_STATE_SIZE_GLOBAL = EncodedSize(GLOBAL_ENCODING);
+    constexpr int BATTLEFIELD_STATE_SIZE_ONE_PLAYER = EncodedSize(PLAYER_ENCODING);
     constexpr int BATTLEFIELD_STATE_SIZE_ONE_HEX = EncodedSize(HEX_ENCODING);
     constexpr int BATTLEFIELD_STATE_SIZE_ALL_HEXES = 165 * BATTLEFIELD_STATE_SIZE_ONE_HEX;
-    constexpr int BATTLEFIELD_STATE_SIZE = BATTLEFIELD_STATE_SIZE_MISC + BATTLEFIELD_STATE_SIZE_ALL_HEXES;
+    constexpr int BATTLEFIELD_STATE_SIZE = \
+        BATTLEFIELD_STATE_SIZE_GLOBAL + \
+        BATTLEFIELD_STATE_SIZE_ONE_PLAYER + \
+        BATTLEFIELD_STATE_SIZE_ONE_PLAYER + \
+        BATTLEFIELD_STATE_SIZE_ALL_HEXES;
 }

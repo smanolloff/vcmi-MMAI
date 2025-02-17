@@ -463,28 +463,29 @@ namespace MMAI::BAI::V8 {
         setattr(A::QUEUE_POS, qpos);
         // setattr(A::ESTIMATED_DMG, dmgPercentHP);
 
-        // std::cout << "lgstats->valueNow:" << lgstats->valueNow << ", rgstats->valueNow: " << rgstats->valueNow << "\n";
+        // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] lgstats->valueNow:" << lgstats->valueNow << ", rgstats->valueNow: " << rgstats->valueNow << "\n";
         auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
+        auto bf_valuePrev = lgstats->valuePrev + rgstats->valuePrev;
         auto bf_valueStart = lgstats->valueStart + rgstats->valueStart;
-        auto bf_hpNow = lgstats->hpNow + rgstats->hpNow;
+        auto bf_hpPrev = lgstats->hpPrev + rgstats->hpPrev;
         auto bf_hpStart = lgstats->hpStart + rgstats->hpStart;
         auto value = valueOne * cstack->getCount();
 
-        // std::cout << "VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
+        // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
         auto percent = [](int v1, int v2) {
-            return static_cast<int>(std::round(100 * v1 / v2));
+            return 100 * v1 / v2;
         };
 
         setattr(A::VALUE_ONE, valueOne);
         setattr(A::VALUE_REL,             percent(value, bf_valueNow));
         setattr(A::VALUE_REL0,            percent(value, bf_valueStart));
-        setattr(A::VALUE_KILLED_REL,      percent(stats.valueKilledNow, bf_valueNow));
+        setattr(A::VALUE_KILLED_REL,      percent(stats.valueKilledNow, bf_valuePrev));
         setattr(A::VALUE_KILLED_ACC_REL0, percent(stats.valueKilledTotal, bf_valueStart));
-        setattr(A::VALUE_LOST_REL,        percent(stats.valueLostNow, bf_valueNow));
+        setattr(A::VALUE_LOST_REL,        percent(stats.valueLostNow, bf_valuePrev));
         setattr(A::VALUE_LOST_ACC_REL0,   percent(stats.valueLostTotal, bf_valueStart));
-        setattr(A::DMG_DEALT_REL,         percent(stats.dmgDealtNow, bf_hpNow));
+        setattr(A::DMG_DEALT_REL,         percent(stats.dmgDealtNow, bf_hpPrev));
         setattr(A::DMG_DEALT_ACC_REL0,    percent(stats.dmgDealtTotal, bf_hpStart));
-        setattr(A::DMG_RECEIVED_REL,      percent(stats.dmgReceivedNow, bf_hpNow));
+        setattr(A::DMG_RECEIVED_REL,      percent(stats.dmgReceivedNow, bf_hpPrev));
         setattr(A::DMG_RECEIVED_ACC_REL0, percent(stats.dmgReceivedTotal, bf_hpStart));
 
         finalize();

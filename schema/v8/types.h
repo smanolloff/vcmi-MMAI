@@ -297,36 +297,25 @@ namespace MMAI::Schema::V8 {
         _count
     };
 
-    enum class MiscAttribute : int {
+    enum class GlobalAttribute : int {
         BATTLE_SIDE,                 // 0=left, 1=right
         BATTLE_WINNER,               // 0=left, 1=right (NA = battle not finished)
+        BFIELD_VALUE_NOW_REL0,       // global_value_now / global_value_at_start
 
-        BFIELD_VALUE_NOW_REL0,       // bfield_value_now             / bfield_value_at_start
+        _count
+    };
 
-        ARMY_VALUE_L_NOW_REL,        // left_army_value_now          / bfield_value_now
-        ARMY_VALUE_R_NOW_REL,        // right_army_value_now         / bfield_value_now
-        ARMY_VALUE_L_NOW_REL0,       // left_army_value_now          / bfield_value_at_start
-        ARMY_VALUE_R_NOW_REL0,       // right_army_value_now         / bfield_value_at_start
-
-        VALUE_KILLED_LEFT_REL,       // left_value_killed_this_turn  / bfield_value_last_turn
-        VALUE_KILLED_RIGHT_REL,      // right_value_killed_this_turn / bfield_value_last_turn
-        VALUE_KILLED_LEFT_ACC_REL0,  // left_value_killed_lifetime   / bfield_value_at_start
-        VALUE_KILLED_RIGHT_ACC_REL0, // right_value_killed_lifetime  / bfield_value_at_start
-
-        VALUE_LOST_LEFT_REL,         // left_value_lost_this_turn    / bfield_value_last_turn
-        VALUE_LOST_RIGHT_REL,        // right_value_lost_this_turn   / bfield_value_last_turn
-        VALUE_LOST_LEFT_ACC_REL0,    // left_value_lost_lifetime     / bfield_value_at_start
-        VALUE_LOST_RIGHT_ACC_REL0,   // right_value_lost_lifetime    / bfield_value_at_start
-
-        DMG_DEALT_LEFT_REL,          // left_dmg_dealt_this_turn     / bfield_hp_last_turn
-        DMG_DEALT_RIGHT_REL,         // right_dmg_dealt_this_turn    / bfield_hp_last_turn
-        DMG_DEALT_LEFT_ACC_REL0,     // left_dmg_dealt_lifetime      / bfield_hp_at_start
-        DMG_DEALT_RIGHT_ACC_REL0,    // right_dmg_dealt_lifetime     / bfield_hp_at_start
-
-        DMG_TAKEN_LEFT_REL,          // left_dmg_taken_this_turn     / bfield_hp_last_turn
-        DMG_TAKEN_RIGHT_REL,         // right_dmg_taken_this_turn    / bfield_hp_last_turn
-        DMG_TAKEN_LEFT_ACC_REL0,     // left_dmg_taken_lifetime      / bfield_hp_at_start
-        DMG_TAKEN_RIGHT_ACC_REL0,    // right_dmg_taken_lifetime     / bfield_hp_at_start
+    enum class PlayerAttribute : int {
+        ARMY_VALUE_NOW_REL,         // side_army_value_now          / global_value_now
+        ARMY_VALUE_NOW_REL0,        // side_army_value_now          / global_value_at_start
+        VALUE_KILLED_REL,           // left_value_killed_this_turn  / global_value_last_turn
+        VALUE_KILLED_ACC_REL0,      // left_value_killed_lifetime   / global_value_at_start
+        VALUE_LOST_REL,             // left_value_lost_this_turn    / global_value_last_turn
+        VALUE_LOST_ACC_REL0,        // left_value_lost_lifetime     / global_value_at_start
+        DMG_DEALT_REL,              // left_dmg_dealt_this_turn     / global_hp_last_turn
+        DMG_DEALT_ACC_REL0,         // left_dmg_dealt_lifetime      / global_hp_at_start
+        DMG_RECEIVED_REL,           // left_dmg_taken_this_turn     / global_hp_last_turn
+        DMG_RECEIVED_ACC_REL0,      // left_dmg_taken_lifetime      / global_hp_at_start
 
         _count
     };
@@ -386,16 +375,16 @@ namespace MMAI::Schema::V8 {
 
 
         // RELATIVE values
-        VALUE_REL,               // stack_value_now          / bfield_value_now
-        VALUE_REL0,              // stack_value_now          / bfield_value_at_start
-        VALUE_KILLED_REL,        // value_killed_this_turn   / bfield_value_last_turn
-        VALUE_KILLED_ACC_REL0,   // value_killed_lifetime    / bfield_value_at_start
-        VALUE_LOST_REL,          // value_lost_this_turn     / bfield_value_last_turn
-        VALUE_LOST_ACC_REL0,     // value_lost_lifetime      / bfield_value_at_start
-        DMG_DEALT_REL,           // dmg_dealt_this_turn      / bfield_hp_last_turn
-        DMG_DEALT_ACC_REL0,      // dmg_dealt_lifetime       / bfield_hp_at_start
-        DMG_RECEIVED_REL,        // dmg_received_this_turn   / bfield_hp_last_turn
-        DMG_RECEIVED_ACC_REL0,   // dmg_received_lifetime    / bfield_hp_at_start
+        VALUE_REL,               // stack_value_now          / global_value_now
+        VALUE_REL0,              // stack_value_now          / global_value_at_start
+        VALUE_KILLED_REL,        // value_killed_this_turn   / global_value_last_turn
+        VALUE_KILLED_ACC_REL0,   // value_killed_lifetime    / global_value_at_start
+        VALUE_LOST_REL,          // value_lost_this_turn     / global_value_last_turn
+        VALUE_LOST_ACC_REL0,     // value_lost_lifetime      / global_value_at_start
+        DMG_DEALT_REL,           // dmg_dealt_this_turn      / global_hp_last_turn
+        DMG_DEALT_ACC_REL0,      // dmg_dealt_lifetime       / global_hp_at_start
+        DMG_RECEIVED_REL,        // dmg_received_this_turn   / global_hp_last_turn
+        DMG_RECEIVED_ACC_REL0,   // dmg_received_lifetime    / global_hp_at_start
         _count
     };
 
@@ -437,8 +426,10 @@ namespace MMAI::Schema::V8 {
     public:
 
         virtual int getValueStart() const = 0;
+        virtual int getValuePrev() const = 0;
         virtual int getValueNow() const = 0;
         virtual int getHPStart() const = 0;
+        virtual int getHPPrev() const = 0;
         virtual int getHPNow() const = 0;
 
         virtual int getDmgDealtNow() const = 0;
@@ -479,8 +470,10 @@ namespace MMAI::Schema::V8 {
         virtual IStack* getAttacker() const = 0;
         virtual IStack* getDefender() const = 0;
         virtual int getDamageDealt() const = 0;
+        virtual int getDamageDealtPercent() const = 0;
         virtual int getUnitsKilled() const = 0;
         virtual int getValueKilled() const = 0;
+        virtual int getValueKilledPercent() const = 0;
         virtual ~IAttackLog() = default;
     };
 

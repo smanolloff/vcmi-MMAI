@@ -33,13 +33,17 @@ namespace MMAI::BAI::V8 {
             const GlobalStats* lgstats_,
             const GlobalStats* rgstats_,
             const Battlefield* battlefield_,
-            std::vector<std::shared_ptr<AttackLog>> attackLogs_
+            std::vector<std::shared_ptr<AttackLog>> attackLogs_,
+            BattleSide winner
         ) : colorname(colorname_),
             side(side_),
             lgstats(lgstats_),
             rgstats(rgstats_),
             battlefield(battlefield_),
-            attackLogs(attackLogs_) {};
+            attackLogs(attackLogs_),
+            ended(winner != BattleSide::NONE),
+            victory(EI(winner) == EI(side))
+        {};
 
         // impl ISupplementaryData
         Type getType() const override { return type; };
@@ -63,10 +67,8 @@ namespace MMAI::BAI::V8 {
         const GlobalStats* const lgstats;
         const GlobalStats* const rgstats;
         const std::vector<std::shared_ptr<AttackLog>> attackLogs;
-
-        // Optionally modified (on battlEnd only)
-        bool ended = false;
-        bool victory = false;
+        const bool ended = false;
+        const bool victory = false;
 
         // Optionally modified (during activeStack if action was invalid)
         ErrorCode errcode = ErrorCode::OK;

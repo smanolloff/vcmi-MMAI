@@ -19,14 +19,16 @@
 #include "schema/v8/types.h"
 
 namespace MMAI::BAI::V8 {
-    using MiscAttribute = Schema::V8::MiscAttribute;
+    using GlobalAttribute = Schema::V8::GlobalAttribute;
+    using PlayerAttribute = Schema::V8::PlayerAttribute;
     using HexAttribute = Schema::V8::HexAttribute;
     using BS = Schema::BattlefieldState;
 
     class Encoder {
     public:
         static void Encode(const HexAttribute a, const int v, BS &vec);
-        static void Encode(const MiscAttribute a, const int v, BS &vec);
+        static void Encode(const PlayerAttribute a, const int v, BS &vec);
+        static void Encode(const GlobalAttribute a, const int v, BS &vec);
         static void Encode(const int a, const Schema::V8::Encoding e, const int n, const int v, const int vmax, BS &vec);
 
         static void EncodeAccumulatingExplicitNull(const int v, const int n, BS &vec);
