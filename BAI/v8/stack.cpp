@@ -169,7 +169,7 @@ namespace MMAI::BAI::V8 {
         }
 
         // queue pos needs to be set first to determine if stack is active
-        auto maxpos = std::get<3>(HEX_ENCODING.at(EI(HA::STACK_QUEUE_POS)));
+        auto maxpos = std::get<3>(HEX_ENCODING.at(EI(HA::STACK_QUEUE_POS))) - 1;
         auto qit = std::find(q.begin(), q.end(), cstack->unitId());
         auto qpos = (qit == q.end()) ? maxpos : qit - q.begin();
         auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
@@ -531,23 +531,23 @@ namespace MMAI::BAI::V8 {
 
     void Stack::finalize() {
         setattr(A::FLAGS, flags.to_ulong());
-        for (int i=0; i<EI(A::_count); ++i) {
-            auto vmax = std::get<3>(HEX_ENCODING.at(STACK_ATTR_OFFSET + i));
-            auto v = attrs.at(i);
-            if (v > vmax) {
-                auto cr = cstack->unitType();
-                if (warned[cr] % 100 == 0) {
-                    warned[cr] = 0;
-                    std::cout << boost::str(
-                        boost::format("WARNING: %s > %s (SA(%d), %s, QTY=%d)\n")
-                        % v % vmax % i % cr->getNameSingularTextID() % cstack->getCount()
-                    );
-                }
-                v = vmax;
-                warned[cr]++;
-            }
+        // for (int i=0; i<EI(A::_count); ++i) {
+        //     auto vmax = std::get<3>(HEX_ENCODING.at(STACK_ATTR_OFFSET + i));
+        //     auto v = attrs.at(i);
+        //     if (v > vmax) {
+        //         auto cr = cstack->unitType();
+        //         if (warned[cr] % 100 == 0) {
+        //             warned[cr] = 0;
+        //             std::cout << boost::str(
+        //                 boost::format("WARNING: %s > %s (SA(%d), %s, QTY=%d)\n")
+        //                 % v % vmax % i % cr->getNameSingularTextID() % cstack->getCount()
+        //             );
+        //         }
+        //         v = vmax;
+        //         warned[cr]++;
+        //     }
 
-            attrs.at(i) = std::min(attrs.at(i), vmax);
-        }
+        //     attrs.at(i) = std::min(attrs.at(i), vmax);
+        // }
     }
 }

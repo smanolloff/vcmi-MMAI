@@ -29,7 +29,7 @@ namespace MMAI::BAI::V8 {
         static void Encode(const HexAttribute a, const int v, BS &vec);
         static void Encode(const PlayerAttribute a, const int v, BS &vec);
         static void Encode(const GlobalAttribute a, const int v, BS &vec);
-        static void Encode(const int a, const Schema::V8::Encoding e, const int n, const int v, const int vmax, BS &vec);
+        static void Encode(const int a, const Schema::V8::Encoding e, const int n, int v, const int vmax, BS &vec);
 
         static void EncodeAccumulatingExplicitNull(const int v, const int n, BS &vec);
         static void EncodeAccumulatingImplicitNull(const int v, const int n, BS &vec);

@@ -20,6 +20,7 @@
 
 #include "BAI/v8/encoder.h"
 #include "common.h"
+#include <c10/util/Exception.h>
 
 namespace MMAI::BAI::V8 {
     using namespace Schema::V8;
@@ -45,9 +46,13 @@ namespace MMAI::BAI::V8 {
             throw std::runtime_error("NULL values are not allowed for strict encoding"); \
         }
 
-    void Encoder::Encode(const int a, const Encoding e, const int n, const int v, const int vmax, BS &vec) {
-        if (v > vmax)
-            THROW_FORMAT("Cannot encode value: %d (vmax=%d, a=%d, n=%d)", v % vmax % EI(a) % n);
+    void Encoder::Encode(const int a, const Encoding e, const int n, int v, const int vmax, BS &vec) {
+        if (v > vmax) {
+            // THROW_FORMAT("Cannot encode value: %d (vmax=%d, a=%d, n=%d, e=%d)", v % vmax % EI(a) % n % EI(e));
+            // Can happen (e.g. DMG_*_ACC_REL0 > 1 if there were resurrected stacks)
+            printf("WARNING: v=%d (vmax=%d, a=%d, e=%d, n=%d)", v, vmax, EI(a), EI(e), n);
+            v = vmax;
+        }
 
         switch (e) {
         break; case Encoding::BINARY_EXPLICIT_NULL: EncodeBinaryExplicitNull(v, n, vec);
