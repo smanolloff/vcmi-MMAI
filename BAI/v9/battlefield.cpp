@@ -14,41 +14,71 @@
 // limitations under the License.
 // =============================================================================
 
-#include "BAI/v7/general_info.h"
+#include "battle/BattleHex.h"
 #include "battle/IBattleInfoCallback.h"
 #include "battle/ReachabilityInfo.h"
 
-#include "BAI/v7/battlefield.h"
-#include "BAI/v7/hex.h"
+#include "schema/v9/constants.h"
+#include "schema/v9/types.h"
+#include "BAI/v9/battlefield.h"
+#include "BAI/v9/hex.h"
 #include "common.h"
-#include "schema/v7/types.h"
 
-namespace MMAI::BAI::V7 {
+namespace MMAI::BAI::V9 {
     using HA = HexAttribute;
     using SA = StackAttribute;
+    using LT = LinkType;
+
+    // A custom hash function must be provided for the buffer
+    struct PairHash {
+        std::size_t operator()(const std::pair<si16, si16>& t) const {
+            auto h0 = std::hash<int>{}(std::get<0>(t));
+            auto h1 = std::hash<int>{}(std::get<1>(t));
+            return h0 ^ (h1 << 1);
+        }
+    };
+
+    // static
+    std::unordered_map<std::pair<si16, si16>, bool, PairHash> InitAdjMap() {
+        auto res = std::unordered_map<std::pair<si16, si16>, bool, PairHash> {};
+
+        for(int id1 = 0; id1 < GameConstants::BFIELD_SIZE; id1++) {
+            auto hex1 = BattleHex(id1);
+            for(auto dir : BattleHex::hexagonalDirections()) {
+                auto hex2 = hex1.cloneInDirection(dir, false);
+                res[{hex1.toInt(), hex2.toInt()}] = true;
+            }
+        }
+
+        return res;
+    }
+
+    static auto ADJMAP = InitAdjMap();
 
     Battlefield::Battlefield(
-        std::shared_ptr<GeneralInfo> info_,
-        std::shared_ptr<Hexes> hexes_,
-        Stacks stacks_,
+        const std::shared_ptr<Hexes> hexes_,
+        const Stacks stacks_,
+        const Links links_,
         const Stack* astack_
-    ) : info(info_)
-      , hexes(hexes_)
+    ) : hexes(hexes_)
       , stacks(stacks_)
+      , links(links_)
       , astack(astack_) {};
 
     // static
     std::shared_ptr<const Battlefield> Battlefield::Create(
         const CPlayerBattleCallback* battle,
         const CStack* acstack,
-        const ArmyValues av,
+        const GlobalStats* lgstats,
+        const GlobalStats* rgstats,
+        std::map<const CStack*, Stack::Stats> stacksStats,
         bool isMorale
     ) {
-        auto stacks = InitStacks(battle, acstack, isMorale);
+        auto [stacks, queue] = InitStacks(battle, acstack, lgstats, rgstats, stacksStats, isMorale);
         auto [hexes, astack] = InitHexes(battle, acstack, stacks);
-        auto info = std::make_shared<GeneralInfo>(battle, av);
+        auto links = InitLinks(battle, stacks, queue, hexes);
 
-        return std::make_shared<const Battlefield>(info, hexes, stacks, astack);
+        return std::make_shared<const Battlefield>(hexes, stacks, links, astack);
     }
 
     // static
@@ -64,7 +94,7 @@ namespace MMAI::BAI::V7 {
         auto res = Queue{};
 
         auto tmp = std::vector<battle::Units>{};
-        battle->battleGetTurnOrder(tmp, QSIZE, 0);
+        battle->battleGetTurnOrder(tmp, STACK_QUEUE_POS_MAX, 0);
         for (auto &units : tmp)
             for (auto &unit : units)
                 res.push_back(unit->unitId());
@@ -73,6 +103,7 @@ namespace MMAI::BAI::V7 {
         //      (where a non-active stack is first)
         //      The active stack *must* be first-in-queue
         if (isMorale && astack && res.at(0) != astack->unitId()) {
+            std::cout << "MORALE!!!\n";
             std::rotate(res.rbegin(), res.rbegin() + 1, res.rend());
             res.at(0) = astack->unitId();
         } else {
@@ -119,7 +150,7 @@ namespace MMAI::BAI::V7 {
             astackinfo = std::make_shared<ActiveStackInfo>(
                 astack,
                 battle->battleCanShoot(astack->cstack),
-                std::make_shared<ReachabilityInfo>(battle->getReachability(astack->cstack))
+                std::make_shared<ReachabilityInfo>(astack->rinfo)
             );
         }
 
@@ -141,9 +172,12 @@ namespace MMAI::BAI::V7 {
     };
 
     // static
-    Stacks Battlefield::InitStacks(
+    std::tuple<Stacks, Queue> Battlefield::InitStacks(
         const CPlayerBattleCallback* battle,
         const CStack* astack,
+        const GlobalStats* lgstats,
+        const GlobalStats* rgstats,
+        std::map<const CStack*, Stack::Stats> stacksStats,
         bool isMorale
     ) {
         auto stacks = Stacks{};
@@ -214,10 +248,131 @@ namespace MMAI::BAI::V7 {
 
             estimateDamage(astack, cstack);
 
-            auto stack = std::make_shared<Stack>(cstack, queue, blocked[cstack], blocking[cstack], estdmg[cstack]);
+            auto stack = std::make_shared<Stack>(
+                cstack,
+                queue,
+                lgstats,
+                rgstats,
+                stacksStats[cstack],  // creates new record if missing
+                battle->getReachability(cstack),
+                blocked[cstack],
+                blocking[cstack],
+                estdmg[cstack]
+            );
+
             stacks.push_back(stack);
         }
 
-        return stacks;
+        return {stacks, queue};
+    }
+
+    // static
+    Links Battlefield::InitLinks(
+        const CPlayerBattleCallback* battle,
+        const Stacks stacks,
+        const Queue &queue,
+        const std::shared_ptr<Hexes> hexes
+    ) {
+        auto links = Links{};
+
+        for (auto &srcrow : *hexes) {
+            for (auto &srchex : srcrow) {
+                for (auto &dstrow : *hexes) {
+                    for (auto &dsthex : dstrow) {
+                        LinkTwoHexes(battle, queue, links, srchex.get(), dsthex.get());
+                    }
+                }
+            }
+        }
+
+        return links;
+    }
+
+    void Battlefield::LinkTwoHexes(
+        const CPlayerBattleCallback* battle,
+        const Queue &queue,
+        Links &links,
+        Hex* src,
+        Hex* dst
+    ) {
+        if (src == dst)
+            return;
+
+        bool adj = false;
+
+        // cost: 30 steps/s (benchmark on A1.vmap vs StupidAI)
+        if (ADJMAP.count({src->bhex.toInt(), dst->bhex.toInt()})) {
+            adj = true;
+            // ADJACENT
+            links.push_back(std::make_shared<Link>(LT::ADJACENT, src, dst, 1));
+            // BLOCKED_BY
+            if (src->stack && dst->stack && src->stack->cstack->canShoot() && src->stack->cstack->unitSide() != dst->stack->cstack->unitSide()) {
+                links.push_back(std::make_shared<Link>(LT::BLOCKED_BY, src, dst, 1));
+            }
+        }
+
+        if (!src->stack)
+            return;
+
+        // RANGED_MOD
+        // (even if blocked, even if dst is free)
+        // cost: 0
+        if (src->stack->cstack->canShoot() && !src->stack->cstack->coversPos(dst->bhex) && (!adj || src->stack->cstack->hasBonusOfType(BonusType::FREE_SHOOTING))) {
+            float mod = 1;
+            if (battle->battleHasDistancePenalty(src->stack->cstack, src->bhex, dst->bhex))
+                mod *= 0.5;
+            if (battle->battleHasWallPenalty(src->stack->cstack, src->bhex, dst->bhex))
+                mod *= 0.5;
+
+            links.push_back(std::make_shared<Link>(LT::RANGED_MOD, src, dst, mod));
+        }
+
+        // REACH
+        // cost: 150 steps/s
+        if (src->stack->rinfo.distances.at(dst->bhex.toInt()) <= src->stack->cstack->getMovementRange())
+            links.push_back(std::make_shared<Link>(LT::REACH, src, dst, 1));
+
+
+        if (!dst->stack)
+            return;
+
+        // REAR_HEX
+        if (dst->stack == src->stack && dst->bhex == src->stack->cstack->occupiedHex())
+            links.push_back(std::make_shared<Link>(LT::REAR_HEX, src, dst, 1));
+
+        // ACTS_BEFORE
+        auto srcpos = src->stack->attr(SA::QUEUE_POS);
+        auto dstpos = dst->stack->attr(SA::QUEUE_POS);
+        if (srcpos < dstpos) {
+            ASSERT(dstpos <= queue.size(), "dstpos exceeds queue size");
+            auto v = std::count(queue.begin(), queue.begin() + dst->stack->attr(SA::QUEUE_POS), src->stack->cstack->unitId());
+            links.push_back(std::make_shared<Link>(LT::ACTS_BEFORE, src, dst, v));
+        }
+
+        if (src->stack->cstack->unitSide() == dst->stack->cstack->unitSide())
+            return;
+
+        // MELEE_DMG_REL
+        auto bai = BattleAttackInfo(src->stack->cstack, dst->stack->cstack, 0, false);
+        auto retdmg = DamageEstimation{};
+        auto estdmg = battle->battleEstimateDamage(bai, &retdmg);
+        auto avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
+        auto dmgFracHP = avgdmg / dst->stack->cstack->getAvailableHealth();
+        links.push_back(std::make_shared<Link>(LT::MELEE_DMG_REL, src, dst, dmgFracHP));
+        if (retdmg.damage.max > 0) {
+            auto avgret = 0.5*(retdmg.damage.max + retdmg.damage.min);
+            auto retFracHP = avgret / src->stack->cstack->getAvailableHealth();
+            links.push_back(std::make_shared<Link>(LT::RETAL_DMG_REL, src, dst, retFracHP));
+        }
+
+        // RANGED_DMG_REL
+        // (even if blocked)
+        if (src->stack->cstack->canShoot()) {
+            auto estdmg = battle->calculateDmgRange(BattleAttackInfo(src->stack->cstack, dst->stack->cstack, 0, true));
+            auto avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
+            auto dmgFracHP = avgdmg / dst->stack->cstack->getAvailableHealth();
+            links.push_back(std::make_shared<Link>(LT::RANGED_DMG_REL, src, dst, dmgFracHP));
+        }
+
     }
 }

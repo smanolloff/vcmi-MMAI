@@ -16,27 +16,27 @@
 
 #pragma once
 
-#include "BAI/v7/battlefield.h"
-#include "BAI/v7/hex.h"
-#include "BAI/v7/hexaction.h"
+#include "BAI/v9/hexaction.h"
 
-namespace MMAI::BAI::V7 {
+namespace MMAI::BAI::V9 {
     /**
-     * Wrapper around Schema::Action
+     * A list of flags for a single hex (see HexAction)
      */
-    struct Action {
-        static std::unique_ptr<Hex> initHex(const Schema::Action &a, const Battlefield * bf);
-        static std::unique_ptr<Hex> initAMoveTargetHex(const Schema::Action &a, const Battlefield * bf);
-        static HexAction initHexAction(const Schema::Action &a, const Battlefield * bf);
+    using HexActMask = std::bitset<EI(HexAction::_count)>;
 
-        Action(const Schema::Action action_, const Battlefield * bf, const std::string color);
+    struct ActMask {
+        bool retreat = false;
+        bool wait = false;
 
-        const std::string color;
-        const Schema::Action action;
-        const std::unique_ptr<Hex> hex;
-        const std::unique_ptr<Hex> aMoveTargetHex;
-        const HexAction hexaction; // XXX: must come after action
-
-        std::string name() const;
+        /**
+         * A list of HexActMask objects
+         *
+         * [0] HexActMask for hex 0
+         * [1] HexActMask for hex 1
+         * ...
+         * [164] HexActMask for hex 164
+         */
+        std::array<HexActMask, BF_SIZE> hexactmasks = {};
     };
+    static_assert(BF_SIZE == 165, "doc assumes BF_SIZE=165");
 }

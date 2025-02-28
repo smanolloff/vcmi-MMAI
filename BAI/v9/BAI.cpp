@@ -18,16 +18,16 @@
 #include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"
 
-#include "BAI/v7/BAI.h"
-#include "BAI/v7/action.h"
-#include "BAI/v7/hexaction.h"
-#include "BAI/v7/hexactmask.h"
-#include "BAI/v7/render.h"
-#include "BAI/v7/supplementary_data.h"
+#include "BAI/v9/BAI.h"
+#include "BAI/v9/action.h"
+#include "BAI/v9/hexaction.h"
+#include "BAI/v9/hexactmask.h"
+#include "BAI/v9/render.h"
+#include "BAI/v9/supplementary_data.h"
 #include "common.h"
-#include "schema/v7/types.h"
+#include "schema/v9/types.h"
 
-namespace MMAI::BAI::V7 {
+namespace MMAI::BAI::V9 {
     Schema::Action BAI::getNonRenderAction() {
         // info("getNonRenderAciton called with result type: " + std::to_string(result->type));
         auto s = state.get();
@@ -36,14 +36,14 @@ namespace MMAI::BAI::V7 {
         while (action == Schema::ACTION_RENDER_ANSI) {
             if (state->supdata->ansiRender.empty()) {
                 state->supdata->ansiRender = renderANSI();
-                state->supdata->type = Schema::V7::ISupplementaryData::Type::ANSI_RENDER;
+                state->supdata->type = Schema::V9::ISupplementaryData::Type::ANSI_RENDER;
             }
 
             // info("getNonRenderAciton (loop) called with result type: " + std::to_string(res.type));
             action = model->getAction(state.get());
         }
         state->supdata->ansiRender.clear();
-        state->supdata->type = Schema::V7::ISupplementaryData::Type::REGULAR;
+        state->supdata->type = Schema::V9::ISupplementaryData::Type::REGULAR;
         return action;
     }
 
@@ -158,7 +158,7 @@ namespace MMAI::BAI::V7 {
 
             auto allstacks = battle->battleGetStacks(CBattleInfoEssentials::ONLY_ENEMY);
             auto target = std::max_element(allstacks.begin(), allstacks.end(), [](const CStack* a, const CStack* b) {
-                return a->unitType()->getAIValue() < b->unitType()->getAIValue();
+                return Stack::CalcValue(a->unitType()) < Stack::CalcValue(b->unitType());
             });
 
             ASSERT(target != allstacks.end(), "Could not find an enemy stack to attack. Falling back to a defend.");
@@ -452,7 +452,18 @@ namespace MMAI::BAI::V7 {
     }
 
     std::string BAI::renderANSI() {
-        Verify(state.get());
+        try {
+            Verify(state.get());
+        } catch (std::exception & e) {
+            try {
+                std::cout << "Disaster render:\n";
+                std::cout << Render(state.get(), state->action.get()) << "\n";
+            } catch (std::exception & e) {
+                std::cerr << "(failed)\n";
+            }
+            throw;
+        }
+
         return Render(state.get(), state->action.get());
     }
 }

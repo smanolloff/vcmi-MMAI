@@ -16,8 +16,5 @@
 
 #pragma once
 
-namespace MMAI::BAI::V7 {
-    namespace Util {
-        int Damp(int v, int max);
-    }
-}
+#include "schema/v9/types.h"
+#include "schema/v9/constants.h"

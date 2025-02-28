@@ -26,5 +26,5 @@
 #include "schema/base.h"
 
 #include "schema/v3/schema.h"
-#include "schema/v7/schema.h"
 #include "schema/v8/schema.h"
+#include "schema/v9/schema.h"

@@ -17,10 +17,10 @@
 #pragma once
 
 #include "schema/base.h"
-#include "schema/v7/types.h"
-#include "schema/v7/util.h"
+#include "schema/v9/types.h"
+#include "schema/v9/util.h"
 
-namespace MMAI::Schema::V7 {
+namespace MMAI::Schema::V9 {
     constexpr int N_NONHEX_ACTIONS = 2;
     constexpr Action ACTION_RETREAT = 0;
     constexpr Action ACTION_WAIT = 1;
@@ -67,16 +67,27 @@ namespace MMAI::Schema::V7 {
         inline constexpr auto LS = Encoding::LINNORM_STRICT_NULL;
         inline constexpr auto LZ = Encoding::LINNORM_ZERO_NULL;
 
+        inline constexpr auto RAW = Encoding::RAW;
+
+        using GA = GlobalAttribute;
+        using PA = PlayerAttribute;
         using HA = HexAttribute;
+        using LA = LinkAttribute;
 
         /*
          * The encoding schema `{a, e, n, vmax}`, where:
          * `a`=attribute, `e`=encoding, `n`=size, `vmax`=max_value.
          */
+        using E4G = std::tuple<GlobalAttribute, Encoding, int, int>;
+        using E4P = std::tuple<PlayerAttribute, Encoding, int, int>;
         using E4H = std::tuple<HexAttribute, Encoding, int, int>;
+        using E4L = std::tuple<LinkAttribute, Encoding, int, int>;
     }
 
+    using GlobalEncoding = std::array<E4G, EI(GlobalAttribute::_count)>;
+    using PlayerEncoding = std::array<E4P, EI(PlayerAttribute::_count)>;
     using HexEncoding = std::array<E4H, EI(HexAttribute::_count)>;
+    using LinkEncoding = std::array<E4L, EI(LinkAttribute::_count)>;
 
     /*
      * Compile-time constructor for E4H and E4S tuples
@@ -115,16 +126,56 @@ namespace MMAI::Schema::V7 {
         case LM: return {a, e, 1, vmax};
         case LS: return {a, e, 1, vmax};
         case LZ: return {a, e, 1, vmax};
+
+        case RAW: return {a, e, 1, vmax};
         default:
             throw std::runtime_error("Unexpected encoding: " + std::to_string(EI(e)));
         }
     }
 
-    // These MAX values are damped via tanh()
+    // Values above MAX are simply capped
+    constexpr int STACK_VALUE_ONE_MAX = 180000;     // archangel ~50K, crystal dragon ~110K, azure dragon ~180K
     constexpr int STACK_QTY_MAX = 1500;
-    constexpr int STACK_VALUE_MAX = 40000;  // archangel 9K, crystal dragon 39K, azure dragon 79K
-    constexpr int ARMY_VALUE_MAX = 1000000;
+    constexpr int STACK_QUEUE_POS_MAX = 30;
+    constexpr int STACK_DMG_DEALT_MAX = 10000;  // 4x1096 has 98 Ghost dragons => ~4K dmg => 8K (+19 attack)
+    constexpr int STACK_VALUE_KILLED_MAX = 100000;  // maxdmg(10K) / cerberus(25) = 400 kills * 200 value = 80K
+    constexpr int STACK_HP_TOTAL_MAX = 30000;  // 98 Ghost dragons * 200HP = 20K
     constexpr int CREATURE_ID_MAX = 149;  // H3 core has creature IDs 0..149
+
+    // NOTE: the generated maps use old AIValue() which is 4-6x LOWER
+    //       than the one calculated by MMAI (in Stack::CalcValue())
+    //       => a map with 100K pools corresponds to 400K..600K pools now
+    // The biggest pools are:
+    //   (1) 4x1096  => 500K pools (old)  => 3000K (new) => total = 6000K  (new)
+    //   (2) 8x64    => 800K pools (old)  => 4800K (new) => total = 9600K  (new)
+    //   (3) 8x64    => 1600K pools (old) => 9600K (new) => total = 19200K (new)
+    // Since (1) is used for training while (2) and (3) are for evaluation, we
+    // set max=10000K=10M (new) in order to:
+    // - test higher-than-trained values via (2), but within limits,
+    // - test higher-than-trained values via (3), but outside limits
+    //
+    // XXX: THIS IS NOW LEFT UNUSED (switched to relative values instead)
+    // constexpr int ARMY_VALUE_MAX = 10 * 1000 * 1000; // 10M
+
+
+    constexpr GlobalEncoding GLOBAL_ENCODING {
+        E4(GA::BATTLE_SIDE,                 CS, 1),
+        E4(GA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
+        E4(GA::BFIELD_VALUE_NOW_REL0,       LS, 100),       // bfield_value_now             / bfield_value_at_start
+    };
+
+    constexpr PlayerEncoding PLAYER_ENCODING {
+        E4(PA::ARMY_VALUE_NOW_REL,     LS, 100),       // army_value_now          / global_value_now
+        E4(PA::ARMY_VALUE_NOW_REL0,    LS, 100),       // army_value_now          / global_value_at_start
+        E4(PA::VALUE_KILLED_REL,       LS, 100),       // value_killed_this_turn  / global_value_last_turn
+        E4(PA::VALUE_KILLED_ACC_REL0,  LS, 100),       // value_killed_lifetime   / global_value_at_start
+        E4(PA::VALUE_LOST_REL,         LS, 100),       // value_lost_this_turn    / global_value_last_turn
+        E4(PA::VALUE_LOST_ACC_REL0,    LS, 100),       // value_lost_lifetime     / global_value_at_start
+        E4(PA::DMG_DEALT_REL,          LS, 100),       // dmg_dealt_this_turn     / global_hp_last_turn
+        E4(PA::DMG_DEALT_ACC_REL0,     LS, 100),       // dmg_dealt_lifetime      / global_hp_at_start
+        E4(PA::DMG_RECEIVED_REL,       LS, 100),       // dmg_received_this_turn  / global_hp_last_turn
+        E4(PA::DMG_RECEIVED_ACC_REL0,  LS, 100),       // dmg_received_lifetime   / global_hp_at_start
+    };
 
     constexpr HexEncoding HEX_ENCODING {
         E4(HA::Y_COORD,                 CS, 10),
@@ -143,20 +194,53 @@ namespace MMAI::Schema::V7 {
         E4(HA::STACK_HP,                EE, 1300),     // azure dragon + all artifacts is 1254
         E4(HA::STACK_HP_LEFT,           EE, 1300),
         E4(HA::STACK_SPEED,             EE, 30),       // at 19=full reach; max is... 37?
-        E4(HA::STACK_QUEUE_POS,         EE, 15),       // 0..14, 0=active stack
+        E4(HA::STACK_QUEUE_POS,         EE, STACK_QUEUE_POS_MAX),       // 0..14, 0=active stack
         // H4(SSTACK_A::ESTIMATED_DMG,  NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
-        E4(HA::STACK_AI_VALUE,          EE, STACK_VALUE_MAX),
+        E4(HA::STACK_VALUE_ONE,         EE, STACK_VALUE_ONE_MAX),
         E4(HA::STACK_FLAGS,             BE, (1<<EI(StackFlag::_count))-1),
+
+        E4(HA::STACK_VALUE_REL,             LE, 100),
+        E4(HA::STACK_VALUE_REL0,            LE, 100),
+        E4(HA::STACK_VALUE_KILLED_REL,      LE, 100),
+        E4(HA::STACK_VALUE_KILLED_ACC_REL0, LE, 100),
+        E4(HA::STACK_VALUE_LOST_REL,        LE, 100),
+        E4(HA::STACK_VALUE_LOST_ACC_REL0,   LE, 100),
+        E4(HA::STACK_DMG_DEALT_REL,         LE, 100),
+        E4(HA::STACK_DMG_DEALT_ACC_REL0,    LE, 100),
+        E4(HA::STACK_DMG_RECEIVED_REL,      LE, 100),
+        E4(HA::STACK_DMG_RECEIVED_ACC_REL0, LE, 100),
+    };
+
+    constexpr LinkEncoding LINK_ENCODING {
+        E4(LA::SRC_HEX_ID, RAW, 0),
+        E4(LA::DST_HEX_ID, RAW, 0),
+        E4(LA::VALUE, RAW, 0),
+        E4(LA::TYPE, CS, EI(LinkType::_count)-1),       // last on purpose (only attribute with size>1)
     };
 
     // Dedining encodings for each attribute by hand is error-prone
     // The below compile-time asserts are essential.
+    static_assert(UninitializedEncodingAttributes(GLOBAL_ENCODING) == 0, "Found uninitialized elements");
+    static_assert(UninitializedEncodingAttributes(PLAYER_ENCODING) == 0, "Found uninitialized elements");
     static_assert(UninitializedEncodingAttributes(HEX_ENCODING) == 0, "Found uninitialized elements");
+    static_assert(DisarrayedEncodingAttributeIndex(GLOBAL_ENCODING) == -1, "Found wrong element at this index");
+    static_assert(DisarrayedEncodingAttributeIndex(PLAYER_ENCODING) == -1, "Found wrong element at this index");
     static_assert(DisarrayedEncodingAttributeIndex(HEX_ENCODING) == -1, "Found wrong element at this index");
+    static_assert(MiscalculatedBinaryAttributeIndex(GLOBAL_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
+    static_assert(MiscalculatedBinaryAttributeIndex(PLAYER_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
     static_assert(MiscalculatedBinaryAttributeIndex(HEX_ENCODING) == -1, "Found miscalculated binary vmax element at this index");
+    static_assert(MiscalculatedBinaryAttributeUnusedValues(GLOBAL_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
+    static_assert(MiscalculatedBinaryAttributeUnusedValues(PLAYER_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
     static_assert(MiscalculatedBinaryAttributeUnusedValues(HEX_ENCODING) == 0, "Number of unused values in the binary attribute is not 0");
 
+    constexpr int BATTLEFIELD_STATE_SIZE_GLOBAL = EncodedSize(GLOBAL_ENCODING);
+    constexpr int BATTLEFIELD_STATE_SIZE_ONE_PLAYER = EncodedSize(PLAYER_ENCODING);
     constexpr int BATTLEFIELD_STATE_SIZE_ONE_HEX = EncodedSize(HEX_ENCODING);
+    constexpr int BATTLEFIELD_STATE_SIZE_ONE_LINK = EncodedSize(LINK_ENCODING);
     constexpr int BATTLEFIELD_STATE_SIZE_ALL_HEXES = 165 * BATTLEFIELD_STATE_SIZE_ONE_HEX;
-    constexpr int BATTLEFIELD_STATE_SIZE = BATTLEFIELD_STATE_SIZE_ALL_HEXES;
+    constexpr int BATTLEFIELD_STATE_SIZE = \
+        BATTLEFIELD_STATE_SIZE_GLOBAL + \
+        BATTLEFIELD_STATE_SIZE_ONE_PLAYER + \
+        BATTLEFIELD_STATE_SIZE_ONE_PLAYER + \
+        BATTLEFIELD_STATE_SIZE_ALL_HEXES;
 }

@@ -14,13 +14,13 @@
 // limitations under the License.
 // =============================================================================
 
-#include "BAI/v7/supplementary_data.h"
+#include "BAI/v9/supplementary_data.h"
 #include "common.h"
 
-namespace MMAI::BAI::V7 {
-    const Schema::V7::Hexes SupplementaryData::getHexes() const {
+namespace MMAI::BAI::V9 {
+    const Schema::V9::Hexes SupplementaryData::getHexes() const {
         ASSERT(battlefield, "getHexes() called when battlefield is null");
-        auto res = Schema::V7::Hexes{};
+        auto res = Schema::V9::Hexes{};
 
         for (int y=0; y<battlefield->hexes->size(); ++y) {
             auto &hexrow = battlefield->hexes->at(y);
@@ -33,9 +33,9 @@ namespace MMAI::BAI::V7 {
         return res;
     }
 
-    const Schema::V7::Stacks SupplementaryData::getStacks() const {
+    const Schema::V9::Stacks SupplementaryData::getStacks() const {
         ASSERT(battlefield, "getStacks() called when battlefield is null");
-        auto res = Schema::V7::Stacks{};
+        auto res = Schema::V9::Stacks{};
 
         for (auto &stack : battlefield->stacks) {
             res.push_back(stack.get());
@@ -44,8 +44,20 @@ namespace MMAI::BAI::V7 {
         return res;
     }
 
-    const Schema::V7::AttackLogs SupplementaryData::getAttackLogs() const {
-        auto res = Schema::V7::AttackLogs{};
+    const Schema::V9::Links SupplementaryData::getLinks() const {
+        ASSERT(battlefield, "getLinks() called when battlefield is null");
+        auto res = Schema::V9::Links{};
+
+        for (auto &link : battlefield->links) {
+            res.push_back(link.get());
+        }
+
+        return res;
+    }
+
+
+    const Schema::V9::AttackLogs SupplementaryData::getAttackLogs() const {
+        auto res = Schema::V9::AttackLogs{};
         res.reserve(attackLogs.size());
 
         for (auto &al : attackLogs)

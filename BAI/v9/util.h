@@ -13,22 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
+
 #pragma once
 
-#include "battle/CPlayerBattleCallback.h"
-
-namespace MMAI::BAI::V7 {
-    using ArmyValues = std::pair<int, int>;
-
-    struct GeneralInfo {
-        static ArmyValues CalcTotalArmyValues(const CPlayerBattleCallback* battle);
-
-        GeneralInfo(
-            const CPlayerBattleCallback* battle,
-            std::pair<int, int> initialArmyValues_
-        );
-
-        const ArmyValues initialArmyValues;
-        const ArmyValues currentArmyValues;
-    };
+namespace MMAI::BAI::V9 {
+    namespace Util {
+        int Damp(int v, int max);
+    }
 }

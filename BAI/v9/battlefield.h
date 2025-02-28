@@ -16,43 +16,48 @@
 
 #pragma once
 
-#include "BAI/v7/general_info.h"
-#include "BAI/v7/hex.h"
-#include "BAI/v7/stack.h"
+#include "battle/CPlayerBattleCallback.h"
+
+#include "BAI/v9/link.h"
+#include "BAI/v9/hex.h"
+#include "BAI/v9/stack.h"
 #include "common.h"
 
-namespace MMAI::BAI::V7 {
+namespace MMAI::BAI::V9 {
     using Stacks = std::vector<std::shared_ptr<Stack>>;
     using Hexes = std::array<std::array<std::unique_ptr<Hex>, BF_XMAX>, BF_YMAX>;
+    using Links = std::vector<std::shared_ptr<Link>>;
     using XY = std::pair<int, int>;
-    using DirHex = std::vector<std::pair<BattleHex::EDir, BattleHex>>;
-
-    constexpr int QSIZE = 15;
 
     class Battlefield {
     public:
         static std::shared_ptr<const Battlefield> Create(
             const CPlayerBattleCallback* battle,
             const CStack* astack_,
-            std::pair<int, int> initialArmyValues,
+            const GlobalStats* lgstats,
+            const GlobalStats* rgstats,
+            std::map<const CStack*, Stack::Stats> stacksStats,
             bool isMorale
         );
 
         Battlefield(
-            std::shared_ptr<GeneralInfo> info,
-            std::shared_ptr<Hexes> hexes,
-            Stacks stacks,
+            const std::shared_ptr<Hexes> hexes,
+            const Stacks stacks,
+            const Links links,
             const Stack* astack
         );
 
-        const std::shared_ptr<GeneralInfo> info;
+        const Links links;
         const std::shared_ptr<Hexes> hexes;
         const Stacks stacks;
         const Stack* const astack;     // XXX: nullptr on battle start/end, or if army stacks > MAX_STACKS_PER_SIDE
     private:
-        static Stacks InitStacks(
+        static std::tuple<Stacks, Queue> InitStacks(
             const CPlayerBattleCallback* battle,
             const CStack* astack,
+            const GlobalStats* lgstats,
+            const GlobalStats* rgstats,
+            const std::map<const CStack*, Stack::Stats> stacksStats,
             bool isMorale
         );
 
@@ -62,8 +67,21 @@ namespace MMAI::BAI::V7 {
             const Stacks stacks
         );
 
+        static Links InitLinks(
+            const CPlayerBattleCallback* battle,
+            const Stacks stacks,
+            const Queue &queue,
+            const std::shared_ptr<Hexes>
+        );
+
+        static void LinkTwoHexes(
+            const CPlayerBattleCallback* battle,
+            const Queue &queue,
+            Links &links,
+            Hex* src,
+            Hex* dst
+        );
+
         static Queue GetQueue(const CPlayerBattleCallback* battle, const CStack* astack, bool isMorale);
-        static int BaseMeleeMod(const CPlayerBattleCallback* battle, const CStack* cstack);
-        static int BaseRangeMod(const CPlayerBattleCallback* battle, const CStack* cstack);
     };
 }

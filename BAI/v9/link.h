@@ -14,29 +14,31 @@
 // limitations under the License.
 // =============================================================================
 
-#include "StdInc.h"
+#pragma once
 
-#include "CStack.h"
+#include "schema/v9/types.h"
+#include "BAI/v9/hex.h"
 
-#include "BAI/v7/general_info.h"
+namespace MMAI::BAI::V9 {
+    using LinkType = Schema::V9::LinkType;
 
-namespace MMAI::BAI::V7 {
-    // static
-    ArmyValues GeneralInfo::CalcTotalArmyValues(const CPlayerBattleCallback* battle) {
-        int res0 = 0;
-        int res1 = 0;
-        for (auto &stack : battle->battleGetStacks()) {
-            stack->unitSide() == BattleSide::ATTACKER
-                ? res0 += stack->getCount() * stack->unitType()->getAIValue()
-                : res1 += stack->getCount() * stack->unitType()->getAIValue();
-        }
-        return {res0, res1};
-    }
-
-    GeneralInfo::GeneralInfo(
-        const CPlayerBattleCallback* battle,
-        ArmyValues initialArmyValues_
-    ) : initialArmyValues(initialArmyValues_),
-        currentArmyValues(CalcTotalArmyValues(battle))
+    class Link : public Schema::V9::ILink {
+    public:
+        Link(LinkType t, const Hex *src, const Hex *dst, float v)
+        : type(t)
+        , src(src)
+        , dst(dst)
+        , value(v)
         {};
+
+        const LinkType type;
+        const Hex* const src;
+        const Hex* const dst;
+        const float value;
+
+        LinkType getType() const override { return type; };
+        const IHex* getSrc() const override { return src; }
+        const IHex* getDst() const override { return dst; }
+        float getValue() const override { return value; };
+    };
 }

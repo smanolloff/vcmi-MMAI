@@ -16,16 +16,22 @@
 #pragma once
 
 #include "schema/base.h"
-#include "schema/v7/types.h"
+#include "schema/v9/types.h"
 
-namespace MMAI::BAI::V7 {
-    using HexAttribute = Schema::V7::HexAttribute;
+namespace MMAI::BAI::V9 {
+    using GlobalAttribute = Schema::V9::GlobalAttribute;
+    using PlayerAttribute = Schema::V9::PlayerAttribute;
+    using HexAttribute = Schema::V9::HexAttribute;
+    using LinkAttribute = Schema::V9::LinkAttribute;
     using BS = Schema::BattlefieldState;
 
     class Encoder {
     public:
+        static void Encode(const LinkAttribute a, const int v, BS &vec);
         static void Encode(const HexAttribute a, const int v, BS &vec);
-        static void Encode(const int a, const Schema::V7::Encoding e, const int n, const int v, const int vmax, BS &vec);
+        static void Encode(const PlayerAttribute a, const int v, BS &vec);
+        static void Encode(const GlobalAttribute a, const int v, BS &vec);
+        static void Encode(const char* attrtype, const int a, const Schema::V9::Encoding e, const int n, int v, const int vmax, BS &vec);
 
         static void EncodeAccumulatingExplicitNull(const int v, const int n, BS &vec);
         static void EncodeAccumulatingImplicitNull(const int v, const int n, BS &vec);

@@ -15,14 +15,14 @@
 // =============================================================================
 
 
-#include "schema/v7/constants.h"
-#include "schema/v7/types.h"
+#include "schema/v9/constants.h"
+#include "schema/v9/types.h"
 
-#include "BAI/v7/encoder.h"
+#include "BAI/v9/encoder.h"
 #include "common.h"
 
-namespace MMAI::BAI::V7 {
-    using namespace Schema::V7;
+namespace MMAI::BAI::V9 {
+    using namespace Schema::V9;
     using BS = Schema::BattlefieldState;
 
     #define COERCE(v, vfallback) (v == NULL_VALUE_UNENCODED) ? vfallback : v
@@ -45,9 +45,18 @@ namespace MMAI::BAI::V7 {
             throw std::runtime_error("NULL values are not allowed for strict encoding"); \
         }
 
-    void Encoder::Encode(const int a, const Encoding e, const int n, const int v, const int vmax, BS &vec) {
-        if (v > vmax)
-            THROW_FORMAT("Cannot encode value: %d (vmax=%d, a=%d, n=%d)", v % vmax % EI(a) % n);
+    void Encoder::Encode(const char* attrname, const int a, const Encoding e, const int n, int v, const int vmax, BS &vec) {
+        if (e == Encoding::RAW) {
+            vec.push_back(v);
+            return;
+        }
+
+        if (v > vmax) {
+            // THROW_FORMAT("Cannot encode value: %d (vmax=%d, a=%d, n=%d, e=%d)", v % vmax % EI(a) % n % EI(e));
+            // Can happen (e.g. DMG_*_ACC_REL0 > 1 if there were resurrected stacks)
+            printf("WARNING: v=%d (vmax=%d, a=%d, e=%d, n=%d, attrname=%s)\n", v, vmax, EI(a), EI(e), n, attrname);
+            v = vmax;
+        }
 
         switch (e) {
         break; case Encoding::BINARY_EXPLICIT_NULL: EncodeBinaryExplicitNull(v, n, vec);
@@ -77,9 +86,24 @@ namespace MMAI::BAI::V7 {
         }
     }
 
+    void Encoder::Encode(const LinkAttribute a, const int v, BS &vec) {
+        auto &[_, e, n, vmax] = LINK_ENCODING.at(EI(a));
+        Encode("LinkAttribute", EI(a), e, n, v, vmax, vec);
+    }
+
     void Encoder::Encode(const HexAttribute a, const int v, BS &vec) {
         auto &[_, e, n, vmax] = HEX_ENCODING.at(EI(a));
-        Encode(EI(a), e, n, v, vmax, vec);
+        Encode("HexAttribute", EI(a), e, n, v, vmax, vec);
+    }
+
+    void Encoder::Encode(const PlayerAttribute a, const int v, BS &vec) {
+        auto &[_, e, n, vmax] = PLAYER_ENCODING.at(EI(a));
+        Encode("PlayerAttribute", EI(a), e, n, v, vmax, vec);
+    }
+
+    void Encoder::Encode(const GlobalAttribute a, const int v, BS &vec) {
+        auto &[_, e, n, vmax] = GLOBAL_ENCODING.at(EI(a));
+        Encode("GlobalAttribute", EI(a), e, n, v, vmax, vec);
     }
 
     //

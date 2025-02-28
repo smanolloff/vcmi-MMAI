@@ -17,20 +17,45 @@
 #pragma once
 
 #include "CStack.h"
-
 #include "battle/IBattleInfoCallback.h"
-#include "schema/v7/types.h"
 
-namespace MMAI::BAI::V7 {
-    using namespace Schema::V7;
+#include "BAI/v9/global_stats.h"
+#include "battle/ReachabilityInfo.h"
+#include "schema/v9/types.h"
+
+namespace MMAI::BAI::V9 {
+    using namespace Schema::V9;
     using Queue = std::vector<uint32_t>; // item=unit id
 
     /**
      * A wrapper around CStack
      */
-    class Stack : public Schema::V7::IStack {
+    class Stack : public Schema::V9::IStack {
     public:
-        Stack(const CStack* cstack, Queue &q, bool blocked, bool blocking, DamageEstimation estdmg);
+        static int CalcValue(const CCreature* creature);
+
+        struct Stats {
+            int dmgDealtNow = 0;
+            int dmgDealtTotal = 0;
+            int dmgReceivedNow = 0;
+            int dmgReceivedTotal = 0;
+            int valueKilledNow = 0;
+            int valueKilledTotal = 0;
+            int valueLostNow = 0;
+            int valueLostTotal = 0;
+        };
+
+        Stack(
+            const CStack* cstack,
+            Queue &q,
+            const GlobalStats* lgstats,
+            const GlobalStats* rgstats,
+            const Stats stats,
+            const ReachabilityInfo rinfo,
+            bool blocked,
+            bool blocking,
+            DamageEstimation estdmg
+        );
 
         // IStack impl
         const StackAttrs& getAttrs() const override;
@@ -40,6 +65,7 @@ namespace MMAI::BAI::V7 {
         char alias;
 
         const CStack* const cstack;
+        const ReachabilityInfo rinfo;
         StackAttrs attrs = {};
         StackFlags flags = 0;   //
 

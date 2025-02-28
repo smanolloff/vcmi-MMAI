@@ -14,19 +14,149 @@
 // limitations under the License.
 // =============================================================================
 
+#include "CCreatureHandler.h"
 #include "battle/IBattleInfoCallback.h"
+#include "bonuses/BonusEnum.h"
 #include "constants/EntityIdentifiers.h"
 
-#include "BAI/v7/stack.h"
-#include "schema/v7/constants.h"
-#include "schema/v7/types.h"
+#include "BAI/v9/stack.h"
+#include "schema/v9/constants.h"
+#include "schema/v9/types.h"
+#include <cmath>
 
-namespace MMAI::BAI::V7 {
-    using A = Schema::V7::StackAttribute;
-    using F = Schema::V7::StackFlag;
+namespace MMAI::BAI::V9 {
+    using A = Schema::V9::StackAttribute;
+    using F = Schema::V9::StackFlag;
 
-    Stack::Stack(const CStack* cstack_, Queue &q, bool blocked, bool blocking, DamageEstimation estdmg)
-    : cstack(cstack_)
+    auto ValueCache = std::map<const CCreature*, float> {};
+
+    // static
+    int Stack::CalcValue(const CCreature* cr) {
+        auto it = ValueCache.find(cr);
+        if (it != ValueCache.end())
+            return it->second;
+
+        // Formula:
+        // 10 * (A + B) * C * D1 * D2 * ... * Dn
+        //
+
+        // A = <offensive factor>
+        // B = <defensive factor>
+        // C = <speed factor>
+        // D* = <bonus factor>
+
+        auto att = cr->getBaseAttack();
+        auto def = cr->getBaseAttack();
+        auto dmg = (cr->getBaseDamageMax() + cr->getBaseDamageMin()) / 2.0;
+        auto hp = cr->getBaseHitPoints();
+        auto spd = cr->getBaseSpeed();
+        auto shooter = cr->hasBonusOfType(BonusType::SHOOTER);
+        auto bonuses = cr->getAllBonuses(Selector::all, nullptr);
+
+        auto a = 3*dmg * (1 + std::min(4.0, 0.05*att));
+        auto b = hp / (1 - std::min(0.7, 0.025*def));
+        auto c = std::log(spd*2);
+        auto d = shooter ? 1.5 : 1.0;
+
+        for (auto &bonus : *bonuses) {
+            switch (bonus->type) {
+            break; case BonusType::ADDITIONAL_ATTACK:           d += (shooter ? 0.5 : 0.3);
+            break; case BonusType::ADDITIONAL_RETALIATION:      d += (bonus->val * 0.1);
+            break; case BonusType::ATTACKS_ALL_ADJACENT:        d += 0.2;
+            break; case BonusType::BLOCKS_RETALIATION:          d += 0.3;
+            break; case BonusType::DEATH_STARE:                 d += (bonus->val * 0.02);   // 10% = 0.2
+            break; case BonusType::DOUBLE_DAMAGE_CHANCE:        d += (bonus->val * 0.005);  // 20% = 0.1
+            break; case BonusType::FLYING:                      d += 0.1;
+            break; case BonusType::NO_MELEE_PENALTY:            d += 0.1;
+            break; case BonusType::THREE_HEADED_ATTACK:         d += 0.05;
+            break; case BonusType::TWO_HEX_ATTACK_BREATH:       d += 0.1;
+            break; case BonusType::UNLIMITED_RETALIATIONS:      d += 0.2;
+            break; case BonusType::ENEMY_DEFENCE_REDUCTION:     d += (bonus->val * 0.0025); // 40% = 0.1
+            break; case BonusType::FIRE_SHIELD:                 d += (bonus->val * 0.003);  // 20% = 0.1
+            break; case BonusType::LIFE_DRAIN:                  d += (bonus->val * 0.003);  // 100% = 0.3
+            break; case BonusType::NO_DISTANCE_PENALTY:         d += 0.5;
+            break; case BonusType::SPELL_LIKE_ATTACK:
+                switch(bonus->subtype.as<SpellID>()) {
+                break; case SpellID::DEATH_CLOUD:               d += 0.2;
+                // break; case SpellID::FIREBALL:
+                }
+            break; case BonusType::SPELL_AFTER_ATTACK:
+                switch(bonus->subtype.as<SpellID>()) {
+                break; case SpellID::BLIND:
+                       case SpellID::STONE_GAZE:
+                       case SpellID::PARALYZE:                  d += (bonus->val * 0.01);   // 20% = 0.2
+                break; case SpellID::BIND:                      d += (bonus->val * 0.001);  // 100% = 0.1
+                break; case SpellID::WEAKNESS:                  d += (bonus->val * 0.001);  // 100% = 0.1
+                break; case SpellID::AGE:                       d += (bonus->val * 0.005);  // 20% = 0.1
+                break; case SpellID::CURSE:                     d += (bonus->val * 0.0025); // 20% = 0.05
+                // break; case SpellID::DISEASE:
+                // break; case SpellID::DISPEL:
+                // break; case SpellID::POISON:
+                // break; case SpellID::THUNDERBOLT:
+                }
+            // break; case BonusType::ACID_BREATH:
+            // break; case BonusType::CHARGE_IMMUNITY:
+            // break; case BonusType::CREATURE_ENCHANT_POWER:
+            // break; case BonusType::CREATURE_SPELL_POWER:
+            // break; case BonusType::DRAGON_NATURE:
+            // break; case BonusType::ENCHANTER:
+            // break; case BonusType::FEAR:
+            // break; case BonusType::FEARLESS:
+            // break; case BonusType::GARGOYLE:
+            // break; case BonusType::HATE:
+            // break; case BonusType::HEALER:
+            // break; case BonusType::HP_REGENERATION:
+            // break; case BonusType::KING:
+            // break; case BonusType::LEVEL_SPELL_IMMUNITY:
+            // break; case BonusType::LUCK:
+            // break; case BonusType::MAGIC_MIRROR:
+            // break; case BonusType::MAGIC_RESISTANCE:
+            // break; case BonusType::MANA_CHANNELING:
+            // break; case BonusType::MANA_DRAIN:
+            // break; case BonusType::MIND_IMMUNITY:
+            // break; case BonusType::MORALE:
+            // break; case BonusType::MORE_DAMAGE_FROM_SPELL:
+            // break; case BonusType::NO_LUCK:
+            // break; case BonusType::NO_TERRAIN_PENALTY:
+            // break; case BonusType::NO_WALL_PENALTY:
+            // break; case BonusType::NON_LIVING:
+            // break; case BonusType::NOT_ACTIVE:
+            // break; case BonusType::RANDOM_SPELLCASTER:
+            // break; case BonusType::REBIRTH:
+            // break; case BonusType::RETURN_AFTER_STRIKE:
+            // break; case BonusType::SHOOTER:
+            // break; case BonusType::SIEGE_WEAPON:
+            // break; case BonusType::SPECIAL_CRYSTAL_GENERATION:
+            // break; case BonusType::SPECIFIC_SPELL_POWER:
+            // break; case BonusType::SPELL_DAMAGE_REDUCTION:
+            // break; case BonusType::SPELL_IMMUNITY:
+            // break; case BonusType::SPELL_RESISTANCE_AURA:
+            // break; case BonusType::SPELL_SCHOOL_IMMUNITY:
+            // break; case BonusType::SPELLCASTER:
+            // break; case BonusType::UNDEAD:
+            // break; case BonusType::VISIONS:
+            }
+        }
+
+        // Multiply by 10 to reduce the integer rounding for weak units
+        // (e.g. peasant 7.48 => 8 is a lot, 74.8 => 75 is OK)
+        ValueCache[cr] = static_cast<int>(std::round(10 * (a + b) * c * d));
+        // std::cout << "\n" << ValueCache[cr] << " " << cr->getNameSingularTextID() << "(a=" << a << ", b=" << b << ", c=" << c << ", d=" << d << ")\n";
+        return ValueCache[cr];
+    }
+
+    Stack::Stack(
+        const CStack* cstack_,
+        Queue &q,
+        const GlobalStats *lgstats,
+        const GlobalStats *rgstats,
+        const Stats stats,
+        const ReachabilityInfo rinfo_,
+        bool blocked,
+        bool blocking,
+        DamageEstimation estdmg
+    ) : cstack(cstack_)
+      , rinfo(rinfo_)
     {
         // XXX: NULL attrs are used only for non-existing stacks
         // => don't fill with null here (as opposed to attrs in Hex)
@@ -41,8 +171,9 @@ namespace MMAI::BAI::V7 {
         }
 
         // queue pos needs to be set first to determine if stack is active
+        auto maxpos = std::get<3>(HEX_ENCODING.at(EI(HA::STACK_QUEUE_POS))) - 1;
         auto qit = std::find(q.begin(), q.end(), cstack->unitId());
-        auto qpos = (qit == q.end()) ? 100 : qit - q.begin();
+        auto qpos = (qit == q.end()) ? maxpos : qit - q.begin();
         auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
 
         // XXX: config/creatures/<faction>.json is misleading
@@ -286,7 +417,6 @@ namespace MMAI::BAI::V7 {
         // double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
         // auto dmgPercentHP = std::clamp<int>(std::round(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
 
-
         if (cstack->willMove()) {
             setflag(F::WILL_ACT);
             // XXX: do NOT use cstack->waited()
@@ -313,11 +443,13 @@ namespace MMAI::BAI::V7 {
         shots = cstack->shots.available();
 
         int cid = cstack->creatureId().num;
-        if (cid > Schema::V7::CREATURE_ID_MAX) {
+        if (cid > Schema::V9::CREATURE_ID_MAX) {
             logAi->error("MMAI error: unknown creature with: %d (%s)", cid, cstack->getDescription());
             ML(throw std::runtime_error("unknown creature id: " + std::to_string(cid)));
             cid = 122; // this is a "NOT USED (1)" creature
         }
+
+        auto valueOne = CalcValue(cstack->unitType());
 
         setattr(A::SIDE, EI(cstack->unitSide()));
         // setattr(A::CREATURE_ID, cid);
@@ -332,7 +464,31 @@ namespace MMAI::BAI::V7 {
         setattr(A::SPEED, cstack->getMovementRange());
         setattr(A::QUEUE_POS, qpos);
         // setattr(A::ESTIMATED_DMG, dmgPercentHP);
-        setattr(A::AI_VALUE, cstack->unitType()->getAIValue());
+
+        // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] lgstats->valueNow:" << lgstats->valueNow << ", rgstats->valueNow: " << rgstats->valueNow << "\n";
+        auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
+        auto bf_valuePrev = lgstats->valuePrev + rgstats->valuePrev;
+        auto bf_valueStart = lgstats->valueStart + rgstats->valueStart;
+        auto bf_hpPrev = lgstats->hpPrev + rgstats->hpPrev;
+        auto bf_hpStart = lgstats->hpStart + rgstats->hpStart;
+        auto value = valueOne * cstack->getCount();
+
+        // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
+        auto percent = [](int v1, int v2) {
+            return 100 * v1 / v2;
+        };
+
+        setattr(A::VALUE_ONE, valueOne);
+        setattr(A::VALUE_REL,             percent(value, bf_valueNow));
+        setattr(A::VALUE_REL0,            percent(value, bf_valueStart));
+        setattr(A::VALUE_KILLED_REL,      percent(stats.valueKilledNow, bf_valuePrev));
+        setattr(A::VALUE_KILLED_ACC_REL0, percent(stats.valueKilledTotal, bf_valueStart));
+        setattr(A::VALUE_LOST_REL,        percent(stats.valueLostNow, bf_valuePrev));
+        setattr(A::VALUE_LOST_ACC_REL0,   percent(stats.valueLostTotal, bf_valueStart));
+        setattr(A::DMG_DEALT_REL,         percent(stats.dmgDealtNow, bf_hpPrev));
+        setattr(A::DMG_DEALT_ACC_REL0,    percent(stats.dmgDealtTotal, bf_hpStart));
+        setattr(A::DMG_RECEIVED_REL,      percent(stats.dmgReceivedNow, bf_hpPrev));
+        setattr(A::DMG_RECEIVED_ACC_REL0, percent(stats.dmgReceivedTotal, bf_hpStart));
 
         finalize();
     }
@@ -373,10 +529,9 @@ namespace MMAI::BAI::V7 {
         attrs.at(EI(a)) += value;
     };
 
+    std::map<const CCreature*, int> warned {};
+
     void Stack::finalize() {
         setattr(A::FLAGS, flags.to_ulong());
-        for (int i=0; i<EI(A::_count); ++i) {
-            attrs.at(i) = std::min(attrs.at(i), std::get<3>(HEX_ENCODING.at(STACK_ATTR_OFFSET + i)));
-        }
     }
 }

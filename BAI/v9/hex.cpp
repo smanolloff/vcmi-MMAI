@@ -17,14 +17,14 @@
 #include "vcmi/spells/Service.h"
 #include "vcmi/spells/Spell.h"
 
-#include "BAI/v7/hex.h"
+#include "BAI/v9/hex.h"
 #include "common.h"
-#include "schema/v7/constants.h"
+#include "schema/v9/constants.h"
 
-namespace MMAI::BAI::V7 {
-    using A = Schema::V7::HexAttribute;
-    using S = Schema::V7::HexState;
-    using SA = Schema::V7::StackAttribute;
+namespace MMAI::BAI::V9 {
+    using A = Schema::V9::HexAttribute;
+    using S = Schema::V9::HexState;
+    using SA = Schema::V9::StackAttribute;
 
     constexpr HexStateMask S_PASSABLE = 1<<EI(HexState::PASSABLE);
     constexpr HexStateMask S_STOPPING = 1<<EI(HexState::STOPPING);
@@ -86,7 +86,8 @@ namespace MMAI::BAI::V7 {
         const std::vector<std::shared_ptr<const CObstacleInstance>> &obstacles,
         const std::map<BattleHex, std::shared_ptr<Stack>> &hexstacks,
         const std::shared_ptr<ActiveStackInfo> &astackinfo
-    ) : bhex(bhex_) {
+    ) : bhex(bhex_)
+      , id(CalcId(bhex_)) {
         attrs.fill(NULL_VALUE_UNENCODED);
 
         auto [x, y] = CalcXY(bhex);
@@ -99,20 +100,41 @@ namespace MMAI::BAI::V7 {
         // This is never N/A => set separately (not within the if below)
         setattr(A::IS_REAR, stack && bhex == stack->cstack->occupiedHex());
 
-        if (stack) {;
-            setattr(A::STACK_SIDE, stack->attr(SA::SIDE));
-            setattr(A::STACK_QUANTITY, stack->attr(SA::QUANTITY));
-            setattr(A::STACK_ATTACK, stack->attr(SA::ATTACK));
-            setattr(A::STACK_DEFENSE, stack->attr(SA::DEFENSE));
-            setattr(A::STACK_SHOTS, stack->attr(SA::SHOTS));
-            setattr(A::STACK_DMG_MIN, stack->attr(SA::DMG_MIN));
-            setattr(A::STACK_DMG_MAX, stack->attr(SA::DMG_MAX));
-            setattr(A::STACK_HP, stack->attr(SA::HP));
-            setattr(A::STACK_HP_LEFT, stack->attr(SA::HP_LEFT));
-            setattr(A::STACK_SPEED, stack->attr(SA::SPEED));
-            setattr(A::STACK_QUEUE_POS, stack->attr(SA::QUEUE_POS));
-            setattr(A::STACK_AI_VALUE, stack->attr(SA::AI_VALUE));
-            setattr(A::STACK_FLAGS, stack->attr(SA::FLAGS));
+        auto attrmap = std::map<A, SA> {
+            {A::STACK_SIDE,                  SA::SIDE},
+            {A::STACK_QUANTITY,              SA::QUANTITY},
+            {A::STACK_ATTACK,                SA::ATTACK},
+            {A::STACK_DEFENSE,               SA::DEFENSE},
+            {A::STACK_SHOTS,                 SA::SHOTS},
+            {A::STACK_DMG_MIN,               SA::DMG_MIN},
+            {A::STACK_DMG_MAX,               SA::DMG_MAX},
+            {A::STACK_HP,                    SA::HP},
+            {A::STACK_HP_LEFT,               SA::HP_LEFT},
+            {A::STACK_SPEED,                 SA::SPEED},
+            {A::STACK_QUEUE_POS,             SA::QUEUE_POS},
+            {A::STACK_VALUE_ONE,             SA::VALUE_ONE},
+            {A::STACK_FLAGS,                 SA::FLAGS},
+
+            {A::STACK_VALUE_REL,             SA::VALUE_REL},
+            {A::STACK_VALUE_REL0,            SA::VALUE_REL0},
+            {A::STACK_VALUE_KILLED_REL,      SA::VALUE_KILLED_REL},
+            {A::STACK_VALUE_KILLED_ACC_REL0, SA::VALUE_KILLED_ACC_REL0},
+            {A::STACK_VALUE_LOST_REL,        SA::VALUE_LOST_REL},
+            {A::STACK_VALUE_LOST_ACC_REL0,   SA::VALUE_LOST_ACC_REL0},
+            {A::STACK_DMG_DEALT_REL,         SA::DMG_DEALT_REL},
+            {A::STACK_DMG_DEALT_ACC_REL0,    SA::DMG_DEALT_ACC_REL0},
+            {A::STACK_DMG_RECEIVED_REL,      SA::DMG_RECEIVED_REL},
+            {A::STACK_DMG_RECEIVED_ACC_REL0, SA::DMG_RECEIVED_ACC_REL0},
+        };
+
+        if (stack) {
+            int i = 0;
+            for (const auto &[a, sa] : attrmap) {
+                setattr(a, stack->attr(sa));
+                ++i;
+            }
+
+            ASSERT(i == EI(SA::_count), "not all stack attributes encoded: i=" + std::to_string(i));
         }
 
         if (astackinfo) {
@@ -127,6 +149,10 @@ namespace MMAI::BAI::V7 {
 
     const HexAttrs& Hex::getAttrs() const {
         return attrs;
+    }
+
+    int Hex::getID() const {
+        return id;
     }
 
     int Hex::getAttr(HexAttribute a) const {

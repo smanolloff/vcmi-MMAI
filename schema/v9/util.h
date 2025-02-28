@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "schema/v7/types.h"
+#include "schema/v9/types.h"
 
-namespace MMAI::Schema::V7 {
+namespace MMAI::Schema::V9 {
     /*
      * Compile time int(sqrt(x))
      * https://stackoverflow.com/a/27709195

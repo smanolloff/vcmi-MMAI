@@ -22,13 +22,13 @@
 #include "battle/ReachabilityInfo.h"
 #include "constants/Enumerations.h"
 
-#include "BAI/v7/stack.h"
-#include "schema/v7/types.h"
+#include "BAI/v9/stack.h"
+#include "schema/v9/types.h"
 
 #include <memory>
 
-namespace MMAI::BAI::V7 {
-    using namespace Schema::V7;
+namespace MMAI::BAI::V9 {
+    using namespace Schema::V9;
     using HexActionMask = std::bitset<EI(HexAction::_count)>;
     using HexStateMask = std::bitset<EI(HexState::_count)>;
     using HexActionHex = std::array<BattleHex, 6>;
@@ -51,7 +51,7 @@ namespace MMAI::BAI::V7 {
      * x is 0..14     (instead of 0..16),
      * id is 0..164  (instead of 0..177)
      */
-    class Hex : public Schema::V7::IHex {
+    class Hex : public Schema::V9::IHex {
     public:
         static int CalcId(const BattleHex &bh);
         static std::pair<int, int> CalcXY(const BattleHex &bh);
@@ -67,10 +67,12 @@ namespace MMAI::BAI::V7 {
 
         // IHex impl
         const HexAttrs& getAttrs() const override;
+        int getID() const override;
         int getAttr(HexAttribute a) const override;
         const Stack* getStack() const override;
 
         const BattleHex bhex;
+        const int id;
         std::shared_ptr<const Stack> stack = nullptr;
         HexAttrs attrs = {};
         HexActionMask actmask = 0;   // for active stack only

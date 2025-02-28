@@ -38,32 +38,6 @@ set(MMAI_FILES
   BAI/v3/supplementary_data.cpp
   BAI/v3/supplementary_data.h
 
-  BAI/v7/BAI.cpp
-  BAI/v7/BAI.h
-  BAI/v7/action.cpp
-  BAI/v7/action.h
-  BAI/v7/attack_log.h
-  BAI/v7/battlefield.cpp
-  BAI/v7/battlefield.h
-  BAI/v7/encoder.cpp
-  BAI/v7/encoder.h
-  BAI/v7/general_info.cpp
-  BAI/v7/general_info.h
-  BAI/v7/hex.cpp
-  BAI/v7/hex.h
-  BAI/v7/hexaction.h
-  BAI/v7/hexactmask.h
-  BAI/v7/render.cpp
-  BAI/v7/render.h
-  BAI/v7/stack.cpp
-  BAI/v7/stack.h
-  BAI/v7/state.cpp
-  BAI/v7/state.h
-  BAI/v7/supplementary_data.cpp
-  BAI/v7/supplementary_data.h
-  BAI/v7/util.cpp
-  BAI/v7/util.h
-
   BAI/v8/BAI.cpp
   BAI/v8/BAI.h
   BAI/v8/action.cpp
@@ -89,19 +63,44 @@ set(MMAI_FILES
   BAI/v8/util.cpp
   BAI/v8/util.h
 
+  BAI/v9/BAI.cpp
+  BAI/v9/BAI.h
+  BAI/v9/action.cpp
+  BAI/v9/action.h
+  BAI/v9/attack_log.h
+  BAI/v9/battlefield.cpp
+  BAI/v9/battlefield.h
+  BAI/v9/encoder.cpp
+  BAI/v9/encoder.h
+  BAI/v9/global_stats.h
+  BAI/v9/hex.cpp
+  BAI/v9/hex.h
+  BAI/v9/hexaction.h
+  BAI/v9/hexactmask.h
+  BAI/v9/render.cpp
+  BAI/v9/render.h
+  BAI/v9/stack.cpp
+  BAI/v9/stack.h
+  BAI/v9/state.cpp
+  BAI/v9/state.h
+  BAI/v9/supplementary_data.cpp
+  BAI/v9/supplementary_data.h
+  BAI/v9/util.cpp
+  BAI/v9/util.h
+
   schema/schema.h
   schema/v3/constants.h
   schema/v3/schema.h
   schema/v3/types.h
   schema/v3/util.h
-  schema/v7/constants.h
-  schema/v7/schema.h
-  schema/v7/types.h
-  schema/v7/util.h
   schema/v8/constants.h
   schema/v8/schema.h
   schema/v8/types.h
   schema/v8/util.h
+  schema/v9/constants.h
+  schema/v9/schema.h
+  schema/v9/types.h
+  schema/v9/util.h
 
   MMAI.h
   StdInc.h

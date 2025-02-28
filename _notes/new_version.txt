@@ -10,7 +10,7 @@ version X -> Y
 4. Text replacements: replace all occurrances of
   - "/vX/" -> "/vY/"
   - "::VX" -> "::VY"
-  ^ in AI/MMAI/BAI/vY/ and in AI/MMAI/schema/vY
+  ^ in AI/MMAI/BAI/vY/ and in AI/MMAI/schema/vY/
 
 5. Edit AI/MMAI/BAI/base.cpp and add #include + case stmt for version Y
    Edit AI/MMAI/BAI/model/TorchModel.cpp and add case stmt for version Y (2 places)
@@ -21,7 +21,8 @@ version X -> Y
 7. Edit the "add_executable(mlclient-cli" line in ML/CMakeLists.txt
   (add vY agents)
 
-8. Edit ML/user_agents/agent-vY.cpp and .h and replace VX with VY (and some integers X with Y)
+8. Edit ML/user_agents/agent-vY.cpp and ML/user_agents/agent-vY.h
+  (replace VX with VY and replace some integers X with Y)
 
 9. Edit ML/main.cpp add #include for vY + replace "AgentVX" with "AgentVY"
 

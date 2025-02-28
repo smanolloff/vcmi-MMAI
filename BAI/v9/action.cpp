@@ -16,11 +16,11 @@
 
 #include "battle/CBattleInfoEssentials.h"
 
-#include "BAI/v7/action.h"
-#include "BAI/v7/hex.h"
-#include "BAI/v7/hexaction.h"
+#include "BAI/v9/action.h"
+#include "BAI/v9/hex.h"
+#include "BAI/v9/hexaction.h"
 
-namespace MMAI::BAI::V7 {
+namespace MMAI::BAI::V9 {
     // static
     std::unique_ptr<Hex> Action::initHex(const Schema::Action &a, const Battlefield * bf) {
         // Control actions (<0) should never reach here

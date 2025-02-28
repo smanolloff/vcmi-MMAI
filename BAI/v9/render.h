@@ -14,12 +14,11 @@
 // limitations under the License.
 // =============================================================================
 
-#include "StdInc.h"
+#include "BAI/v9/action.h"
+#include "BAI/v9/state.h"
+#include "schema/base.h"
 
-namespace MMAI::BAI::V7 {
-    namespace Util {
-        int Damp(int v, int max) {
-            return std::round(max * std::tanh(static_cast<double>(v) / max));
-        }
-    }
+namespace MMAI::BAI::V9 {
+    std::string Render(const Schema::IState* istate, const Action *action);
+    void Verify(const State* state);
 }

@@ -19,19 +19,19 @@
 #include "battle/BattleHex.h"
 
 #include "common.h"
-#include "schema/v7/constants.h"
-#include "schema/v7/types.h"
+#include "schema/v9/constants.h"
+#include "schema/v9/types.h"
 
 // There is a cyclic dependency if those are placed in action.h:
 // action.h -> battlefield.h -> hex.h -> actmask.h -> action.h
-namespace MMAI::BAI::V7 {
+namespace MMAI::BAI::V9 {
     enum class NonHexAction : int {
         RETREAT,
         WAIT,
         count
     };
 
-    using HexAction = Schema::V7::HexAction;
+    using HexAction = Schema::V9::HexAction;
 
     static_assert(EI(HexAction::AMOVE_TR) == 0);
     static_assert(EI(HexAction::AMOVE_R) == 1);
@@ -49,8 +49,8 @@ namespace MMAI::BAI::V7 {
         BattleHex::TOP_LEFT,
     };
 
-    static_assert(EI(NonHexAction::count) == Schema::V7::N_NONHEX_ACTIONS);
-    static_assert(EI(HexAction::_count) == Schema::V7::N_HEX_ACTIONS);
+    static_assert(EI(NonHexAction::count) == Schema::V9::N_NONHEX_ACTIONS);
+    static_assert(EI(HexAction::_count) == Schema::V9::N_HEX_ACTIONS);
 
     constexpr int N_ACTIONS = EI(NonHexAction::count) + EI(HexAction::_count)*BF_SIZE;
 }

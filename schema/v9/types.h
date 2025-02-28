@@ -18,7 +18,7 @@
 
 #include "schema/base.h"
 
-namespace MMAI::Schema::V7 {
+namespace MMAI::Schema::V9 {
     enum class Encoding : int {
         /*
          * Represent `v` as `n` bits, where `bits[1..v+1]=1`.
@@ -266,6 +266,11 @@ namespace MMAI::Schema::V7 {
          */
         LINNORM_ZERO_NULL,
         // XXX: NORMALIZED_ZERO_NULL obsoletes NORMALIZED_IMPLICIT_NULL
+
+        /*
+         * Don't normalize, use as-is.
+         */
+        RAW,
     };
 
     enum class StackActState : int {
@@ -297,6 +302,29 @@ namespace MMAI::Schema::V7 {
         _count
     };
 
+    enum class GlobalAttribute : int {
+        BATTLE_SIDE,                 // 0=left, 1=right
+        BATTLE_WINNER,               // 0=left, 1=right (NA = battle not finished)
+        BFIELD_VALUE_NOW_REL0,       // global_value_now / global_value_at_start
+
+        _count
+    };
+
+    enum class PlayerAttribute : int {
+        ARMY_VALUE_NOW_REL,         // side_army_value_now          / global_value_now
+        ARMY_VALUE_NOW_REL0,        // side_army_value_now          / global_value_at_start
+        VALUE_KILLED_REL,           // left_value_killed_this_turn  / global_value_last_turn
+        VALUE_KILLED_ACC_REL0,      // left_value_killed_lifetime   / global_value_at_start
+        VALUE_LOST_REL,             // left_value_lost_this_turn    / global_value_last_turn
+        VALUE_LOST_ACC_REL0,        // left_value_lost_lifetime     / global_value_at_start
+        DMG_DEALT_REL,              // left_dmg_dealt_this_turn     / global_hp_last_turn
+        DMG_DEALT_ACC_REL0,         // left_dmg_dealt_lifetime      / global_hp_at_start
+        DMG_RECEIVED_REL,           // left_dmg_taken_this_turn     / global_hp_last_turn
+        DMG_RECEIVED_ACC_REL0,      // left_dmg_taken_lifetime      / global_hp_at_start
+
+        _count
+    };
+
     // For description on each attribute, see the comments for HEX_ENCODING
     enum class HexAttribute : int {
         Y_COORD,
@@ -317,8 +345,19 @@ namespace MMAI::Schema::V7 {
         STACK_SPEED,
         STACK_QUEUE_POS,
         // STACK_ESTIMATED_DMG,
-        STACK_AI_VALUE,
+        STACK_VALUE_ONE,
         STACK_FLAGS,
+
+        STACK_VALUE_REL,
+        STACK_VALUE_REL0,
+        STACK_VALUE_KILLED_REL,
+        STACK_VALUE_KILLED_ACC_REL0,
+        STACK_VALUE_LOST_REL,
+        STACK_VALUE_LOST_ACC_REL0,
+        STACK_DMG_DEALT_REL,
+        STACK_DMG_DEALT_ACC_REL0,
+        STACK_DMG_RECEIVED_REL,
+        STACK_DMG_RECEIVED_ACC_REL0,
 
         _count
     };
@@ -336,8 +375,21 @@ namespace MMAI::Schema::V7 {
         SPEED,
         QUEUE_POS,
         // ESTIMATED_DMG,
-        AI_VALUE,
+        VALUE_ONE,
         FLAGS,
+
+
+        // RELATIVE values
+        VALUE_REL,               // stack_value_now          / global_value_now
+        VALUE_REL0,              // stack_value_now          / global_value_at_start
+        VALUE_KILLED_REL,        // value_killed_this_turn   / global_value_last_turn
+        VALUE_KILLED_ACC_REL0,   // value_killed_lifetime    / global_value_at_start
+        VALUE_LOST_REL,          // value_lost_this_turn     / global_value_last_turn
+        VALUE_LOST_ACC_REL0,     // value_lost_lifetime      / global_value_at_start
+        DMG_DEALT_REL,           // dmg_dealt_this_turn      / global_hp_last_turn
+        DMG_DEALT_ACC_REL0,      // dmg_dealt_lifetime       / global_hp_at_start
+        DMG_RECEIVED_REL,        // dmg_received_this_turn   / global_hp_last_turn
+        DMG_RECEIVED_ACC_REL0,   // dmg_received_lifetime    / global_hp_at_start
         _count
     };
 
@@ -360,6 +412,32 @@ namespace MMAI::Schema::V7 {
         _count
     };
 
+    enum class LinkType : int {
+        // XXX: types are sorted by frequency (desc) as a micro-optimization
+
+        // ACTION           // TODO? link with v=action (SRC=active stack)
+        ADJACENT,
+        REACH,              // i.e. "can move to"
+        RANGED_MOD,         // v=0.25 / 0.5 / 1
+        ACTS_BEFORE,        // v=num of actions (e.g. 2 if waited)
+        // BLOCKS,          // adds further attention to blocking units
+        MELEE_DMG_REL,      // v=frac. of DST stack HP
+        RETAL_DMG_REL,      // v=frac. of SRC stack HP after hypothetical attack
+        RANGED_DMG_REL,     // v=frac. of DST stack HP
+        BLOCKED_BY,
+        REAR_HEX,           // DST=rear hex of wide unit
+        _count
+    };
+
+    enum class LinkAttribute : int {
+        SRC_HEX_ID,
+        DST_HEX_ID,
+        VALUE,
+        TYPE,               // last on purpose (only attribute with >1 encsize)
+
+        _count
+    };
+
     enum class ErrorCode : int {
         OK,
         ALREADY_WAITED,
@@ -375,13 +453,26 @@ namespace MMAI::Schema::V7 {
         INVALID_DIR,
     };
 
-    class IMisc {
+    class IGlobalStats {
     public:
-        virtual int getInitialArmyValueLeft() const = 0;
-        virtual int getInitialArmyValueRight() const = 0;
-        virtual int getCurrentArmyValueLeft() const = 0;
-        virtual int getCurrentArmyValueRight() const = 0;
-        virtual ~IMisc() = default;
+
+        virtual int getValueStart() const = 0;
+        virtual int getValuePrev() const = 0;
+        virtual int getValueNow() const = 0;
+        virtual int getHPStart() const = 0;
+        virtual int getHPPrev() const = 0;
+        virtual int getHPNow() const = 0;
+
+        virtual int getDmgDealtNow() const = 0;
+        virtual int getDmgDealtTotal() const = 0;
+        virtual int getDmgReceivedNow() const = 0;
+        virtual int getDmgReceivedTotal() const = 0;
+        virtual int getValueKilledNow() const = 0;
+        virtual int getValueKilledTotal() const = 0;
+        virtual int getValueLostNow() const = 0;
+        virtual int getValueLostTotal() const = 0;
+
+        virtual ~IGlobalStats() = default;
     };
 
     using HexAttrs = std::array<int, static_cast<int>(HexAttribute::_count)>;
@@ -400,24 +491,37 @@ namespace MMAI::Schema::V7 {
     class IHex {
     public:
         virtual const HexAttrs& getAttrs() const = 0;
+        virtual int getID() const = 0;
         virtual int getAttr(HexAttribute) const = 0;
         virtual const IStack* getStack() const = 0;
         virtual ~IHex() = default;
     };
 
+    class ILink {
+    public:
+        virtual LinkType getType() const = 0;
+        virtual const IHex* getSrc() const = 0;
+        virtual const IHex* getDst() const = 0;
+        virtual float getValue() const = 0;
+        virtual ~ILink() = default;
+    };
+
     class IAttackLog {
     public:
-        virtual IStack* getAttacker() const = 0;
-        virtual IStack* getDefender() const = 0;
+        virtual const IStack* getAttacker() const = 0;
+        virtual const IStack* getDefender() const = 0;
         virtual int getDamageDealt() const = 0;
+        virtual int getDamageDealtPercent() const = 0;
         virtual int getUnitsKilled() const = 0;
         virtual int getValueKilled() const = 0;
+        virtual int getValueKilledPercent() const = 0;
         virtual ~IAttackLog() = default;
     };
 
     using AttackLogs = std::vector<IAttackLog*>;
-    using Hexes = std::array<std::array<IHex*, 15>, 11>;
     using Stacks = std::vector<IStack*>;
+    using Hexes = std::array<std::array<IHex*, 15>, 11>;
+    using Links = std::vector<ILink*>;
 
     enum class Side : int {LEFT, RIGHT}; // corresponds to BattleSide::Type
 
@@ -431,17 +535,13 @@ namespace MMAI::Schema::V7 {
         virtual Side getSide() const = 0;
         virtual std::string getColor() const = 0;
         virtual ErrorCode getErrorCode() const = 0;
-        virtual int getDmgDealt() const = 0;
-        virtual int getDmgReceived() const = 0;
-        virtual int getUnitsLost() const = 0;
-        virtual int getUnitsKilled() const = 0;
-        virtual int getValueLost() const = 0;
-        virtual int getValueKilled() const = 0;
         virtual bool getIsBattleEnded() const = 0;
         virtual bool getIsVictorious() const = 0;
-        virtual const IMisc* getMisc() const = 0;
-        virtual const Hexes getHexes() const = 0;
+        virtual const IGlobalStats* getGlobalStatsLeft() const = 0;
+        virtual const IGlobalStats* getGlobalStatsRight() const = 0;
         virtual const Stacks getStacks() const = 0;
+        virtual const Hexes getHexes() const = 0;
+        virtual const Links getLinks() const = 0;
         virtual const AttackLogs getAttackLogs() const = 0;
         virtual const std::string getAnsiRender() const = 0;
         virtual ~ISupplementaryData() = default;
