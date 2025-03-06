@@ -13,19 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
-
 #pragma once
 
-/*
- * THIS FILE LIVES IN:
- *
- * vcmi/AI/MMAI/export/export.h
- *
- */
+#include "battle/CPlayerBattleCallback.h"
 
-#include "schema/base.h"
+namespace MMAI::BAI::V7 {
+    using ArmyValues = std::pair<int, int>;
 
-#include "schema/v3/schema.h"
-#include "schema/v7/schema.h"
-#include "schema/v8/schema.h"
-#include "schema/v9/schema.h"
+    struct GeneralInfo {
+        static ArmyValues CalcTotalArmyValues(const CPlayerBattleCallback* battle);
+
+        GeneralInfo(
+            const CPlayerBattleCallback* battle,
+            std::pair<int, int> initialArmyValues_
+        );
+
+        const ArmyValues initialArmyValues;
+        const ArmyValues currentArmyValues;
+    };
+}

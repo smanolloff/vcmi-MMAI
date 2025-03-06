@@ -16,16 +16,5 @@
 
 #pragma once
 
-/*
- * THIS FILE LIVES IN:
- *
- * vcmi/AI/MMAI/export/export.h
- *
- */
-
-#include "schema/base.h"
-
-#include "schema/v3/schema.h"
-#include "schema/v7/schema.h"
-#include "schema/v8/schema.h"
-#include "schema/v9/schema.h"
+#include "schema/v7/types.h"
+#include "schema/v7/constants.h"

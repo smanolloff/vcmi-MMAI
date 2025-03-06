@@ -19,6 +19,7 @@
 #include "spells/CSpellHandler.h"
 
 #include "BAI/v3/BAI.h"
+#include "BAI/v7/BAI.h"
 #include "BAI/v8/BAI.h"
 #include "BAI/v9/BAI.h"
 #include "base.h"
@@ -36,6 +37,8 @@ namespace MMAI::BAI {
         switch (version) {
         break; case 3:
             res = std::make_shared<V3::BAI>(model, version, env, cb);
+        break; case 7:
+            res = std::make_shared<V7::BAI>(model, version, env, cb);
         break; case 8:
             res = std::make_shared<V8::BAI>(model, version, env, cb);
         break; case 9:

@@ -37,6 +37,9 @@ namespace MMAI::BAI {
             break; case 3:
                 sizeOneHex = MMAI::Schema::V3::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V3::N_ACTIONS;
+            break; case 7:
+                sizeOneHex = MMAI::Schema::V7::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V7::N_ACTIONS;
             break; case 8:
                 sizeOneHex = MMAI::Schema::V8::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V8::N_ACTIONS;
@@ -79,6 +82,8 @@ namespace MMAI::BAI {
         switch(version) {
             break; case 3:
                 ended = std::any_cast<const MMAI::Schema::V3::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 7:
+                ended = std::any_cast<const MMAI::Schema::V7::ISupplementaryData*>(any)->getIsBattleEnded();
             break; case 8:
                 ended = std::any_cast<const MMAI::Schema::V8::ISupplementaryData*>(any)->getIsBattleEnded();
             break; case 9:

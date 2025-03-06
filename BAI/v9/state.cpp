@@ -15,7 +15,6 @@
 // =============================================================================
 
 #include "battle/CPlayerBattleCallback.h"
-#include "constants/EntityIdentifiers.h"
 #include "networkPacks/PacksForClientBattle.h"
 
 #include "BAI/v9/encoder.h"
