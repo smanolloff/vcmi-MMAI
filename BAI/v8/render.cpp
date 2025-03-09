@@ -281,246 +281,268 @@ namespace MMAI::BAI::V8 {
                     expect(!hex->stack, "cstack is nullptr, but hex->stack is present");
                 }
 
-                switch(attr) {
-                break; case HA::Y_COORD:
-                    expect(v == y, "HEX.Y_COORD: %d != %d", v, y);
-                break; case HA::X_COORD:
-                    expect(v == x, "HEX.X_COORD: %d != %d", v, x);
-                break; case HA::STATE_MASK: {
-                    auto obstacles = battle->battleGetAllObstaclesOnPos(bh, false);
-                    auto anyobstacle = [&obstacles](std::function<bool(const CObstacleInstance*)> fn) {
-                        return std::any_of(obstacles.begin(), obstacles.end(), [&fn](std::shared_ptr<const CObstacleInstance> obstacle) {
-                            return fn(obstacle.get());
-                        });
-                    };
+                try {
+                    switch(attr) {
+                    break; case HA::Y_COORD:
+                        expect(v == y, "HEX.Y_COORD: %d != %d", v, y);
+                    break; case HA::X_COORD:
+                        expect(v == x, "HEX.X_COORD: %d != %d", v, x);
+                    break; case HA::STATE_MASK: {
+                        auto obstacles = battle->battleGetAllObstaclesOnPos(bh, false);
+                        auto anyobstacle = [&obstacles](std::function<bool(const CObstacleInstance*)> fn) {
+                            return std::any_of(obstacles.begin(), obstacles.end(), [&fn](std::shared_ptr<const CObstacleInstance> obstacle) {
+                                return fn(obstacle.get());
+                            });
+                        };
 
-                    auto mask = HexStateMask(v);
-                    BattleSide side = astack ? astack->unitSide() : BattleSide::ATTACKER; // XXX: Hex defaults to 0 if there is no astack
+                        auto mask = HexStateMask(v);
+                        BattleSide side = astack ? astack->unitSide() : BattleSide::ATTACKER; // XXX: Hex defaults to 0 if there is no astack
 
-                    if (mask.test(EI(HexState::PASSABLE))) {
-                        expect(
-                            aa == EAccessibility::ACCESSIBLE || (EI(side) && aa == EAccessibility::GATE),
-                            "HEX.STATE_MASK: PASSABLE bit is set, but accessibility is %d (side: %d)", EI(aa), side
-                        );
-                    } else {
-                        if (aa == EAccessibility::OBSTACLE || aa == EAccessibility::ALIVE_STACK)
+                        if (mask.test(EI(HexState::PASSABLE))) {
+                            expect(
+                                aa == EAccessibility::ACCESSIBLE || (EI(side) && aa == EAccessibility::GATE),
+                                "HEX.STATE_MASK: PASSABLE bit is set, but accessibility is %d (side: %d)", EI(aa), side
+                            );
+                        } else {
+                            if (aa == EAccessibility::OBSTACLE || aa == EAccessibility::ALIVE_STACK)
+                                break;
+
+                            switch (aa) {
+                            break; case EAccessibility::ACCESSIBLE:
+                                throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is ACCESSIBLE");
+                            break; case EAccessibility::ALIVE_STACK:
+                            break; case EAccessibility::OBSTACLE:
+                            break; case EAccessibility::DESTRUCTIBLE_WALL:
+                            break; case EAccessibility::GATE:
+                            break; case EAccessibility::UNAVAILABLE:
+                                // only Fort and Boat battles can have unavailable hexes
+                                expect(
+                                    battle->battleGetFortifications().wallsHealth > 0 || battle->battleTerrainType() == TerrainId::WATER,
+                                    "Found UNAVAILABLE accessibility on non-fort, non-boat battlefield: tertype=%d", EI(battle->battleTerrainType())
+                                );
+                            break; case EAccessibility::SIDE_COLUMN:
+                                // side hexes should are not included in the observation
+                                throw std::runtime_error("HEX.STATE_MASK: SIDE_COLUMN accessibility found");
+                            break; default:
+                                throw std::runtime_error("Unexpected accessibility: " + std::to_string(EI(aa)));
+                            }
+                        }
+
+                        if (mask.test(EI(HexState::STOPPING))) {
+                            auto stopping = anyobstacle(std::mem_fn(&CObstacleInstance::stopsMovement));
+                            expect(stopping, "HEX.STATE_MASK: STOPPING bit is set, but no obstacle stops movement");
+                        }
+
+                        if (mask.test(EI(HexState::DAMAGING_L))) {
+                            auto damaging = anyobstacle([side](const CObstacleInstance* o) {
+                                if (o->obstacleType == CObstacleInstance::MOAT) return true;
+                                if (!o->triggersEffects()) return false;
+                                auto s = SpellID(o->ID);
+                                if (s == SpellID::FIRE_WALL) return true;
+                                if (s != SpellID::LAND_MINE) return false;
+                                auto so = dynamic_cast<const SpellCreatedObstacle *>(o);
+                                return (side == so->casterSide) ? bool(side) : !bool(side);
+                            });
+                            expect(damaging, "HEX.STATE_MASK: DAMAGING bit is set, but no obstacle triggers a damaging effect");
+                        }
+
+                        if (mask.test(EI(HexState::DAMAGING_R))) {
+                            auto damaging = anyobstacle([side](const CObstacleInstance* o) {
+                                if (o->obstacleType == CObstacleInstance::MOAT) return true;
+                                if (!o->triggersEffects()) return false;
+                                auto s = SpellID(o->ID);
+                                if (s == SpellID::FIRE_WALL) return true;
+                                if (s != SpellID::LAND_MINE) return false;
+                                auto so = dynamic_cast<const SpellCreatedObstacle *>(o);
+                                return (side == so->casterSide) ? !bool(side) : bool(side);
+                            });
+                            expect(damaging, "HEX.STATE_MASK: DAMAGING bit is set, but no obstacle triggers a damaging effect");
+                        }
+
+                        // if (mask.test(EI(HexState::GATE))) {
+                        //     expect(battle->battleGetSiegeLevel(), "HEX.STATE_MASK: GATE bit is set, but there is no fort");
+                        //     expect(bh == BattleHex::GATE_INNER || bh == BattleHex::GATE_OUTER, "HEX.STATE_MASK: GATE bit is set on bhex#%d", bh.toInt());
+                        // }
+                    }
+                    break; case HA::ACTION_MASK: {
+                        if (ended) {
+                            expect(v == 0, "HEX.ACTION_MASK: battle ended, but action mask is %d", v);
+                        } else {
+                            ensureCorrectMaskOrNA(bh, v, astack, battle, "HEX.ACTION_MASK");
+                        }
+                    }
+                    break; case HA::IS_REAR: {
+                        ensureValueMatch(v, cstack ? cstack->occupiedHex() == hex->bhex : 0, "HEX.STACK_FLAGS.IS_REAR");
+                    }
+                    break; case HA::STACK_SIDE:
+                        ensureStackNullOrMatch(attr, cstack, v, [&] { return EI(cstack->unitSide()); }, "HA.STACK_SIDE");
+                    // break; case HA::STACK_CREATURE_ID:
+                    //     ensureStackValueMatch(a, v, cstack->unitType()->getId(), "HEX.STACK_CREATURE_ID");
+                    break; case HA::STACK_QUANTITY:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_QTY_MAX * float(cstack->getCount()) / STACK_QTY_MAX); }, "HEX.STACK_QUANTITY");
+                    break; case HA::STACK_ATTACK:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getAttack(false); }, "HEX.STACK_ATTACK");
+                    break; case HA::STACK_DEFENSE:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getDefense(false); }, "HEX.STACK_DEFENSE");
+                    break; case HA::STACK_SHOTS:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->shots.available(); }, "HEX.STACK_SHOTS");
+                    break; case HA::STACK_DMG_MIN:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMinDamage(false); }, "HEX.STACK_DMG_MIN");
+                    break; case HA::STACK_DMG_MAX:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxDamage(false); }, "HEX.STACK_DMG_MAX");
+                    break; case HA::STACK_HP:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxHealth(); }, "HEX.STACK_HP");
+                    break; case HA::STACK_HP_LEFT:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getFirstHPleft(); }, "HEX.STACK_HP_LEFT");
+                    break; case HA::STACK_SPEED:
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMovementRange(); }, "HEX.STACK_SPEED");
+                    break; case HA::STACK_QUEUE_POS:
+                        // at battle end, queue is messed up
+                        // (the stack that dealt the killing blow is still "active", but not on 0 pos)
+                        if (ended)
                             break;
 
-                        switch (aa) {
-                        break; case EAccessibility::ACCESSIBLE:
-                            throw std::runtime_error("HEX.STATE_MASK: PASSABLE bit not set, but accessibility is ACCESSIBLE");
-                        break; case EAccessibility::ALIVE_STACK:
-                        break; case EAccessibility::OBSTACLE:
-                        break; case EAccessibility::DESTRUCTIBLE_WALL:
-                        break; case EAccessibility::GATE:
-                        break; case EAccessibility::UNAVAILABLE:
-                            // only Fort and Boat battles can have unavailable hexes
-                            expect(
-                                battle->battleGetFortifications().wallsHealth > 0 || battle->battleTerrainType() == TerrainId::WATER,
-                                "Found UNAVAILABLE accessibility on non-fort, non-boat battlefield: tertype=%d", EI(battle->battleTerrainType())
-                            );
-                        break; case EAccessibility::SIDE_COLUMN:
-                            // side hexes should are not included in the observation
-                            throw std::runtime_error("HEX.STATE_MASK: SIDE_COLUMN accessibility found");
-                        break; default:
-                            throw std::runtime_error("Unexpected accessibility: " + std::to_string(EI(aa)));
-                        }
+                        if (v == 0)
+                            expect(cstack == astack, "HEX.STACK_QUEUE_POS: =0 but is different from astack");
+                        else
+                            expect(cstack != astack, "HEX.STACK_QUEUE_POS: =%d but is same as astack", v);
+
+                    break; case HA::STACK_VALUE_ONE: {
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return Stack::CalcValue(cstack->unitType()); }, "HEX.STACK_VALUE_ONE");
+                    }
+                    break; case HA::STACK_VALUE_REL: {
+                        int tot = 0;
+                        for (auto &s : allstacks)
+                            tot += s->getCount() * Stack::CalcValue(s->unitType());
+
+                        // if (cstack) {
+                        //     std::cout << "Stack type: ";
+                        //     std::cout << cstack->unitType()->getNameSingularTextID();
+                        //     auto vv = 100.0 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot;
+                        //     std::cout << " Have: " << v << ", want: " << vv;
+                        //     std::cout << "\n";
+                        // }
+                        ensureStackNullOrMatch(attr, cstack, v, [&]{ return 100 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot; }, "HEX.STACK_VALUE_REL");
                     }
 
-                    if (mask.test(EI(HexState::STOPPING))) {
-                        auto stopping = anyobstacle(std::mem_fn(&CObstacleInstance::stopsMovement));
-                        expect(stopping, "HEX.STATE_MASK: STOPPING bit is set, but no obstacle stops movement");
-                    }
+                    // These require historical information
+                    // (CPlayerCallback does not provide such)
+                    break; case HA::STACK_VALUE_REL0:
+                    break; case HA::STACK_VALUE_KILLED_REL:
+                    break; case HA::STACK_VALUE_KILLED_ACC_REL0:
+                    break; case HA::STACK_VALUE_LOST_REL:
+                    break; case HA::STACK_VALUE_LOST_ACC_REL0:
+                    break; case HA::STACK_DMG_DEALT_REL:
+                    break; case HA::STACK_DMG_DEALT_ACC_REL0:
+                    break; case HA::STACK_DMG_RECEIVED_REL:
+                    break; case HA::STACK_DMG_RECEIVED_ACC_REL0:
 
-                    if (mask.test(EI(HexState::DAMAGING_L))) {
-                        auto damaging = anyobstacle([side](const CObstacleInstance* o) {
-                            if (o->obstacleType == CObstacleInstance::MOAT) return true;
-                            if (!o->triggersEffects()) return false;
-                            auto s = SpellID(o->ID);
-                            if (s == SpellID::FIRE_WALL) return true;
-                            if (s != SpellID::LAND_MINE) return false;
-                            auto so = dynamic_cast<const SpellCreatedObstacle *>(o);
-                            return (side == so->casterSide) ? bool(side) : !bool(side);
-                        });
-                        expect(damaging, "HEX.STATE_MASK: DAMAGING bit is set, but no obstacle triggers a damaging effect");
-                    }
+                    break; case HA::STACK_FLAGS: {
+                        if (!isNA(v, cstack, "HEX.STACK_FLAGS")) {
+                            for (int j=0; j<EI(StackFlag::_count); j++) {
+                                auto f = StackFlag(j);
+                                auto vf = hex->stack->flag(f);
 
-                    if (mask.test(EI(HexState::DAMAGING_R))) {
-                        auto damaging = anyobstacle([side](const CObstacleInstance* o) {
-                            if (o->obstacleType == CObstacleInstance::MOAT) return true;
-                            if (!o->triggersEffects()) return false;
-                            auto s = SpellID(o->ID);
-                            if (s == SpellID::FIRE_WALL) return true;
-                            if (s != SpellID::LAND_MINE) return false;
-                            auto so = dynamic_cast<const SpellCreatedObstacle *>(o);
-                            return (side == so->casterSide) ? !bool(side) : bool(side);
-                        });
-                        expect(damaging, "HEX.STATE_MASK: DAMAGING bit is set, but no obstacle triggers a damaging effect");
-                    }
-
-                    // if (mask.test(EI(HexState::GATE))) {
-                    //     expect(battle->battleGetSiegeLevel(), "HEX.STATE_MASK: GATE bit is set, but there is no fort");
-                    //     expect(bh == BattleHex::GATE_INNER || bh == BattleHex::GATE_OUTER, "HEX.STATE_MASK: GATE bit is set on bhex#%d", bh.toInt());
-                    // }
-                }
-                break; case HA::ACTION_MASK: {
-                    if (ended) {
-                        expect(v == 0, "HEX.ACTION_MASK: battle ended, but action mask is %d", v);
-                    } else {
-                        ensureCorrectMaskOrNA(bh, v, astack, battle, "HEX.ACTION_MASK");
-                    }
-                }
-                break; case HA::IS_REAR: {
-                    ensureValueMatch(v, cstack ? cstack->occupiedHex() == hex->bhex : 0, "HEX.STACK_FLAGS.IS_REAR");
-                }
-                break; case HA::STACK_SIDE:
-                    ensureStackNullOrMatch(attr, cstack, v, [&] { return EI(cstack->unitSide()); }, "HA.STACK_SIDE");
-                // break; case HA::STACK_CREATURE_ID:
-                //     ensureStackValueMatch(a, v, cstack->unitType()->getId(), "HEX.STACK_CREATURE_ID");
-                break; case HA::STACK_QUANTITY:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_QTY_MAX * float(cstack->getCount()) / STACK_QTY_MAX); }, "HEX.STACK_QUANTITY");
-                break; case HA::STACK_ATTACK:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getAttack(false); }, "HEX.STACK_ATTACK");
-                break; case HA::STACK_DEFENSE:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getDefense(false); }, "HEX.STACK_DEFENSE");
-                break; case HA::STACK_SHOTS:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->shots.available(); }, "HEX.STACK_SHOTS");
-                break; case HA::STACK_DMG_MIN:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMinDamage(false); }, "HEX.STACK_DMG_MIN");
-                break; case HA::STACK_DMG_MAX:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxDamage(false); }, "HEX.STACK_DMG_MAX");
-                break; case HA::STACK_HP:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxHealth(); }, "HEX.STACK_HP");
-                break; case HA::STACK_HP_LEFT:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getFirstHPleft(); }, "HEX.STACK_HP_LEFT");
-                break; case HA::STACK_SPEED:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMovementRange(); }, "HEX.STACK_SPEED");
-                break; case HA::STACK_QUEUE_POS:
-                    // at battle end, queue is messed up
-                    // (the stack that dealt the killing blow is still "active", but not on 0 pos)
-                    if (ended)
-                        break;
-
-                    if (v == 0)
-                        expect(cstack == astack, "HEX.STACK_QUEUE_POS: =0 but is different from astack");
-                    else
-                        expect(cstack != astack, "HEX.STACK_QUEUE_POS: =%d but is same as astack", v);
-
-                break; case HA::STACK_VALUE_ONE: {
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return Stack::CalcValue(cstack->unitType()); }, "HEX.STACK_VALUE_ONE");
-                }
-                break; case HA::STACK_VALUE_REL: {
-                    int tot = 0;
-                    for (auto &s : allstacks)
-                        tot += s->getCount() * Stack::CalcValue(s->unitType());
-
-                    // if (cstack) {
-                    //     std::cout << "Stack type: ";
-                    //     std::cout << cstack->unitType()->getNameSingularTextID();
-                    //     auto vv = 100.0 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot;
-                    //     std::cout << " Have: " << v << ", want: " << vv;
-                    //     std::cout << "\n";
-                    // }
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return 100 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot; }, "HEX.STACK_VALUE_REL");
-                }
-
-                // These require historical information
-                // (CPlayerCallback does not provide such)
-                break; case HA::STACK_VALUE_REL0:
-                break; case HA::STACK_VALUE_KILLED_REL:
-                break; case HA::STACK_VALUE_KILLED_ACC_REL0:
-                break; case HA::STACK_VALUE_LOST_REL:
-                break; case HA::STACK_VALUE_LOST_ACC_REL0:
-                break; case HA::STACK_DMG_DEALT_REL:
-                break; case HA::STACK_DMG_DEALT_ACC_REL0:
-                break; case HA::STACK_DMG_RECEIVED_REL:
-                break; case HA::STACK_DMG_RECEIVED_ACC_REL0:
-
-                break; case HA::STACK_FLAGS: {
-                    if (!isNA(v, cstack, "HEX.STACK_FLAGS")) {
-                        for (int j=0; j<EI(StackFlag::_count); j++) {
-                            auto f = StackFlag(j);
-                            auto vf = hex->stack->flag(f);
-
-                            switch(f) {
-                            break; case SF::IS_ACTIVE:
-                                // at battle end, queue is messed up
-                                // (the stack that dealt the killing blow is still "active", but not on 0 pos)
-                                if (ended)
-                                    break;
-
-                                if (vf == 0)
-                                    expect(cstack != astack, "HEX.STACK_FLAGS.IS_ACTIVE: =0 but cstack == astack");
-                                else
-                                    expect(cstack == astack, "HEX.STACK_FLAGS.IS_ACTIVE: =%d but cstack != astack", vf);
-                            break; case SF::CAN_WAIT:
-                                ensureValueMatch(vf, cstack->willMove() && !cstack->waitedThisTurn, "HEX.STACK_FLAGS.CAN_WAIT");
-                            break; case SF::WILL_ACT:
-                                ensureValueMatch(vf, cstack->willMove(), "HEX.STACK_FLAGS.WILL_ACT");
-                            break; case SF::CAN_RETALIATE:
-                                // XXX: ableToRetaliate() calls CAmmo's (i.e. CRetaliations's) canUse() method
-                                //      which takes into account relevant bonuses (e.g. NO_RETALIATION from expert Blind)
-                                //      It does *NOT* take into account the attacker's BLOCKS_RETALIATION bonus
-                                //      (if it did, what would be the correct CAN_RETALIATE value for friendly units?)
-                                ensureValueMatch(vf, cstack->ableToRetaliate(), "HEX.STACK_FLAGS.CAN_RETALIATE");
-                            break; case SF::SLEEPING:
-                                cstack->unitType()->getId() == CreatureID::AMMO_CART
-                                    ? ensureValueMatch(vf, false, "HEX.STACK_FLAGS.SLEEPING")
-                                    : ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NOT_ACTIVE), "HEX.STACK_FLAGS.SLEEPING");
-                            break; case SF::BLOCKED:
-                                ensureValueMatch(vf, cstack->canShoot() && battle->battleIsUnitBlocked(cstack), "HEX.STACK_FLAGS.TWO_HEX_ATTACK_BREATH");
-                            break; case SF::BLOCKING: {
-                                auto want = 0;
-                                for (auto &adjstack : battle->battleAdjacentUnits(cstack)) {
-                                    if (adjstack->unitSide() != cstack->unitSide() && adjstack->canShoot() && battle->battleIsUnitBlocked(adjstack)) {
-                                        want = 1;
+                                switch(f) {
+                                break; case SF::IS_ACTIVE:
+                                    // at battle end, queue is messed up
+                                    // (the stack that dealt the killing blow is still "active", but not on 0 pos)
+                                    if (ended)
                                         break;
-                                    }
+
+                                    if (vf == 0)
+                                        expect(cstack != astack, "HEX.STACK_FLAGS.IS_ACTIVE: =0 but cstack == astack");
+                                    else
+                                        expect(cstack == astack, "HEX.STACK_FLAGS.IS_ACTIVE: =%d but cstack != astack", vf);
+                                break; case SF::CAN_WAIT:
+                                    ensureValueMatch(vf, cstack->willMove() && !cstack->waitedThisTurn, "HEX.STACK_FLAGS.CAN_WAIT");
+                                break; case SF::WILL_ACT:
+                                    ensureValueMatch(vf, cstack->willMove(), "HEX.STACK_FLAGS.WILL_ACT");
+                                break; case SF::CAN_RETALIATE:
+                                    // XXX: ableToRetaliate() calls CAmmo's (i.e. CRetaliations's) canUse() method
+                                    //      which takes into account relevant bonuses (e.g. NO_RETALIATION from expert Blind)
+                                    //      It does *NOT* take into account the attacker's BLOCKS_RETALIATION bonus
+                                    //      (if it did, what would be the correct CAN_RETALIATE value for friendly units?)
+                                    ensureValueMatch(vf, cstack->ableToRetaliate(), "HEX.STACK_FLAGS.CAN_RETALIATE");
+                                break; case SF::SLEEPING:
+                                    cstack->unitType()->getId() == CreatureID::AMMO_CART
+                                        ? ensureValueMatch(vf, false, "HEX.STACK_FLAGS.SLEEPING")
+                                        : ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NOT_ACTIVE), "HEX.STACK_FLAGS.SLEEPING");
+                                break; case SF::BLOCKED: {
+                                    auto want = cstack->canShoot() \
+                                        && !cstack->hasBonusOfType(BonusType::FREE_SHOOTING) \
+                                        && !cstack->hasBonusOfType(BonusType::SIEGE_WEAPON) \
+                                        && battle->battleIsUnitBlocked(cstack);
+
+                                    ensureValueMatch(vf, want, "HEX.STACK_FLAGS.BLOCKED");
                                 }
-                                ensureValueMatch(vf, bool(want), "HEX.STACK_FLAGS.BLOCKING");
-                            }
-                            break; case SF::IS_WIDE:
-                                ensureValueMatch(vf, cstack->doubleWide(), "HEX.STACK_FLAGS.IS_WIDE");
-                            break; case SF::FLYING:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "HEX.STACK_FLAGS.FLYING");
-                            break; case SF::BLIND_LIKE_ATTACK: {
-                                auto spell_after_attack_bonuses = BonusList();
-                                auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
-                                bonuses->getBonuses(spell_after_attack_bonuses, Selector::type()(BonusType::SPELL_AFTER_ATTACK), nullptr);
-                                auto castchance = [&spell_after_attack_bonuses](std::vector<SpellID> spellids) {
-                                    // TODO: what about BLOCK_MAGIC_ABOVE / BLOCK_ALL_MAGIC
-                                    //       Isn't the chance always 0 then?
-                                    int res = 0;
+                                break; case SF::BLOCKING: {
+                                    auto want = 0;
+                                    for (auto &adjstack : battle->battleAdjacentUnits(cstack)) {
+                                        if (adjstack->unitSide() != cstack->unitSide() \
+                                            && adjstack->canShoot() \
+                                            && !adjstack->hasBonusOfType(BonusType::FREE_SHOOTING) \
+                                            && !adjstack->hasBonusOfType(BonusType::SIEGE_WEAPON) \
+                                            && battle->battleIsUnitBlocked(adjstack)
+                                        ) {
+                                            want = 1;
+                                            break;
+                                        }
+                                    }
+                                    ensureValueMatch(vf, bool(want), "HEX.STACK_FLAGS.BLOCKING");
+                                }
+                                break; case SF::IS_WIDE:
+                                    ensureValueMatch(vf, cstack->doubleWide() && cstack->occupiedHex().isAvailable(), "HEX.STACK_FLAGS.IS_WIDE");
+                                break; case SF::FLYING:
+                                    ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "HEX.STACK_FLAGS.FLYING");
+                                break; case SF::BLIND_LIKE_ATTACK: {
+                                    auto spell_after_attack_bonuses = BonusList();
+                                    auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
+                                    bonuses->getBonuses(spell_after_attack_bonuses, Selector::type()(BonusType::SPELL_AFTER_ATTACK), nullptr);
+                                    auto castchance = [&spell_after_attack_bonuses](std::vector<SpellID> spellids) {
+                                        // TODO: what about BLOCK_MAGIC_ABOVE / BLOCK_ALL_MAGIC
+                                        //       Isn't the chance always 0 then?
+                                        int res = 0;
 
-                                    auto sel = CSelector(Selector::subtype()(spellids.at(0)));
-                                    for (auto it = spellids.begin()+1; it != spellids.end(); ++it)
-                                        sel = sel.Or(Selector::subtype()(*it));
+                                        auto sel = CSelector(Selector::subtype()(spellids.at(0)));
+                                        for (auto it = spellids.begin()+1; it != spellids.end(); ++it)
+                                            sel = sel.Or(Selector::subtype()(*it));
 
-                                    auto selected = BonusList();
-                                    spell_after_attack_bonuses.getBonuses(selected, sel);
-                                    for (auto &bonus : selected)
-                                        res += bonus->val;
-                                    return res;
-                                };
+                                        auto selected = BonusList();
+                                        spell_after_attack_bonuses.getBonuses(selected, sel);
+                                        for (auto &bonus : selected)
+                                            res += bonus->val;
+                                        return res;
+                                    };
 
-                                ensureValueMatch(vf, castchance({SpellID::BLIND, SpellID::STONE_GAZE, SpellID::PARALYZE}) > 0, "HEX.STACK_FLAGS.BLIND_LIKE_ATTACK");
-                            }
-                            break; case SF::ADDITIONAL_ATTACK:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ADDITIONAL_ATTACK), "HEX.STACK_FLAGS.ADDITIONAL_ATTACK");
-                            break; case SF::NO_MELEE_PENALTY:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NO_MELEE_PENALTY), "HEX.STACK_FLAGS.NO_MELEE_PENALTY");
-                            break; case SF::TWO_HEX_ATTACK_BREATH:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::TWO_HEX_ATTACK_BREATH), "HEX.STACK_FLAGS.TWO_HEX_ATTACK_BREATH");
-                            break; case SF::BLOCKS_RETALIATION:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::BLOCKS_RETALIATION), "HEX.STACK_FLAGS.BLOCKS_RETALIATION");
-                            break; default:
-                                THROW_FORMAT("Unexpected StackFlag: %d", EI(f));
+                                    ensureValueMatch(vf, castchance({SpellID::BLIND, SpellID::STONE_GAZE, SpellID::PARALYZE}) > 0, "HEX.STACK_FLAGS.BLIND_LIKE_ATTACK");
+                                }
+                                break; case SF::ADDITIONAL_ATTACK:
+                                    ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ADDITIONAL_ATTACK), "HEX.STACK_FLAGS.ADDITIONAL_ATTACK");
+                                break; case SF::NO_MELEE_PENALTY:
+                                    ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NO_MELEE_PENALTY), "HEX.STACK_FLAGS.NO_MELEE_PENALTY");
+                                break; case SF::TWO_HEX_ATTACK_BREATH:
+                                    ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::TWO_HEX_ATTACK_BREATH), "HEX.STACK_FLAGS.TWO_HEX_ATTACK_BREATH");
+                                break; case SF::BLOCKS_RETALIATION:
+                                    ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::BLOCKS_RETALIATION), "HEX.STACK_FLAGS.BLOCKS_RETALIATION");
+                                break; default:
+                                    THROW_FORMAT("Unexpected StackFlag: %d", EI(f));
+                                }
                             }
                         }
                     }
-                }
-                break; default:
-                    THROW_FORMAT("Unexpected HexAttribute: %d", EI(attr));
+                    break; default:
+                        THROW_FORMAT("Unexpected HexAttribute: %d", EI(attr));
+                    }
+                } catch (std::exception & e) {
+                    std::cout << "ERROR CONTEXT:\n";
+                    std::cout << "y=" << y << "\n";
+                    std::cout << "x=" << x << "\n";
+                    std::cout << "attr=" << EI(attr) << "\n";
+                    cstack
+                        ? std::cout << "cstack: " << cstack->getDescription() << "\n"
+                        : std::cout << "cstack: nullptr\n";
+                    throw;
                 }
             }
         }

@@ -90,6 +90,9 @@ namespace MMAI::BAI {
 
         std::string addrstr = "?";
 
+        // Set via VCMI_BAI_VERBOSE env var ("1" to enable)
+        bool verbose = false;
+
         /*
          * Templates defined in the header
          * Needed to prevent linker errors for calls from derived classes

@@ -452,7 +452,18 @@ namespace MMAI::BAI::V8 {
     }
 
     std::string BAI::renderANSI() {
-        Verify(state.get());
+        try {
+            Verify(state.get());
+        } catch (std::exception & e) {
+            try {
+                std::cout << "Disaster render:\n";
+                std::cout << Render(state.get(), state->action.get()) << "\n";
+            } catch (std::exception & e) {
+                std::cerr << "(failed)\n";
+            }
+            throw;
+        }
+
         return Render(state.get(), state->action.get());
     }
 }

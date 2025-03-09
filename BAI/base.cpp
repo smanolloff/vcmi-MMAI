@@ -66,7 +66,9 @@ namespace MMAI::BAI {
         std::ostringstream oss;
         oss << this; // Store this memory address
         addrstr = oss.str();
-        info("+++ constructor +++");
+
+        const char* envvar = std::getenv("VCMI_BAI_VERBOSE");
+        verbose = envvar != nullptr && strcmp(envvar, "1") == 0;
     }
 
     /*
@@ -119,15 +121,15 @@ namespace MMAI::BAI {
 
     void Base::battleLogMessage(const BattleID &bid, const std::vector<MetaString> &lines) {
         debug("*** battleLogMessage ***");
-        trace([&](){
+        if (verbose) {
             std::string res = "Messages:";
             for(const auto & line : lines) {
                 std::string formatted = line.toString();
                 boost::algorithm::trim(formatted);
                 res = res + "\n\t* " + formatted;
             }
-            return res;
-        });
+            std::cout << "BAI_VERBOSE: " << res << "\n";
+        }
     }
 
     void Base::battleNewRound(const BattleID &bid) {
@@ -144,7 +146,7 @@ namespace MMAI::BAI {
 
     void Base::battleSpellCast(const BattleID &bid, const BattleSpellCast *sc) {
         debug("*** battleSpellCast ***");
-        trace([&](){
+        if (verbose) {
             std::string res = "Spellcast info:";
             auto battle = cb->getBattle(bid);
             auto caster = battle->battleGetStackByID(sc->casterStack);
@@ -168,13 +170,13 @@ namespace MMAI::BAI {
             for (auto &cid : sc->reflectedCres)
                 res += "\n\t  > " + battle->battleGetStackByID(cid)->getDescription();
 
-            return res;
-        });
+            std::cout << "BAI_VERBOSE: " << res << "\n";
+        }
     }
 
 void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport) {
         debug("*** battleStackMoved ***");
-        trace([&](){
+        if (verbose) {
             auto battle = cb->getBattle(bid);
             std::string fmt = "Movement info:";
 
@@ -196,8 +198,8 @@ void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const Bat
                 % distance
                 % teleport;
 
-            return boost::str(res);
-        });
+            std::cout << "BAI_VERBOSE: " << boost::str(res) << "\n";
+        }
     }
 
     void Base::battleStacksAttacked(const BattleID &bid, const std::vector<BattleStackAttacked> &bsa, bool ranged) {
@@ -206,10 +208,10 @@ void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const Bat
 
     void Base::battleStacksEffectsSet(const BattleID &bid, const SetStackEffect & sse) {
         debug("*** battleStacksEffectsSet ***");
-        trace([&](){
+        if (verbose) {
             auto battle = cb->getBattle(bid);
 
-            std::string res = "Effects:";
+            std::string res = "Effects set:";
 
             for (auto &[unitid, bonuses] : sse.toAdd) {
                 auto cstack = battle->battleGetStackByID(unitid);
@@ -235,8 +237,8 @@ void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const Bat
                 }
             }
 
-            return res;
-        });
+            std::cout << "BAI_VERBOSE: " << res << "\n";
+        };
     }
 
     void Base::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
@@ -256,26 +258,26 @@ void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const Bat
     //      negative morale just skips turn
     void Base::battleTriggerEffect(const BattleID &bid, const BattleTriggerEffect & bte) {
         debug("*** battleTriggerEffect ***");
-        trace([&](){
+        if (verbose) {
             auto battle = cb->getBattle(bid);
             auto cstack = battle->battleGetStackByID(bte.stackID);
-            std::string res = "Effect:";
+            std::string res = "Effect triggered:";
             res += "\n\t* bonus id=" + std::to_string(bte.effect);
             res += "\n\t* bonus value=" + std::to_string(bte.val);
             res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
-            return res;
-        });
+            std::cout << "BAI_VERBOSE: " << res << "\n";
+        }
     }
 
     void Base::battleUnitsChanged(const BattleID &bid, const std::vector<UnitChanges> &changes) {
         debug("*** battleUnitsChanged ***");
-        trace([&](){
+        if (verbose) {
             std::string res = "Changes:";
             for(const auto & change : changes) {
                 res += "\n\t* operation=" + std::to_string(EI(change.operation));
                 res += "\n\t* healthDelta=" + std::to_string(change.healthDelta);
             }
-            return res;
-        });
+            std::cout << "BAI_VERBOSE: " << res << "\n";
+        }
     }
 }
