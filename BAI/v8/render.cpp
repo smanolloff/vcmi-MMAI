@@ -558,7 +558,7 @@ namespace MMAI::BAI::V8 {
             }
         }
 
-        if (!astack)
+        if (!astack && !supdata->getIsBattleEnded())
             logAi->error("could not find an active stack.");
 
         std::string nocol = "\033[0m";

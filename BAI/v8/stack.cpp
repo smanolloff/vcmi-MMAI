@@ -55,7 +55,7 @@ namespace MMAI::BAI::V8 {
 
         auto a = 3*dmg * (1 + std::min(4.0, 0.05*att));
         auto b = hp / (1 - std::min(0.7, 0.025*def));
-        auto c = std::log(spd*2);
+        auto c = spd ? std::log(spd*2) : 0;
         auto d = shooter ? 1.5 : 1.0;
 
         for (auto &bonus : *bonuses) {

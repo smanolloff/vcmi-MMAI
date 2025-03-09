@@ -693,8 +693,8 @@ namespace MMAI::BAI::V9 {
             }
         }
 
-        if (!astack)
-            logAi->error("could not find an active stack.");
+        if (!astack && !supdata->getIsBattleEnded())
+            logAi->error("could not find an active stack (battle has not ended).");
 
         std::string nocol = "\033[0m";
         std::string redcol = "\033[31m"; // red
