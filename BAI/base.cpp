@@ -174,7 +174,7 @@ namespace MMAI::BAI {
         }
     }
 
-void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport) {
+    void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const BattleHexArray & dest, int distance, bool teleport) {
         debug("*** battleStackMoved ***");
         if (verbose) {
             auto battle = cb->getBattle(bid);
@@ -186,7 +186,7 @@ void Base::battleStackMoved(const BattleID &bid, const CStack * stack, const Bat
             fmt += "\n\t* distance=%d";
             fmt += "\n\t* teleport=%d";
 
-            auto bh0 = dest.at(0);
+            auto bh0 = dest.at(dest.size() - 1);
             auto hexid0 = bh0.getX()-1 + bh0.getY()*BF_XMAX;
             auto x0 = bh0.getX() - 1;
             auto y0 = bh0.getY();
