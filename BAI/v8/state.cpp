@@ -132,27 +132,27 @@ namespace MMAI::BAI::V8 {
         rgstats->hpNow = rh;
 
         for (auto &al : attackLogs) {
-            if (al->attacker) {
-                stacksStats[al->attacker->cstack].dmgDealtNow += al->dmg;
-                stacksStats[al->attacker->cstack].dmgDealtTotal += al->dmg;
-                stacksStats[al->attacker->cstack].valueKilledNow += al->value;
-                stacksStats[al->attacker->cstack].valueKilledTotal += al->value;
+            if (al->cattacker) {
+                stacksStats[al->cattacker].dmgDealtNow += al->dmg;
+                stacksStats[al->cattacker].dmgDealtTotal += al->dmg;
+                stacksStats[al->cattacker].valueKilledNow += al->value;
+                stacksStats[al->cattacker].valueKilledTotal += al->value;
 
-                auto s = al->attacker->attr(SA::SIDE) == EI(Side::LEFT) ? lgstats.get() : rgstats.get();
+                auto s = al->cattacker->unitSide() == BattleSide::LEFT_SIDE ? lgstats.get() : rgstats.get();
                 s->dmgDealtNow += al->dmg;
                 s->dmgDealtTotal += al->dmg;
                 s->valueKilledNow += al->value;
                 s->valueKilledTotal += al->value;
             }
 
-            ASSERT(al->defender, "AttackLog defender is nullptr!");
+            ASSERT(al->cdefender, "AttackLog cdefender is nullptr!");
 
-            stacksStats[al->defender->cstack].dmgReceivedNow += al->dmg;
-            stacksStats[al->defender->cstack].dmgReceivedTotal += al->dmg;
-            stacksStats[al->defender->cstack].valueLostNow += al->value;
-            stacksStats[al->defender->cstack].valueLostTotal += al->value;
+            stacksStats[al->cdefender].dmgReceivedNow += al->dmg;
+            stacksStats[al->cdefender].dmgReceivedTotal += al->dmg;
+            stacksStats[al->cdefender].valueLostNow += al->value;
+            stacksStats[al->cdefender].valueLostTotal += al->value;
 
-            auto s = al->defender->attr(SA::SIDE) == EI(Side::LEFT) ? lgstats.get() : rgstats.get();
+            auto s = al->cdefender->unitSide() == BattleSide::LEFT_SIDE ? lgstats.get() : rgstats.get();
             s->dmgReceivedNow += al->dmg;
             s->dmgReceivedTotal += al->dmg;
             s->valueLostNow += al->value;
@@ -258,10 +258,13 @@ namespace MMAI::BAI::V8 {
             ASSERT(cdefender, "defender cannot be NULL");
             // logAi->debug("Attack: %s -> %s (%d dmg, %d died)", attacker->getName(), defender->getName(), elem.damageAmount, elem.killedAmount);
 
-            // there may have been no room for defender in the obs
             auto defender = std::find_if(stacks.begin(), stacks.end(), [&cdefender](std::shared_ptr<Stack> stack) {
                 return cdefender == stack->cstack;
             });
+
+            if (defender == stacks.end()) {
+                logAi->info("defender cstack '%s' not found in stacks. Maybe it was just summoned/resurrected?", cdefender->getDescription());
+            }
 
             auto attacker = std::find_if(stacks.begin(), stacks.end(), [&cattacker](std::shared_ptr<Stack> stack) {
                 return cattacker == stack->cstack;
@@ -273,9 +276,13 @@ namespace MMAI::BAI::V8 {
 
             attackLogs.push_back(std::make_shared<AttackLog>(
                 // XXX: attacker can be NULL when an effect does dmg (eg. Acid)
-                // XXX: attacker and/or defender can be NULL they can't fit in obs
+                // XXX: attacker or defender can be NULL if it did not exist
+                //      when `stacks` was built (e.g. during our last turn),
+                //      but the enemy just summonned/resurrected it
                 attacker != stacks.end() ? *attacker : nullptr,
                 defender != stacks.end() ? *defender : nullptr,
+                cattacker,
+                cdefender,
                 elem.damageAmount,
                 100 * elem.damageAmount / bf_hpNow,
                 elem.killedAmount,
@@ -289,7 +296,7 @@ namespace MMAI::BAI::V8 {
         if (static_cast<BonusType>(bte.effect) != BonusType::MORALE)
             return;
 
-        auto stack = battle->battleGetStackByID(bte.stackID);
+        auto stack = battle->battleGetStackByID(bte.stackID, false);
         isMorale = stack->unitSide() == side;
     }
 

@@ -149,7 +149,7 @@ namespace MMAI::BAI {
         if (verbose) {
             std::string res = "Spellcast info:";
             auto battle = cb->getBattle(bid);
-            auto caster = battle->battleGetStackByID(sc->casterStack);
+            auto caster = battle->battleGetStackByID(sc->casterStack, false);
 
             res += "\n\t* spell: " + sc->spellID.toSpell()->identifier;
             res += "\n\t* castByHero=" + std::to_string(sc->castByHero);
@@ -160,15 +160,15 @@ namespace MMAI::BAI {
 
             res += "\n\t* affected:";
             for (auto &cid : sc->affectedCres)
-                res += "\n\t  > " + battle->battleGetStackByID(cid)->getDescription();
+                res += "\n\t  > " + battle->battleGetStackByID(cid, false)->getDescription();
 
             res += "\n\t* resisted:";
             for (auto &cid : sc->resistedCres)
-                res += "\n\t  > " + battle->battleGetStackByID(cid)->getDescription();
+                res += "\n\t  > " + battle->battleGetStackByID(cid, false)->getDescription();
 
             res += "\n\t* reflected:";
             for (auto &cid : sc->reflectedCres)
-                res += "\n\t  > " + battle->battleGetStackByID(cid)->getDescription();
+                res += "\n\t  > " + battle->battleGetStackByID(cid, false)->getDescription();
 
             std::cout << "BAI_VERBOSE: " << res << "\n";
         }

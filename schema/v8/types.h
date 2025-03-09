@@ -467,8 +467,10 @@ namespace MMAI::Schema::V8 {
 
     class IAttackLog {
     public:
+        // NOTE: each of those can be nullptr if cstack was just resurrected/summoned
         virtual IStack* getAttacker() const = 0;
         virtual IStack* getDefender() const = 0;
+
         virtual int getDamageDealt() const = 0;
         virtual int getDamageDealtPercent() const = 0;
         virtual int getUnitsKilled() const = 0;

@@ -120,6 +120,10 @@ namespace MMAI::BAI::V8 {
                 return std::make_shared<BattleAction>(BattleAction::makeHeal(astack, target));
             }
         } else if (astack->creatureId() == CreatureID::CATAPULT) {
+            // // XXX:
+            // // TEMP DEFEND FOR CATAPULT, TO BE REMOVED
+            // return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));
+
             if (!astack->canShoot())
                 // out of ammo
                 return std::make_shared<BattleAction>(BattleAction::makeDefend(astack));  // out of ammo (arrow towers have 99 shots)
@@ -207,6 +211,10 @@ namespace MMAI::BAI::V8 {
 
             try {
                 auto ba = buildBattleAction();
+
+                // // XXX:
+                // // TEMP DEFEND FOR CATAPULT, TO BE REMOVED
+                // ba = std::make_shared<BattleAction>(BattleAction::makeDefend(astack));
 
                 if (ba) {
                     debug("Action is VALID: " + state->action->name());

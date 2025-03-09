@@ -25,6 +25,8 @@ namespace MMAI::BAI::V9 {
         AttackLog(
             std::shared_ptr<Stack> attacker_,
             std::shared_ptr<Stack> defender_,
+            const CStack* cattacker_,
+            const CStack* cdefender_,
             int dmg_,
             int dmgPercent_,
             int units_,
@@ -32,6 +34,8 @@ namespace MMAI::BAI::V9 {
             int valuePercent_
         ) : attacker(attacker_)
           , defender(defender_)
+          , cattacker(cattacker_)
+          , cdefender(cdefender_)
           , dmg(dmg_)
           , dmgPercent(dmgPercent_)
           , units(units_)
@@ -60,6 +64,8 @@ namespace MMAI::BAI::V9 {
 
         const std::shared_ptr<Stack> attacker;  // XXX: can be nullptr if dmg is not from creature
         const std::shared_ptr<Stack> defender;
+        const CStack* cattacker;
+        const CStack* cdefender;
         const int dmg;
         const int dmgPercent;
         const int units;

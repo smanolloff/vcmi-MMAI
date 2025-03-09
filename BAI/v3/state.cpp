@@ -204,7 +204,7 @@ namespace MMAI::BAI::V3 {
         if (static_cast<BonusType>(bte.effect) != BonusType::MORALE)
             return;
 
-        auto stack = battle->battleGetStackByID(bte.stackID);
+        auto stack = battle->battleGetStackByID(bte.stackID, false);
         isMorale = stack->unitSide() == side;
     }
 
