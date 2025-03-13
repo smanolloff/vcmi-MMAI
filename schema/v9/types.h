@@ -273,6 +273,15 @@ namespace MMAI::Schema::V9 {
         RAW,
     };
 
+    enum class CombatResult {
+        LEFT_WINS,
+        RIGHT_WINS,
+        DRAW,
+        NONE,
+
+        _count
+    };
+
     enum class StackActState : int {
         READY,          // will act this turn, not waited
         WAITING,        // will act this turn, already waited

@@ -22,6 +22,10 @@
 #include "schema/v9/types.h"
 
 namespace MMAI::BAI::V9 {
+    // match sides for convenience when determining winner (see `victory`)
+    static_assert(EI(CombatResult::LEFT_WINS) == EI(Side::LEFT));
+    static_assert(EI(CombatResult::RIGHT_WINS) == EI(Side::RIGHT));
+
     class SupplementaryData : public Schema::V9::ISupplementaryData {
     public:
         SupplementaryData() = delete;
@@ -34,15 +38,15 @@ namespace MMAI::BAI::V9 {
             const GlobalStats* rgstats_,
             const Battlefield* battlefield_,
             std::vector<std::shared_ptr<AttackLog>> attackLogs_,
-            BattleSide winner
+            CombatResult result
         ) : colorname(colorname_),
             side(side_),
             lgstats(lgstats_),
             rgstats(rgstats_),
             battlefield(battlefield_),
             attackLogs(attackLogs_),
-            ended(winner != BattleSide::NONE),
-            victory(EI(winner) == EI(side))
+            ended(result != CombatResult::NONE),
+            victory(EI(result) == EI(side))
         {};
 
         // impl ISupplementaryData

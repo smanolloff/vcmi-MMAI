@@ -103,7 +103,7 @@ namespace MMAI::BAI::V9 {
         actmask.reserve(Schema::V9::N_ACTIONS);
     }
 
-    void State::onActiveStack(const CStack* astack, BattleSide winner) {
+    void State::onActiveStack(const CStack* astack, CombatResult result) {
         lgstats->dmgDealtNow = 0;
         rgstats->dmgDealtNow = 0;
         lgstats->dmgReceivedNow = 0;
@@ -169,7 +169,7 @@ namespace MMAI::BAI::V9 {
             rgstats.get(),
             battlefield.get(),
             attackLogs, // store the logs since last turn
-            winner
+            result
         );
 
         attackLogs.clear(); // accumulate new logs until next turn
@@ -316,6 +316,13 @@ namespace MMAI::BAI::V9 {
     }
 
     void State::onBattleEnd(const BattleResult *br) {
-        onActiveStack(nullptr, br->winner);
+        switch(br->winner) {
+        break; case BattleSide::LEFT_SIDE:
+            onActiveStack(nullptr, CombatResult::LEFT_WINS);
+        break; case BattleSide::RIGHT_SIDE:
+            onActiveStack(nullptr, CombatResult::RIGHT_WINS);
+        break; default:
+            onActiveStack(nullptr, CombatResult::DRAW);
+        }
     }
 };

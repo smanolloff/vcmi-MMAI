@@ -118,7 +118,7 @@ namespace MMAI::BAI::V9 {
 
         auto ended = state->supdata->ended;
 
-        if (!astack) // draw?
+        if (!astack)
             expect(ended, "astack is NULL, but ended is not true");
         else if (ended) {
             // at battle-end, activeStack is usually the ENEMY stack
