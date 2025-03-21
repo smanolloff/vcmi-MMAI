@@ -22,6 +22,7 @@
 #include "BAI/v7/BAI.h"
 #include "BAI/v8/BAI.h"
 #include "BAI/v9/BAI.h"
+#include "BAI/v10/BAI.h"
 #include "base.h"
 
 namespace MMAI::BAI {
@@ -43,6 +44,8 @@ namespace MMAI::BAI {
             res = std::make_shared<V8::BAI>(model, version, env, cb);
         break; case 9:
             res = std::make_shared<V9::BAI>(model, version, env, cb);
+        break; case 10:
+            res = std::make_shared<V10::BAI>(model, version, env, cb);
         break; default:
             throw std::runtime_error("Unsupported schema version: " + std::to_string(version));
         }
@@ -67,7 +70,7 @@ namespace MMAI::BAI {
         oss << this; // Store this memory address
         addrstr = oss.str();
 
-        const char* envvar = std::getenv("VCMI_BAI_VERBOSE");
+        const char* envvar = std::getenv("MMAI_VERBOSE");
         verbose = envvar != nullptr && strcmp(envvar, "1") == 0;
     }
 
@@ -128,7 +131,7 @@ namespace MMAI::BAI {
                 boost::algorithm::trim(formatted);
                 res = res + "\n\t* " + formatted;
             }
-            std::cout << "BAI_VERBOSE: " << res << "\n";
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
         }
     }
 
@@ -170,7 +173,7 @@ namespace MMAI::BAI {
             for (auto &cid : sc->reflectedCres)
                 res += "\n\t  > " + battle->battleGetStackByID(cid, false)->getDescription();
 
-            std::cout << "BAI_VERBOSE: " << res << "\n";
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
         }
     }
 
@@ -198,7 +201,7 @@ namespace MMAI::BAI {
                 % distance
                 % teleport;
 
-            std::cout << "BAI_VERBOSE: " << boost::str(res) << "\n";
+            std::cout << "MMAI_VERBOSE: " << boost::str(res) << "\n";
         }
     }
 
@@ -237,7 +240,7 @@ namespace MMAI::BAI {
                 }
             }
 
-            std::cout << "BAI_VERBOSE: " << res << "\n";
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
         };
     }
 
@@ -265,7 +268,7 @@ namespace MMAI::BAI {
             res += "\n\t* bonus id=" + std::to_string(bte.effect);
             res += "\n\t* bonus value=" + std::to_string(bte.val);
             res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
-            std::cout << "BAI_VERBOSE: " << res << "\n";
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
         }
     }
 
@@ -277,7 +280,7 @@ namespace MMAI::BAI {
                 res += "\n\t* operation=" + std::to_string(EI(change.operation));
                 res += "\n\t* healthDelta=" + std::to_string(change.healthDelta);
             }
-            std::cout << "BAI_VERBOSE: " << res << "\n";
+            std::cout << "MMAI_VERBOSE: " << res << "\n";
         }
     }
 }
