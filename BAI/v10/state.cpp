@@ -106,7 +106,7 @@ namespace MMAI::BAI::V10 {
         actmask.reserve(Schema::V10::N_ACTIONS);
     }
 
-    void State::onActiveStack(const CStack* astack, CombatResult result, bool recording) {
+    void State::onActiveStack(const CStack* astack, CombatResult result, bool recording, bool fastpath) {
         lgstats->dmgDealtNow = 0;
         rgstats->dmgDealtNow = 0;
         lgstats->dmgReceivedNow = 0;
@@ -162,27 +162,7 @@ namespace MMAI::BAI::V10 {
             s->valueLostTotal += al->value;
         }
 
-        // Case A: << ENEMY TURN >>
-        // 1. StupidAI makes action; vcmi calls ->
-        // 2. State::onActionStart() calls ->
-        // 3. onActiveStack(recording=true) builds bf
-        //
-        // Case B: << OUR TURN >>
-        // 1. BAI::activeStack() calls ->
-        // 2. State::onActiveStack(recording=false) builds bf and returns to ->
-        // 3. BAI::activeStack() makes action; vcmi calls ->
-        // 4. State::onActionStart() calls ->
-        // 5. onActiveStack(recording=true)
-        //
-        // no need to create battlefield in 5, as it's the same as in 2.
-        // We could check only the unit's side, but since there are
-        // auto-acting units, comparing the exact unit seems safer.
-        //
-
-        // auto fastpath = recording && astack && astack->unitSide() != side) {
-        auto fastpath = recording && astack && astack != actingStack;
-        printf("Fastpath: %d\n", fastpath);
-
+        // printf("Fastpath: %d\n", fastpath);
         if (!fastpath) {
             battlefield = Battlefield::Create(battle, astack, lgstats.get(), rgstats.get(), stacksStats, isMorale);
             bfstate.clear();
@@ -210,14 +190,16 @@ namespace MMAI::BAI::V10 {
         }
 
         isMorale = false;
-        actingStack = nullptr;
 
         if (recording) {
             ASSERT(startedAction >= 0, "unexpected startedAction: " + std::to_string(startedAction));
             // NOT: this creates a copy of bfstate (which is what we want)
             transitions.push_back({startedAction, std::make_shared<Schema::BattlefieldState>(bfstate)});
+            actingStack = nullptr;
         } else {
+            startedAction = -1;
             transitions.clear();
+            actingStack = astack; // for fastpath, see onActionStarted
         }
 
         supdata = std::make_unique<SupplementaryData>(
@@ -342,7 +324,34 @@ namespace MMAI::BAI::V10 {
         // XXX: assuming action was OK (no server error about failed/fishy action)
     }
 
+    /*
+     * XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+     * IMPORTANT: `battlefield` must not be used here (old state)
+     * XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+     */
     void State::onActionStarted(const BattleAction &action) {
+        // Case A: << ENEMY TURN >>
+        // 1. StupidAI makes action; vcmi calls ->
+        // 2. State::onActionStart() calls ->                           // actingStack is nullptr
+        // 3. onActiveStack(recording=true) builds bf and returns to ->
+        // 4. State::onActionStart() clears actingStack
+        //
+        // Case B: << OUR TURN >>
+        // 1. BAI::activeStack() calls ->
+        // 2. State::onActiveStack(recording=false) builds bf, sets actingStack and returns to ->
+        // 3. BAI::activeStack() makes action; vcmi calls ->
+        // 4. State::onActionStart() sets fastpath=true and calls ->    //  actingStack already present
+        // 5. onActiveStack(recording=true) **skips building bf** and returns to ->
+        // 6. State::onActionStart() clears actingStack
+
+        //
+        // no need to create battlefield in 5, as it's the same as in 2.
+        // We could check only the unit's side, but since there are
+        // auto-acting units, comparing the exact unit seems safer.
+        //
+        // XXX: this is true only if actingStack was set in onActiveStack() i.e. on our turn
+        auto fastpath = !!actingStack;
+
         actingStack = nullptr;
         auto stacks = battle->battleGetStacks();
 
@@ -360,13 +369,20 @@ namespace MMAI::BAI::V10 {
         // }
         // ASSERT(stack, "could not find stack unitId: " + std::to_string(action.stackNumber));
 
+        // XXX: tecnically, this loop is redundant if fastpath is true
+        //      using it for validation though
+        bool found = false;
         for (auto cstack : battle->battleGetAllStacks(true)) {
             if (cstack->unitId() == action.stackNumber) {
+                if (actingStack && cstack != actingStack) {
+                    THROW_FORMAT("actingStack was already set to %s, but does not match the real acting stack %s", actingStack->getDescription() % cstack->getDescription());
+                }
                 actingStack = cstack;
+                found = true;
                 break;
             }
         }
-        ASSERT(actingStack, "could not find cstack with unitId: " + std::to_string(action.stackNumber));
+        ASSERT(found, "could not find cstack with unitId: " + std::to_string(action.stackNumber));
 
         if (actingStack->creatureId() == CreatureID::FIRST_AID_TENT
             || actingStack->creatureId() == CreatureID::CATAPULT
@@ -397,11 +413,38 @@ namespace MMAI::BAI::V10 {
         }
         break; case EActionType::WALK_AND_ATTACK: {
             auto bhMove = action.target.at(0).hexValue;
-            auto bhUnit = action.target.at(1).hexValue;
-            auto dir = BattleHex::mutualPosition(bhMove, bhUnit);
-            auto hexaction = HexAction(AMOVE_TO_EDIR.at(dir));
-            auto id = Hex::CalcId(bhMove);
-            startedAction = N_NONHEX_ACTIONS + id*EI(HexAction::_count) + EI(hexaction);
+            auto bhTarget = action.target.at(1).hexValue;
+            auto idMove = Hex::CalcId(bhMove);
+
+            // Can't use `battlefield` (old state)
+            auto it = std::find_if(stacks.begin(), stacks.end(), [&bhTarget](const CStack* cstack) {
+                return cstack->coversPos(bhTarget);
+            });
+
+            if (it == stacks.end()) {
+                THROW_FORMAT("Could not find stack for target bhex: %d", bhTarget.toInt());
+            }
+
+            auto targetStack = *it;
+
+            if (!CStack::isMeleeAttackPossible(actingStack, targetStack, bhMove)) {
+                THROW_FORMAT("Melee attack not possible from bh=%d to bh=%d (to %s)", bhMove.toInt() % bhTarget.toInt() % targetStack->getDescription());
+            }
+
+            const auto &nbhexes = Hex::NearbyBattleHexes(bhMove);
+
+            for (int i=0; i<nbhexes.size(); ++i) {
+                auto &n_bhex = nbhexes.at(i);
+                if (n_bhex == bhTarget) {
+                    startedAction = N_NONHEX_ACTIONS + idMove*EI(HexAction::_count) + EI(HexAction(i));
+                    break;
+                }
+            }
+
+            ASSERT(startedAction >= 0, "failed to determine startedAction"
+
+
+            );
         }
         break; case EActionType::MONSTER_SPELL:
             logAi->warn("Got MONSTER_SPELL action (use cursed ground to prevent this)");
@@ -413,7 +456,7 @@ namespace MMAI::BAI::V10 {
             return;
         }
 
-        onActiveStack(actingStack, CombatResult::NONE, true);
+        onActiveStack(actingStack, CombatResult::NONE, true, fastpath);
     }
 
 

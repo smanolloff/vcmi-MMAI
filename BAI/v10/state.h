@@ -47,7 +47,7 @@ namespace MMAI::BAI::V10 {
         State() = delete;
         State(const int version_, const std::string colorname, const CPlayerBattleCallback* battle_);
 
-        void onActiveStack(const CStack* astack, CombatResult result = CombatResult::NONE, bool recording = false);
+        void onActiveStack(const CStack* astack, CombatResult result = CombatResult::NONE, bool recording = false, bool fastpath = false);
         void onBattleStacksAttacked(const std::vector<BattleStackAttacked> &bsa);
         void onBattleTriggerEffect(const BattleTriggerEffect &bte);
         void onActionStarted(const BattleAction &action);

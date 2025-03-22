@@ -834,7 +834,7 @@ namespace MMAI::BAI::V10 {
 
         // All cell text is aligned right
         auto colwidths = std::array<int, 4 + 2*max_stacks_per_side>{};
-        colwidths.fill(render_queue_size + 1); // default col width
+        colwidths.fill(4); // default col width
         colwidths.at(0) = 16; // header col
 
         // Divider column indexes
@@ -938,11 +938,13 @@ namespace MMAI::BAI::V10 {
                         //         throw std::runtime_error("Unexpected actstate:: " + std::to_string(EI(stack->getAttr(a))));
                         //     }
                         if (a == SA::QUEUE) {
-                            std::ostringstream oss;
                             auto qbits = std::bitset<STACK_QUEUE_SIZE>(stack->getAttr(SA::QUEUE));
-                            for (int i=0; i<render_queue_size; ++i)
-                                oss << (qbits.test(i) ? std::to_string(i) : ".");
-                            value = oss.str();
+                            for (int i=0; i<render_queue_size; ++i) {
+                                if (qbits.test(i)) {
+                                    value = std::to_string(i);
+                                    break;
+                                }
+                            }
                         } else if (a == SA::VALUE_ONE && stack->getAttr(a) >= 1000) {
                             std::ostringstream oss;
                             oss << std::fixed << std::setprecision(1) << (stack->getAttr(a) / 1000.0);

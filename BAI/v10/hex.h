@@ -55,6 +55,7 @@ namespace MMAI::BAI::V10 {
     public:
         static int CalcId(const BattleHex &bh);
         static std::pair<int, int> CalcXY(const BattleHex &bh);
+        static HexActionHex NearbyBattleHexes(const BattleHex &bh);
 
         Hex(
             const BattleHex &bh,
@@ -94,7 +95,5 @@ namespace MMAI::BAI::V10 {
             const std::shared_ptr<ActiveStackInfo> &astackinfo,
             const std::map<BattleHex, std::shared_ptr<Stack>> &hexstacks
         );
-
-        static HexActionHex NearbyBattleHexes(const BattleHex &bh);
     };
 }
