@@ -320,21 +320,33 @@ namespace MMAI::Schema::V10 {
     enum class GlobalAttribute : int {
         BATTLE_SIDE,                 // 0=left, 1=right
         BATTLE_WINNER,               // 0=left, 1=right (NA = battle not finished)
+        BFIELD_VALUE_START_ABS,      // global_value_at_start
+        BFIELD_VALUE_NOW_ABS,        // global_value_now
         BFIELD_VALUE_NOW_REL0,       // global_value_now / global_value_at_start
 
         _count
     };
 
     enum class PlayerAttribute : int {
+        ARMY_VALUE_NOW_ABS,
         ARMY_VALUE_NOW_REL,         // side_army_value_now          / global_value_now
+        ARMY_VALUE_NOW_ABS0,
         ARMY_VALUE_NOW_REL0,        // side_army_value_now          / global_value_at_start
+        VALUE_KILLED_ABS,
         VALUE_KILLED_REL,           // left_value_killed_this_turn  / global_value_last_turn
+        VALUE_KILLED_ACC_ABS0,
         VALUE_KILLED_ACC_REL0,      // left_value_killed_lifetime   / global_value_at_start
+        VALUE_LOST_ABS,
         VALUE_LOST_REL,             // left_value_lost_this_turn    / global_value_last_turn
+        VALUE_LOST_ACC_ABS0,
         VALUE_LOST_ACC_REL0,        // left_value_lost_lifetime     / global_value_at_start
+        DMG_DEALT_ABS,
         DMG_DEALT_REL,              // left_dmg_dealt_this_turn     / global_hp_last_turn
+        DMG_DEALT_ACC_ABS0,
         DMG_DEALT_ACC_REL0,         // left_dmg_dealt_lifetime      / global_hp_at_start
+        DMG_RECEIVED_ABS,
         DMG_RECEIVED_REL,           // left_dmg_taken_this_turn     / global_hp_last_turn
+        DMG_RECEIVED_ACC_ABS0,
         DMG_RECEIVED_ACC_REL0,      // left_dmg_taken_lifetime      / global_hp_at_start
 
         _count
@@ -349,6 +361,7 @@ namespace MMAI::Schema::V10 {
         IS_REAR,  // is this hex the rear hex of a stack
         STACK_SIDE,
         // STACK_CREATURE_ID,
+        STACK_SLOT,
         STACK_QUANTITY,
         STACK_ATTACK,
         STACK_DEFENSE,
@@ -379,6 +392,7 @@ namespace MMAI::Schema::V10 {
 
     enum class StackAttribute : int {
         SIDE,
+        SLOT,
         QUANTITY,
         ATTACK,
         DEFENSE,
@@ -542,9 +556,6 @@ namespace MMAI::Schema::V10 {
 
     enum class Side : int {LEFT, RIGHT}; // corresponds to BattleSide::Type
 
-    // using ValueDiff = std::pair<int, float>;                        // {index, diff}
-    // using StateDiff = std::pair<Action, std::vector<ValueDiff>>;    // {action, [vdiff, vdiff, ...]}
-    // using StateHistory = std::vector<StateDiff*>;
     using StateTransition = std::pair<Action, BattlefieldState*>;
     using StateTransitions = std::vector<StateTransition>;
 

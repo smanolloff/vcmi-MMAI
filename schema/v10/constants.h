@@ -141,6 +141,7 @@ namespace MMAI::Schema::V10 {
     constexpr int STACK_VALUE_KILLED_MAX = 100000;  // maxdmg(10K) / cerberus(25) = 400 kills * 200 value = 80K
     constexpr int STACK_HP_TOTAL_MAX = 30000;  // 98 Ghost dragons * 200HP = 20K
     constexpr int CREATURE_ID_MAX = 149;  // H3 core has creature IDs 0..149
+    constexpr int STACK_SLOT_MAX = 8;  // 0-6 regular; 7=war machines; 8=other (summoned, commander, etc.)
 
     // NOTE: the generated maps use old AIValue() which is 4-6x LOWER
     //       than the one calculated by MMAI (in Stack::CalcValue())
@@ -160,19 +161,31 @@ namespace MMAI::Schema::V10 {
     constexpr GlobalEncoding GLOBAL_ENCODING {
         E4(GA::BATTLE_SIDE,                 CS, 1),
         E4(GA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
+        E4(GA::BFIELD_VALUE_START_ABS,      ES, 10e6),      // 4.2M max for 4x1024.vmap
+        E4(GA::BFIELD_VALUE_NOW_ABS,        ES, 10e6),
         E4(GA::BFIELD_VALUE_NOW_REL0,       LS, 100),       // bfield_value_now             / bfield_value_at_start
     };
 
     constexpr PlayerEncoding PLAYER_ENCODING {
+        E4(PA::ARMY_VALUE_NOW_ABS,     ES, 5e6),       // 2.2M max on 4x1024.vmap
         E4(PA::ARMY_VALUE_NOW_REL,     LS, 100),       // army_value_now          / global_value_now
+        E4(PA::ARMY_VALUE_NOW_ABS0,    ES, 5e6),
         E4(PA::ARMY_VALUE_NOW_REL0,    LS, 100),       // army_value_now          / global_value_at_start
+        E4(PA::VALUE_KILLED_ABS,       ES, 5e6),
         E4(PA::VALUE_KILLED_REL,       LS, 100),       // value_killed_this_turn  / global_value_last_turn
+        E4(PA::VALUE_KILLED_ACC_ABS0,  ES, 5e6),
         E4(PA::VALUE_KILLED_ACC_REL0,  LS, 100),       // value_killed_lifetime   / global_value_at_start
+        E4(PA::VALUE_LOST_ABS,         ES, 5e6),
         E4(PA::VALUE_LOST_REL,         LS, 100),       // value_lost_this_turn    / global_value_last_turn
+        E4(PA::VALUE_LOST_ACC_ABS0,    ES, 5e6),
         E4(PA::VALUE_LOST_ACC_REL0,    LS, 100),       // value_lost_lifetime     / global_value_at_start
+        E4(PA::DMG_DEALT_ABS,          ES, 10e3),      // 6.5k max on 4x1024.vmap
         E4(PA::DMG_DEALT_REL,          LS, 100),       // dmg_dealt_this_turn     / global_hp_last_turn
+        E4(PA::DMG_DEALT_ACC_ABS0,     ES, 100e3),     // 45k max on 4x1024.vmap
         E4(PA::DMG_DEALT_ACC_REL0,     LS, 100),       // dmg_dealt_lifetime      / global_hp_at_start
+        E4(PA::DMG_RECEIVED_ABS,       ES, 10e3),
         E4(PA::DMG_RECEIVED_REL,       LS, 100),       // dmg_received_this_turn  / global_hp_last_turn
+        E4(PA::DMG_RECEIVED_ACC_ABS0,  ES, 100e3),
         E4(PA::DMG_RECEIVED_ACC_REL0,  LS, 100),       // dmg_received_lifetime   / global_hp_at_start
     };
 
@@ -184,6 +197,7 @@ namespace MMAI::Schema::V10 {
         E4(HA::IS_REAR,                 CE, 1),        // 1=this is the rear hex of a stack
         E4(HA::STACK_SIDE,              CE, 1),        // 0=attacker, 1=defender
         // E4(HA::STACK_CREATURE_ID,       CE, CREATURE_ID_MAX),
+        E4(HA::STACK_SLOT,              CE, STACK_SLOT_MAX),
         E4(HA::STACK_QUANTITY,          EE, STACK_QTY_MAX),
         E4(HA::STACK_ATTACK,            EZ, 80),
         E4(HA::STACK_DEFENSE,           EZ, 80),       // azure dragon is 60 when defending
@@ -242,50 +256,4 @@ namespace MMAI::Schema::V10 {
         BATTLEFIELD_STATE_SIZE_ONE_PLAYER + \
         BATTLEFIELD_STATE_SIZE_ONE_PLAYER + \
         BATTLEFIELD_STATE_SIZE_ALL_HEXES;
-
-
-    // /*
-    //  * Compile-time calculation for offset of a hex attribute
-    //  */
-    // template <typename T>
-    // constexpr int EncodedRelativeOffset(T a, std::array<std::tuple<T, Encoding, int, int>, EI(T::_count)> elems) {
-    //     int ret = 0;
-    //     for (int i = 0; i < EI(a); i++) {
-    //         ret += std::get<2>(elems.at(i));
-    //     }
-    //     return ret;
-    // }
-
-    // constexpr int EncodedRelativeOffset(GlobalAttribute a) {
-    //     return EncodedRelativeOffset(a, GLOBAL_ENCODING);
-    // }
-
-    // constexpr int EncodedRelativeOffset(PlayerAttribute a) {
-    //     return EncodedRelativeOffset(a, PLAYER_ENCODING);
-    // }
-
-    // constexpr int EncodedRelativeOffset(HexAttribute a) {
-    //     return EncodedRelativeOffset(a, HEX_ENCODING);
-    // }
-
-    // constexpr int EncodedAbsoluteOffset(GlobalAttribute a) {
-    //     return EncodedRelativeOffset(a, GLOBAL_ENCODING);
-    // }
-
-    // // In practice, the below functions are evaluated at runtime only
-    // // They are defined here anyway, as there's no better place to put them
-
-    // constexpr int EncodedAbsoluteOffset(int side, PlayerAttribute a) {
-    //     return BATTLEFIELD_STATE_SIZE_GLOBAL \
-    //         + side * BATTLEFIELD_STATE_SIZE_ONE_PLAYER \
-    //         + EncodedRelativeOffset(a, PLAYER_ENCODING);
-    // }
-
-    // constexpr int EncodedAbsoluteOffset(int hexId, HexAttribute a) {
-    //     return BATTLEFIELD_STATE_SIZE_GLOBAL \
-    //         + 2*BATTLEFIELD_STATE_SIZE_ONE_PLAYER \
-    //         + hexId * BATTLEFIELD_STATE_SIZE_ONE_HEX \
-    //         + EncodedRelativeOffset(a, HEX_ENCODING);
-    // }
-
 }

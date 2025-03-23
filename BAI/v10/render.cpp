@@ -803,11 +803,12 @@ namespace MMAI::BAI::V10 {
             }
             break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % lgstats->getValueNow() % (100.0 * lgstats->getValueNow() / (lgstats->getValueNow() + rgstats->getValueNow())));
             break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % rgstats->getValueNow() % (100.0 * rgstats->getValueNow() / (lgstats->getValueNow() + rgstats->getValueNow())));
+            break; case 10: name = "Current BF value"; value = boost::str(boost::format("%d (%.0f%% of starting BF value)") % (rgstats->getValueNow() + rgstats->getValueNow()) % (100.0 * (lgstats->getValueNow() + rgstats->getValueNow()) / (lgstats->getValueStart() + rgstats->getValueStart())));
             break; default:
                 continue;
             }
 
-            lines.at(tablestartrow + i) << PadLeft(name, 15, ' ') << ": " << value;
+            lines.at(tablestartrow + i) << PadLeft(name, 17, ' ') << ": " << value;
         }
 
         lines.emplace_back() << "";

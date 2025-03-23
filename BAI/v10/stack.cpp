@@ -176,13 +176,19 @@ namespace MMAI::BAI::V10 {
         // XXX: NULL attrs are used only for non-existing stacks
         // => don't fill with null here (as opposed to attrs in Hex)
 
-        auto slot = cstack->unitSlot();
-        if (slot >= 0) {
+        int slot = cstack->unitSlot();
+        if (slot >= 0 && slot < 7) {
             alias = slot + '0';
-        } else if (slot == SlotID::SUMMONED_SLOT_PLACEHOLDER) {
-            alias = 'S';
         } else if (slot == SlotID::WAR_MACHINES_SLOT) {
+            // "machine" slot
             alias = 'M';
+            slot = 7;
+        } else {
+            // "special" slot
+            // SlotID::SUMMONED_SLOT_PLACEHOLDER
+            // SlotID::COMMANDER_SLOT_PLACEHOLDER
+            alias = 'S';
+            slot = 8;
         }
 
         // queue pos needs to be set first to determine if stack is active
@@ -466,6 +472,7 @@ namespace MMAI::BAI::V10 {
 
         setattr(A::SIDE, EI(cstack->unitSide()));
         // setattr(A::CREATURE_ID, cid);
+        setattr(A::SLOT, slot);
         setattr(A::QUANTITY, cstack->getCount());
         setattr(A::ATTACK, cstack->getAttack(shots > 0));
         setattr(A::DEFENSE, cstack->getDefense(false));

@@ -191,17 +191,6 @@ namespace MMAI::BAI::V10 {
 
         isMorale = false;
 
-        if (recording) {
-            ASSERT(startedAction >= 0, "unexpected startedAction: " + std::to_string(startedAction));
-            // NOT: this creates a copy of bfstate (which is what we want)
-            transitions.push_back({startedAction, std::make_shared<Schema::BattlefieldState>(bfstate)});
-            actingStack = nullptr;
-        } else {
-            startedAction = -1;
-            transitions.clear();
-            actingStack = astack; // for fastpath, see onActionStarted
-        }
-
         supdata = std::make_unique<SupplementaryData>(
             colorname,
             Side(side),
@@ -212,6 +201,17 @@ namespace MMAI::BAI::V10 {
             transitions, // store the states since last turn
             result
         );
+
+        if (recording) {
+            ASSERT(startedAction >= 0, "unexpected startedAction: " + std::to_string(startedAction));
+            // NOT: this creates a copy of bfstate (which is what we want)
+            transitions.push_back({startedAction, std::make_shared<Schema::BattlefieldState>(bfstate)});
+            actingStack = nullptr;
+        } else {
+            startedAction = -1;
+            transitions.clear();
+            actingStack = astack; // for fastpath, see onActionStarted
+        }
 
         attackLogs.clear(); // accumulate new logs until next turn
     }
@@ -230,6 +230,8 @@ namespace MMAI::BAI::V10 {
 
         auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
         auto bf_valueStart = lgstats->valueStart + rgstats->valueStart;
+        Encoder::Encode(GA::BFIELD_VALUE_START_ABS, bf_valueStart, bfstate);
+        Encoder::Encode(GA::BFIELD_VALUE_NOW_ABS, bf_valueNow, bfstate);
         Encoder::Encode(GA::BFIELD_VALUE_NOW_REL0, 100 * bf_valueNow / bf_valueStart, bfstate);
     }
 
@@ -242,15 +244,25 @@ namespace MMAI::BAI::V10 {
         auto bf_hpPrev = lgstats->hpPrev + rgstats->hpPrev;
         auto bf_hpStart = lgstats->hpStart + rgstats->hpStart;
 
+        Encoder::Encode(PA::ARMY_VALUE_NOW_ABS,     s->valueNow, bfstate);
         Encoder::Encode(PA::ARMY_VALUE_NOW_REL,     100 * s->valueNow / bf_valueNow, bfstate);
+        Encoder::Encode(PA::ARMY_VALUE_NOW_ABS0,    s->valueNow, bfstate);
         Encoder::Encode(PA::ARMY_VALUE_NOW_REL0,    100 * s->valueNow / bf_valueStart, bfstate);
+        Encoder::Encode(PA::VALUE_KILLED_ABS,       s->valueKilledNow, bfstate);
         Encoder::Encode(PA::VALUE_KILLED_REL,       100 * s->valueKilledNow / bf_valuePrev, bfstate);
+        Encoder::Encode(PA::VALUE_KILLED_ACC_ABS0,  s->valueKilledTotal, bfstate);
         Encoder::Encode(PA::VALUE_KILLED_ACC_REL0,  100 * s->valueKilledTotal / bf_valueStart, bfstate);
+        Encoder::Encode(PA::VALUE_LOST_ABS,         s->valueLostNow, bfstate);
         Encoder::Encode(PA::VALUE_LOST_REL,         100 * s->valueLostNow / bf_valuePrev, bfstate);
+        Encoder::Encode(PA::VALUE_LOST_ACC_ABS0,    s->valueLostTotal, bfstate);
         Encoder::Encode(PA::VALUE_LOST_ACC_REL0,    100 * s->valueLostTotal / bf_valueStart, bfstate);
+        Encoder::Encode(PA::DMG_DEALT_ABS,          s->dmgDealtNow, bfstate);
         Encoder::Encode(PA::DMG_DEALT_REL,          100 * s->dmgDealtNow / bf_hpPrev, bfstate);
+        Encoder::Encode(PA::DMG_DEALT_ACC_ABS0,     s->dmgDealtTotal, bfstate);
         Encoder::Encode(PA::DMG_DEALT_ACC_REL0,     100 * s->dmgDealtTotal / bf_hpStart, bfstate);
+        Encoder::Encode(PA::DMG_RECEIVED_ABS,       s->dmgReceivedNow, bfstate);
         Encoder::Encode(PA::DMG_RECEIVED_REL,       100 * s->dmgReceivedNow / bf_hpPrev, bfstate);
+        Encoder::Encode(PA::DMG_RECEIVED_ACC_ABS0,  s->dmgReceivedTotal, bfstate);
         Encoder::Encode(PA::DMG_RECEIVED_ACC_REL0,  100 * s->dmgReceivedTotal / bf_hpStart, bfstate);
     }
 

@@ -121,6 +121,7 @@ namespace MMAI::BAI::V10 {
 
         auto attrmap = std::map<A, SA> {
             {A::STACK_SIDE,                  SA::SIDE},
+            {A::STACK_SLOT,                  SA::SLOT},
             {A::STACK_QUANTITY,              SA::QUANTITY},
             {A::STACK_ATTACK,                SA::ATTACK},
             {A::STACK_DEFENSE,               SA::DEFENSE},
