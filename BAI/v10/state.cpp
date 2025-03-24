@@ -206,7 +206,7 @@ namespace MMAI::BAI::V10 {
         if (recording) {
             ASSERT(startedAction >= 0, "unexpected startedAction: " + std::to_string(startedAction));
             // NOT: this creates a copy of bfstate (which is what we want)
-            transitions.push_back({startedAction, std::make_shared<Schema::BattlefieldState>(bfstate)});
+            transitions.push_back({startedAction, std::make_shared<Schema::ActionMask>(actmask), std::make_shared<Schema::BattlefieldState>(bfstate)});
             actingStack = nullptr;
         } else {
             startedAction = -1;

@@ -40,7 +40,7 @@ namespace MMAI::BAI::V10 {
             const PlayerStats* rpstats_,
             const Battlefield* battlefield_,
             const std::vector<std::shared_ptr<AttackLog>> attackLogs_,
-            std::vector<std::pair<Schema::Action, std::shared_ptr<Schema::BattlefieldState>>> transitions_,
+            std::vector<std::tuple<Schema::Action, std::shared_ptr<Schema::ActionMask>, std::shared_ptr<Schema::BattlefieldState>>> transitions_,
             CombatResult result
         ) : colorname(colorname_),
             side(side_),
@@ -81,7 +81,7 @@ namespace MMAI::BAI::V10 {
         const std::vector<std::shared_ptr<AttackLog>> attackLogs;
         const bool ended = false;
         const bool victory = false;
-        const std::vector<std::pair<Schema::Action, std::shared_ptr<Schema::BattlefieldState>>> transitions;
+        const std::vector<std::tuple<Schema::Action, std::shared_ptr<Schema::ActionMask>, std::shared_ptr<Schema::BattlefieldState>>> transitions;
 
         // Optionally modified (during activeStack if action was invalid)
         ErrorCode errcode = ErrorCode::OK;

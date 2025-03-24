@@ -555,7 +555,7 @@ namespace MMAI::Schema::V10 {
 
     enum class Side : int {LEFT, RIGHT}; // corresponds to BattleSide::Type
 
-    using StateTransition = std::pair<Action, BattlefieldState*>;
+    using StateTransition = std::tuple<Action, ActionMask*, BattlefieldState*>;
     using StateTransitions = std::vector<StateTransition>;
 
     // This is returned as std::any by IState

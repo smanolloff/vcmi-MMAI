@@ -58,8 +58,8 @@ namespace MMAI::BAI::V10 {
         auto res = Schema::V10::StateTransitions{};
         res.reserve(transitions.size());
 
-        for (auto [action, transition] : transitions)
-            res.push_back({action, transition.get()});
+        for (auto [action, actmask, transition] : transitions)
+            res.push_back({action, actmask.get(), transition.get()});
 
         return res;
     }

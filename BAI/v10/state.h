@@ -67,7 +67,7 @@ namespace MMAI::BAI::V10 {
         Schema::ActionMask actmask = {};
         std::unique_ptr<SupplementaryData> supdata = nullptr;
         std::vector<std::shared_ptr<AttackLog>> attackLogs = {};
-        std::vector<std::pair<Schema::Action, std::shared_ptr<Schema::BattlefieldState>>> transitions = {};
+        std::vector<std::tuple<Schema::Action, std::shared_ptr<Schema::ActionMask>, std::shared_ptr<Schema::BattlefieldState>>> transitions = {};
         std::unique_ptr<Action> action = nullptr;
         std::unique_ptr<GlobalStats> gstats = nullptr;
         std::unique_ptr<PlayerStats> lpstats = nullptr;
