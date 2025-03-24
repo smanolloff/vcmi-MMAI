@@ -328,25 +328,25 @@ namespace MMAI::Schema::V10 {
     };
 
     enum class PlayerAttribute : int {
+        BATTLE_SIDE,                // 0=left, 1=right
         ARMY_VALUE_NOW_ABS,
         ARMY_VALUE_NOW_REL,         // side_army_value_now          / global_value_now
-        ARMY_VALUE_NOW_ABS0,
         ARMY_VALUE_NOW_REL0,        // side_army_value_now          / global_value_at_start
         VALUE_KILLED_ABS,
         VALUE_KILLED_REL,           // left_value_killed_this_turn  / global_value_last_turn
-        VALUE_KILLED_ACC_ABS0,
+        VALUE_KILLED_ACC_ABS,
         VALUE_KILLED_ACC_REL0,      // left_value_killed_lifetime   / global_value_at_start
         VALUE_LOST_ABS,
         VALUE_LOST_REL,             // left_value_lost_this_turn    / global_value_last_turn
-        VALUE_LOST_ACC_ABS0,
+        VALUE_LOST_ACC_ABS,
         VALUE_LOST_ACC_REL0,        // left_value_lost_lifetime     / global_value_at_start
         DMG_DEALT_ABS,
         DMG_DEALT_REL,              // left_dmg_dealt_this_turn     / global_hp_last_turn
-        DMG_DEALT_ACC_ABS0,
+        DMG_DEALT_ACC_ABS,
         DMG_DEALT_ACC_REL0,         // left_dmg_dealt_lifetime      / global_hp_at_start
         DMG_RECEIVED_ABS,
         DMG_RECEIVED_REL,           // left_dmg_taken_this_turn     / global_hp_last_turn
-        DMG_RECEIVED_ACC_ABS0,
+        DMG_RECEIVED_ACC_ABS,
         DMG_RECEIVED_ACC_REL0,      // left_dmg_taken_lifetime      / global_hp_at_start
 
         _count
@@ -484,26 +484,19 @@ namespace MMAI::Schema::V10 {
 
     class IGlobalStats {
     public:
-
-        virtual int getValueStart() const = 0;
-        virtual int getValuePrev() const = 0;
-        virtual int getValueNow() const = 0;
-        virtual int getHPStart() const = 0;
-        virtual int getHPPrev() const = 0;
-        virtual int getHPNow() const = 0;
-
-        virtual int getDmgDealtNow() const = 0;
-        virtual int getDmgDealtTotal() const = 0;
-        virtual int getDmgReceivedNow() const = 0;
-        virtual int getDmgReceivedTotal() const = 0;
-        virtual int getValueKilledNow() const = 0;
-        virtual int getValueKilledTotal() const = 0;
-        virtual int getValueLostNow() const = 0;
-        virtual int getValueLostTotal() const = 0;
-
+        virtual int getAttr(GlobalAttribute) const = 0;
         virtual ~IGlobalStats() = default;
     };
 
+    class IPlayerStats {
+    public:
+        virtual int getAttr(PlayerAttribute) const = 0;
+        virtual ~IPlayerStats() = default;
+    };
+
+
+    using GlobalAttrs = std::array<int, static_cast<int>(GlobalAttribute::_count)>;
+    using PlayerAttrs = std::array<int, static_cast<int>(PlayerAttribute::_count)>;
     using HexAttrs = std::array<int, static_cast<int>(HexAttribute::_count)>;
     using StackAttrs = std::array<int, static_cast<int>(StackAttribute::_count)>;
     using StackFlags = std::bitset<EI(StackFlag::_count)>;
@@ -571,8 +564,9 @@ namespace MMAI::Schema::V10 {
         virtual ErrorCode getErrorCode() const = 0;
         virtual bool getIsBattleEnded() const = 0;
         virtual bool getIsVictorious() const = 0;
-        virtual const IGlobalStats* getGlobalStatsLeft() const = 0;
-        virtual const IGlobalStats* getGlobalStatsRight() const = 0;
+        virtual const IGlobalStats* getGlobalStats() const = 0;
+        virtual const IPlayerStats* getLeftPlayerStats() const = 0;
+        virtual const IPlayerStats* getRightPlayerStats() const = 0;
         virtual const Stacks getStacks() const = 0;
         virtual const Hexes getHexes() const = 0;
         virtual const AttackLogs getAttackLogs() const = 0;

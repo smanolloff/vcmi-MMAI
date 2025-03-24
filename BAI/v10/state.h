@@ -22,6 +22,7 @@
 #include "BAI/v10/action.h"
 #include "BAI/v10/attack_log.h"
 #include "BAI/v10/battlefield.h"
+#include "BAI/v10/player_stats.h"
 #include "BAI/v10/global_stats.h"
 #include "BAI/v10/supplementary_data.h"
 #include "schema/base.h"
@@ -68,8 +69,9 @@ namespace MMAI::BAI::V10 {
         std::vector<std::shared_ptr<AttackLog>> attackLogs = {};
         std::vector<std::pair<Schema::Action, std::shared_ptr<Schema::BattlefieldState>>> transitions = {};
         std::unique_ptr<Action> action = nullptr;
-        std::unique_ptr<GlobalStats> lgstats = nullptr;
-        std::unique_ptr<GlobalStats> rgstats = nullptr;
+        std::unique_ptr<GlobalStats> gstats = nullptr;
+        std::unique_ptr<PlayerStats> lpstats = nullptr;
+        std::unique_ptr<PlayerStats> rpstats = nullptr;
         const std::pair<int, int> initialArmyValues;
         const std::string colorname;
         const CPlayerBattleCallback* const battle;

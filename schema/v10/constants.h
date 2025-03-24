@@ -169,23 +169,22 @@ namespace MMAI::Schema::V10 {
     constexpr PlayerEncoding PLAYER_ENCODING {
         E4(PA::ARMY_VALUE_NOW_ABS,     ES, 5e6),       // 2.2M max on 4x1024.vmap
         E4(PA::ARMY_VALUE_NOW_REL,     LS, 100),       // army_value_now          / global_value_now
-        E4(PA::ARMY_VALUE_NOW_ABS0,    ES, 5e6),
         E4(PA::ARMY_VALUE_NOW_REL0,    LS, 100),       // army_value_now          / global_value_at_start
         E4(PA::VALUE_KILLED_ABS,       ES, 5e6),
         E4(PA::VALUE_KILLED_REL,       LS, 100),       // value_killed_this_turn  / global_value_last_turn
-        E4(PA::VALUE_KILLED_ACC_ABS0,  ES, 5e6),
+        E4(PA::VALUE_KILLED_ACC_ABS,   ES, 5e6),
         E4(PA::VALUE_KILLED_ACC_REL0,  LS, 100),       // value_killed_lifetime   / global_value_at_start
         E4(PA::VALUE_LOST_ABS,         ES, 5e6),
         E4(PA::VALUE_LOST_REL,         LS, 100),       // value_lost_this_turn    / global_value_last_turn
-        E4(PA::VALUE_LOST_ACC_ABS0,    ES, 5e6),
+        E4(PA::VALUE_LOST_ACC_ABS,     ES, 5e6),
         E4(PA::VALUE_LOST_ACC_REL0,    LS, 100),       // value_lost_lifetime     / global_value_at_start
         E4(PA::DMG_DEALT_ABS,          ES, 10e3),      // 6.5k max on 4x1024.vmap
         E4(PA::DMG_DEALT_REL,          LS, 100),       // dmg_dealt_this_turn     / global_hp_last_turn
-        E4(PA::DMG_DEALT_ACC_ABS0,     ES, 100e3),     // 45k max on 4x1024.vmap
+        E4(PA::DMG_DEALT_ACC_ABS,      ES, 100e3),     // 45k max on 4x1024.vmap
         E4(PA::DMG_DEALT_ACC_REL0,     LS, 100),       // dmg_dealt_lifetime      / global_hp_at_start
         E4(PA::DMG_RECEIVED_ABS,       ES, 10e3),
         E4(PA::DMG_RECEIVED_REL,       LS, 100),       // dmg_received_this_turn  / global_hp_last_turn
-        E4(PA::DMG_RECEIVED_ACC_ABS0,  ES, 100e3),
+        E4(PA::DMG_RECEIVED_ACC_ABS,   ES, 100e3),
         E4(PA::DMG_RECEIVED_ACC_REL0,  LS, 100),       // dmg_received_lifetime   / global_hp_at_start
     };
 

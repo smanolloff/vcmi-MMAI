@@ -670,7 +670,7 @@ namespace MMAI::BAI::V7 {
                     sym = std::string(1, stack->getAlias());
                     col = stack->getAttr(SA::SIDE) ? bluecol : redcol;
 
-                    if (stack->getAttr(SA::QUEUE_POS) == 0) // && !supdata->getIsBattleEnded()
+                    if (stack->getAttr(SA::QUEUE_POS) & 1) // && !supdata->getIsBattleEnded()
                         col += activemod;
 
                     if (flags.test(EI(SF::IS_WIDE)) && !seen) {
@@ -906,11 +906,19 @@ namespace MMAI::BAI::V7 {
                             break; default:
                                 THROW_FORMAT("Unexpected specialcounter: %d", specialcounter);
                             }
+                        } else if (a == SA::QUEUE_POS) {
+                            auto bits = std::bitset<QSIZE>(stack->getAttr(a));
+                            int i = 0;
+                            while (i < QSIZE) {
+                                if (bits.test(i)) break;
+                                ++i;
+                            }
+                            value = std::to_string(i);
                         } else {
                             value = std::to_string(stack->getAttr(a));
                         }
 
-                        if (stack->getAttr(SA::QUEUE_POS) == 0 && !supdata->getIsBattleEnded()) color += activemod;
+                        if ((stack->getAttr(SA::QUEUE_POS) & 1) && !supdata->getIsBattleEnded()) color += activemod;
                     }
 
                     auto colid = 2 + i + side + (max_stacks_per_side*side);

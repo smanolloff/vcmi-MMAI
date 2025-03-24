@@ -17,6 +17,7 @@
 
 #include "BAI/v10/attack_log.h"
 #include "BAI/v10/battlefield.h"
+#include "BAI/v10/player_stats.h"
 #include "BAI/v10/global_stats.h"
 // #include "BAI/v10/util.h"
 #include "schema/v10/types.h"
@@ -34,16 +35,18 @@ namespace MMAI::BAI::V10 {
         SupplementaryData(
             std::string colorname_,
             Side side_,
-            const GlobalStats* lgstats_,
-            const GlobalStats* rgstats_,
+            const GlobalStats* gstats_,
+            const PlayerStats* lpstats_,
+            const PlayerStats* rpstats_,
             const Battlefield* battlefield_,
             const std::vector<std::shared_ptr<AttackLog>> attackLogs_,
             std::vector<std::pair<Schema::Action, std::shared_ptr<Schema::BattlefieldState>>> transitions_,
             CombatResult result
         ) : colorname(colorname_),
             side(side_),
-            lgstats(lgstats_),
-            rgstats(rgstats_),
+            gstats(gstats_),
+            lpstats(lpstats_),
+            rpstats(rpstats_),
             battlefield(battlefield_),
             attackLogs(attackLogs_),
             transitions(transitions_),
@@ -64,15 +67,17 @@ namespace MMAI::BAI::V10 {
         const Schema::V10::Hexes getHexes() const override;
         const Schema::V10::AttackLogs getAttackLogs() const override;
         const Schema::V10::StateTransitions getStateTransitions() const override;
-        const Schema::V10::IGlobalStats* getGlobalStatsLeft() const override { return lgstats; }
-        const Schema::V10::IGlobalStats* getGlobalStatsRight() const override { return rgstats; }
+        const Schema::V10::IGlobalStats* getGlobalStats() const override { return gstats; }
+        const Schema::V10::IPlayerStats* getLeftPlayerStats() const override { return lpstats; }
+        const Schema::V10::IPlayerStats* getRightPlayerStats() const override { return rpstats; }
         const std::string getAnsiRender() const override { return ansiRender; }
 
         const std::string colorname;
         const Side side;
         const Battlefield* const battlefield;
-        const GlobalStats* const lgstats;
-        const GlobalStats* const rgstats;
+        const GlobalStats* const gstats;
+        const PlayerStats* const lpstats;
+        const PlayerStats* const rpstats;
         const std::vector<std::shared_ptr<AttackLog>> attackLogs;
         const bool ended = false;
         const bool victory = false;

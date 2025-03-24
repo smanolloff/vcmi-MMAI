@@ -65,9 +65,14 @@ namespace MMAI::BAI::V7 {
 
         auto tmp = std::vector<battle::Units>{};
         battle->battleGetTurnOrder(tmp, QSIZE, 0);
-        for (auto &units : tmp)
-            for (auto &unit : units)
-                res.push_back(unit->unitId());
+        for (auto &units : tmp) {
+            for (auto &unit : units) {
+                if (res.size() < QSIZE)
+                    res.push_back(unit->unitId());
+                else
+                    break;
+            }
+        }
 
         // XXX: after morale, battleGetTurnOrder() returns wrong order
         //      (where a non-active stack is first)
@@ -105,7 +110,7 @@ namespace MMAI::BAI::V7 {
                     hexstacks.insert({bh, stack});
 
             // XXX: at battle_end, stack->cstack != acstack even if qpos=0
-            if (stack->attr(SA::QUEUE_POS) == 0 && acstack)
+            if ((stack->attr(SA::QUEUE_POS) & 1) && acstack)
                 astack = stack.get();
         }
 

@@ -17,17 +17,20 @@
 
 #include "battle/BattleSide.h"
 #include "schema/v10/types.h"
+#include "BAI/v10/global_stats.h"
 
 namespace MMAI::BAI::V10 {
     using namespace Schema::V10;
 
-    class GlobalStats : public IGlobalStats {
+    class PlayerStats : public IPlayerStats {
     public:
-        GlobalStats(BattleSide side, int value, int hp);
-        int getAttr(GlobalAttribute a) const override;
-        int attr(GlobalAttribute a) const;
+        PlayerStats(BattleSide side, GlobalStats* gstats, int value, int hp);
+        void update(GlobalStats* gstats, int value, int hp);
+        int getAttr(PlayerAttribute a) const override;
+        int attr(PlayerAttribute a) const;
+        void addattr(PlayerAttribute a, int value);
     private:
-        void setattr(GlobalAttribute a, int value);
-        GlobalAttrs attrs = {};
+        void setattr(PlayerAttribute a, int value);
+        PlayerAttrs attrs = {};
     };
 }

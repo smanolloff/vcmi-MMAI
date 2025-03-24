@@ -25,6 +25,20 @@ namespace MMAI::BAI::V7 {
     using A = Schema::V7::StackAttribute;
     using F = Schema::V7::StackFlag;
 
+    // static
+    BitQueue Stack::QBits(const CStack* cstack, const Queue& vec) {
+        BitQueue result;
+        if (vec.size() != QSIZE)
+            throw std::runtime_error("Unexpected queue size: " + std::to_string(vec.size()));
+
+        for (auto i = 0; i < vec.size(); ++i) {
+            if (vec[i] == cstack->unitId())
+                result.set(i);
+        }
+
+        return result;
+    }
+
     Stack::Stack(const CStack* cstack_, Queue &q, bool blocked, bool blocking, DamageEstimation estdmg)
     : cstack(cstack_)
     {
@@ -40,9 +54,7 @@ namespace MMAI::BAI::V7 {
             alias = 'M';
         }
 
-        // queue pos needs to be set first to determine if stack is active
-        auto qit = std::find(q.begin(), q.end(), cstack->unitId());
-        auto qpos = (qit == q.end()) ? 100 : qit - q.begin();
+        auto qbits = QBits(cstack, q);
         auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
 
         // XXX: config/creatures/<faction>.json is misleading
@@ -307,7 +319,7 @@ namespace MMAI::BAI::V7 {
         if (cstack->occupiedHex().isAvailable())
             setflag(F::IS_WIDE);
 
-        if (qpos == 0)
+        if (qbits.test(0))
             setflag(F::IS_ACTIVE);
 
         shots = cstack->shots.available();
@@ -330,7 +342,7 @@ namespace MMAI::BAI::V7 {
         setattr(A::HP, cstack->getMaxHealth());
         setattr(A::HP_LEFT, cstack->getFirstHPleft());
         setattr(A::SPEED, cstack->getMovementRange());
-        setattr(A::QUEUE_POS, qpos);
+        setattr(A::QUEUE_POS, qbits.to_ulong());
         // setattr(A::ESTIMATED_DMG, dmgPercentHP);
         setattr(A::AI_VALUE, cstack->unitType()->getAIValue());
 

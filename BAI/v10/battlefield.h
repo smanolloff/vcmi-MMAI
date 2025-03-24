@@ -18,6 +18,7 @@
 
 #include "battle/CPlayerBattleCallback.h"
 
+#include "BAI/v10/attack_log.h"
 #include "BAI/v10/hex.h"
 #include "BAI/v10/stack.h"
 #include "common.h"
@@ -32,14 +33,17 @@ namespace MMAI::BAI::V10 {
         static std::shared_ptr<const Battlefield> Create(
             const CPlayerBattleCallback* battle,
             const CStack* astack_,
-            const GlobalStats* lgstats,
-            const GlobalStats* rgstats,
-            std::map<const CStack*, Stack::Stats> stacksStats,
+            const std::vector<std::shared_ptr<AttackLog>> attackLogs,
+            // const GlobalStats* lgstats,
+            // const GlobalStats* rgstats,
+            // std::map<const CStack*, Stack::Stats> stacksStats,
             bool isMorale
         );
 
         Battlefield(
-            const std::shared_ptr<Hexes> hexes,
+            const std::shared_ptr<GlobalStats> gstats,
+            const std::shared_ptr<PlayerStats> lpstats,
+            const std::shared_ptr<PlayerStats> rpstats,
             const Stacks stacks,
             const Stack* astack
         );

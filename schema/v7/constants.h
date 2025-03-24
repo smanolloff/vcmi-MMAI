@@ -125,6 +125,7 @@ namespace MMAI::Schema::V7 {
     constexpr int STACK_VALUE_MAX = 40000;  // archangel 9K, crystal dragon 39K, azure dragon 79K
     constexpr int ARMY_VALUE_MAX = 1000000;
     constexpr int CREATURE_ID_MAX = 149;  // H3 core has creature IDs 0..149
+    constexpr int QSIZE = 15;
 
     constexpr HexEncoding HEX_ENCODING {
         E4(HA::Y_COORD,                 CS, 10),
@@ -143,7 +144,7 @@ namespace MMAI::Schema::V7 {
         E4(HA::STACK_HP,                EE, 1300),     // azure dragon + all artifacts is 1254
         E4(HA::STACK_HP_LEFT,           EE, 1300),
         E4(HA::STACK_SPEED,             EE, 30),       // at 19=full reach; max is... 37?
-        E4(HA::STACK_QUEUE_POS,         EE, 15),       // 0..14, 0=active stack
+        E4(HA::STACK_QUEUE_POS,         BZ, (1<<QSIZE)-1),       // 0..14, 0=active stack
         // H4(SSTACK_A::ESTIMATED_DMG,  NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
         E4(HA::STACK_AI_VALUE,          EE, STACK_VALUE_MAX),
         E4(HA::STACK_FLAGS,             BE, (1<<EI(StackFlag::_count))-1),

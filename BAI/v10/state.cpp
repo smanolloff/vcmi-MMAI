@@ -98,24 +98,17 @@ namespace MMAI::BAI::V10 {
     , nullstack(InitNullStack())
     {
         auto [lv, lh, rv, rh] = CalcGlobalStats(battle);
-        lgstats = std::make_unique<GlobalStats>(lv, lh);
-        rgstats = std::make_unique<GlobalStats>(rv, rh);
-        battlefield = Battlefield::Create(battle_, nullptr, lgstats.get(), rgstats.get(), {}, false);
+        gstats = std::make_unique<GlobalStats>(battle->battleGetMySide(), lv + rv);
+        lpstats = std::make_unique<PlayerStats>(BattleSide::LEFT_SIDE, gstats, lv + rv, lv, lh);
+        rpstats = std::make_unique<PlayerStats>(BattleSide::RIGHT_SIDE, gstats, lv + rv, rv, rh);
+
+        battlefield = Battlefield::Create(battle_, nullptr, lpstats.get(), rpstats.get(), {}, false);
 
         bfstate.reserve(Schema::V10::BATTLEFIELD_STATE_SIZE);
         actmask.reserve(Schema::V10::N_ACTIONS);
     }
 
     void State::onActiveStack(const CStack* astack, CombatResult result, bool recording, bool fastpath) {
-        lgstats->dmgDealtNow = 0;
-        rgstats->dmgDealtNow = 0;
-        lgstats->dmgReceivedNow = 0;
-        rgstats->dmgReceivedNow = 0;
-        lgstats->valueKilledNow = 0;
-        rgstats->valueKilledNow = 0;
-        lgstats->valueLostNow = 0;
-        rgstats->valueLostNow = 0;
-
         for (auto &[cstack, ss] : stacksStats) {
             ss.dmgDealtNow = 0;
             ss.dmgReceivedNow = 0;
@@ -123,16 +116,15 @@ namespace MMAI::BAI::V10 {
             ss.valueLostNow = 0;
         }
 
-        auto [lv, lh, rv, rh] = CalcGlobalStats(battle);
-        lgstats->valuePrev = lgstats->valueNow;
-        lgstats->valueNow = lv;
-        lgstats->hpPrev = lgstats->hpNow;
-        lgstats->hpNow = lh;
+        // lgstats->valuePrev = lgstats->valueNow;
+        // lgstats->valueNow = lv;
+        // lgstats->hpPrev = lgstats->hpNow;
+        // lgstats->hpNow = lh;
 
-        rgstats->valuePrev = rgstats->valueNow;
-        rgstats->valueNow = rv;
-        rgstats->hpPrev = rgstats->hpNow;
-        rgstats->hpNow = rh;
+        // rgstats->valuePrev = rgstats->valueNow;
+        // rgstats->valueNow = rv;
+        // rgstats->hpPrev = rgstats->hpNow;
+        // rgstats->hpNow = rh;
 
         for (auto &al : attackLogs) {
             if (al->cattacker) {
@@ -141,30 +133,29 @@ namespace MMAI::BAI::V10 {
                 stacksStats[al->cattacker].valueKilledNow += al->value;
                 stacksStats[al->cattacker].valueKilledTotal += al->value;
 
-                auto s = al->cattacker->unitSide() == BattleSide::LEFT_SIDE ? lgstats.get() : rgstats.get();
-                s->dmgDealtNow += al->dmg;
-                s->dmgDealtTotal += al->dmg;
-                s->valueKilledNow += al->value;
-                s->valueKilledTotal += al->value;
+                auto pstats = (al->cattacker->unitSide() == BattleSide::LEFT_SIDE)
+                    ? lpstats.get() : rpstats.get();
+
+                pstats->addattr(PA::DMG_DEALT_ABS, al->dmg);
+                pstats->addattr(PA::DMG_DEALT_ACC_ABS, al->dmg);
+                pstats->addattr(PA::VALUE_KILLED_ABS, al->value);
+                pstats->addattr(PA::VALUE_KILLED_ACC_ABS, al->value);
             }
 
             ASSERT(al->cdefender, "AttackLog cdefender is nullptr!");
 
-            stacksStats[al->cdefender].dmgReceivedNow += al->dmg;
-            stacksStats[al->cdefender].dmgReceivedTotal += al->dmg;
-            stacksStats[al->cdefender].valueLostNow += al->value;
-            stacksStats[al->cdefender].valueLostTotal += al->value;
+            auto pstats = (al->cdefender->unitSide() == BattleSide::LEFT_SIDE)
+                ? lpstats.get() : rpstats.get();
 
-            auto s = al->cdefender->unitSide() == BattleSide::LEFT_SIDE ? lgstats.get() : rgstats.get();
-            s->dmgReceivedNow += al->dmg;
-            s->dmgReceivedTotal += al->dmg;
-            s->valueLostNow += al->value;
-            s->valueLostTotal += al->value;
+            pstats->addattr(PA::DMG_RECEIVED_ABS, al->dmg);
+            pstats->addattr(PA::DMG_RECEIVED_ACC_ABS, al->dmg);
+            pstats->addattr(PA::VALUE_LOST_ABS, al->value);
+            pstats->addattr(PA::VALUE_LOST_ACC_ABS, al->value);
         }
 
         // printf("Fastpath: %d\n", fastpath);
         if (!fastpath) {
-            battlefield = Battlefield::Create(battle, astack, lgstats.get(), rgstats.get(), stacksStats, isMorale);
+            battlefield = Battlefield::Create(battle, astack, lpstats.get(), rpstats.get(), stacksStats, isMorale);
             bfstate.clear();
             actmask.clear();
 

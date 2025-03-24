@@ -27,8 +27,6 @@ namespace MMAI::BAI::V7 {
     using XY = std::pair<int, int>;
     using DirHex = std::vector<std::pair<BattleHex::EDir, BattleHex>>;
 
-    constexpr int QSIZE = 15;
-
     class Battlefield {
     public:
         static std::shared_ptr<const Battlefield> Create(

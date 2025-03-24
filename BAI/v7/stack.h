@@ -19,11 +19,13 @@
 #include "CStack.h"
 
 #include "battle/IBattleInfoCallback.h"
+#include "schema/v7/constants.h"
 #include "schema/v7/types.h"
 
 namespace MMAI::BAI::V7 {
     using namespace Schema::V7;
     using Queue = std::vector<uint32_t>; // item=unit id
+    using BitQueue = std::bitset<QSIZE>;
 
     /**
      * A wrapper around CStack
@@ -31,6 +33,9 @@ namespace MMAI::BAI::V7 {
     class Stack : public Schema::V7::IStack {
     public:
         Stack(const CStack* cstack, Queue &q, bool blocked, bool blocking, DamageEstimation estdmg);
+
+        // not the quantum version :)
+        static BitQueue QBits(const CStack*, const Queue&);
 
         // IStack impl
         const StackAttrs& getAttrs() const override;
