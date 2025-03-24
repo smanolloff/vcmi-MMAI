@@ -133,7 +133,8 @@ namespace MMAI::BAI::V10 {
             {A::STACK_SPEED,                 SA::SPEED},
             {A::STACK_QUEUE,                 SA::QUEUE},
             {A::STACK_VALUE_ONE,             SA::VALUE_ONE},
-            {A::STACK_FLAGS,                 SA::FLAGS},
+            {A::STACK_FLAGS1,                SA::FLAGS1},
+            {A::STACK_FLAGS2,                SA::FLAGS2},
 
             {A::STACK_VALUE_REL,             SA::VALUE_REL},
             {A::STACK_VALUE_REL0,            SA::VALUE_REL0},

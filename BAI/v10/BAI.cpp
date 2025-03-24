@@ -174,7 +174,7 @@ namespace MMAI::BAI::V10 {
         auto ba = maybeBuildAutoAction(astack);
 
         if (ba) {
-            info("Making automatic action with stack %s", astack->getDescription());
+            info("Making automatic action with %s", astack->getDescription());
             cb->battleMakeUnitAction(bid, *ba);
             return;
         }
@@ -192,6 +192,11 @@ namespace MMAI::BAI::V10 {
 
 
         while(true) {
+            for (int i = 0; i < static_cast<int>(state->transitions.size()); ++i) {
+                auto [a, m, s] = state->transitions.at(i);
+                logAi->debug("PRE-GET_ACTION[%d]: m.size=" + std::to_string(m->size()) + ", s.size()=" + std::to_string(s->size()));
+            }
+
             auto a = getNonRenderAction();
             allactions.push_back(a);
 
@@ -503,10 +508,12 @@ namespace MMAI::BAI::V10 {
     }
 
     void BAI::actionStarted(const BattleID &bid, const BattleAction &action) {
+        Base::actionStarted(bid, action);
         state->onActionStarted(action);
     };
 
     void BAI::actionFinished(const BattleID &bid, const BattleAction &action) {
+        Base::actionFinished(bid, action);
         state->onActionFinished(action);
     };
 }

@@ -47,7 +47,8 @@ namespace MMAI::BAI::V10 {
     static_assert(EI(HA::STACK_SPEED)                   == EI(SA::SPEED) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_QUEUE)                   == EI(SA::QUEUE) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_VALUE_ONE)               == EI(SA::VALUE_ONE) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_FLAGS)                   == EI(SA::FLAGS) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_FLAGS1)                  == EI(SA::FLAGS1) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_FLAGS2)                  == EI(SA::FLAGS2) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_VALUE_REL)               == EI(SA::VALUE_REL) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_VALUE_REL0)              == EI(SA::VALUE_REL0) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_VALUE_KILLED_REL)        == EI(SA::VALUE_KILLED_REL) + STACK_ATTR_OFFSET);
@@ -155,6 +156,7 @@ namespace MMAI::BAI::V10 {
     }
 
     void State::onActiveStack(const CStack* astack, CombatResult result, bool recording, bool fastpath) {
+        logAi->debug("onActiveStack: result=%d, recording=%d, fastpath=%d", EI(result), recording, fastpath);
         auto [lv, lh, rv, rh] = CalcGlobalStats(battle);
         auto [ldd, ldr, lvk, lvl, rdd, rdr, rvk, rvl] = ProcessAttackLogs(attackLogs, sstats);
         auto ogstats = *gstats;  // a copy of the "old" gstats
@@ -163,7 +165,10 @@ namespace MMAI::BAI::V10 {
         rpstats->update(&ogstats, rv, rh, rdd, rdr, rvk, rvl);
 
         // printf("Fastpath: %d\n", fastpath);
-        if (!fastpath) {
+        if (fastpath) {
+            // means we are done with onActiveStack, and we can safely clear transitions now
+            transitions.clear();
+        } else {
             battlefield = Battlefield::Create(battle, astack, &ogstats, gstats.get(), sstats, isMorale);
             bfstate.clear();
             actmask.clear();
@@ -205,13 +210,13 @@ namespace MMAI::BAI::V10 {
 
         if (recording) {
             ASSERT(startedAction >= 0, "unexpected startedAction: " + std::to_string(startedAction));
-            // NOT: this creates a copy of bfstate (which is what we want)
+            // NOTE: this creates a copy of bfstate (which is what we want)
             transitions.push_back({startedAction, std::make_shared<Schema::ActionMask>(actmask), std::make_shared<Schema::BattlefieldState>(bfstate)});
-            actingStack = nullptr;
         } else {
-            startedAction = -1;
-            transitions.clear();
             actingStack = astack; // for fastpath, see onActionStarted
+            startedAction = -1;
+            // XXX: must NOT clear transitions here (can do it only after BAI's activeStack completes)
+            // transitions.clear();
         }
 
         attackLogs.clear(); // accumulate new logs until next turn
@@ -305,6 +310,18 @@ namespace MMAI::BAI::V10 {
      * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      */
     void State::onActionStarted(const BattleAction &action) {
+        _onActionStarted(action);
+        actingStack = nullptr;
+    }
+
+    void State::_onActionStarted(const BattleAction &action) {
+        if (!action.isUnitAction()) {
+            logAi->warn("Got non-unit action of type: %d", EI(action.actionType));
+            return;
+        }
+
+        auto stacks = battle->battleGetStacks();
+
         // Case A: << ENEMY TURN >>
         // 1. StupidAI makes action; vcmi calls ->
         // 2. State::onActionStart() calls ->                           // actingStack is nullptr
@@ -321,37 +338,20 @@ namespace MMAI::BAI::V10 {
 
         //
         // no need to create battlefield in 5, as it's the same as in 2.
-        // We could check only the unit's side, but since there are
-        // auto-acting units, comparing the exact unit seems safer.
-        //
-        // XXX: this is true only if actingStack was set in onActiveStack() i.e. on our turn
-        auto fastpath = !!actingStack;
-
-        actingStack = nullptr;
-        auto stacks = battle->battleGetStacks();
-
-        if (!action.isUnitAction()) {
-            logAi->warn("Got non-unit action of type: %d", EI(action.actionType));
-            return;
-        }
-
-        // std::shared_ptr<Stack> stack = nullptr;
-        // for (auto s : battlefield->stacks) {
-        //     if (stack->cstack->unitId() == action.stackNumber) {
-        //         stack = s;
-        //         break;
-        //     }
-        // }
-        // ASSERT(stack, "could not find stack unitId: " + std::to_string(action.stackNumber));
-
-        // XXX: tecnically, this loop is redundant if fastpath is true
-        //      using it for validation though
+        bool fastpath = false;
         bool found = false;
         for (auto cstack : battle->battleGetAllStacks(true)) {
             if (cstack->unitId() == action.stackNumber) {
-                if (actingStack && cstack != actingStack) {
-                    THROW_FORMAT("actingStack was already set to %s, but does not match the real acting stack %s", actingStack->getDescription() % cstack->getDescription());
+                if (actingStack) {
+                    // XXX: actingStack is already set here only if it was set in onActiveStack() i.e. on our turn
+                    // We could check only the unit's side, but since there are
+                    // auto-acting units, comparing the exact unit seems safer.
+                    fastpath = true;
+                    if (cstack != actingStack) {
+                        THROW_FORMAT("actingStack was already set to %s, but does not match the real acting stack %s", actingStack->getDescription() % cstack->getDescription());
+                    }
                 }
+
                 actingStack = cstack;
                 found = true;
                 break;
@@ -428,9 +428,11 @@ namespace MMAI::BAI::V10 {
             // Don't record a state diff for the other actions
             // (most are irrelevant or should never occur during training,
             //  except for MONSTER_SPELL, which can be fixed via cursed ground)
+            logAi->debug("Not recording actionType=%d", EI(action.actionType));
             return;
         }
 
+        logAi->debug("Recording actionType=%d", EI(action.actionType));
         onActiveStack(actingStack, CombatResult::NONE, true, fastpath);
     }
 

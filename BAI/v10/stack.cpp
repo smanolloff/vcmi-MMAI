@@ -26,7 +26,8 @@
 
 namespace MMAI::BAI::V10 {
     using A = Schema::V10::StackAttribute;
-    using F = Schema::V10::StackFlag;
+    using F1 = Schema::V10::StackFlag1;
+    using F2 = Schema::V10::StackFlag2;
 
     auto ValueCache = std::map<const CCreature*, float> {};
 
@@ -225,57 +226,60 @@ namespace MMAI::BAI::V10 {
             // break; case BonusType::NO_MORALE: minmorale = maxmorale = 0;
 
             /* 28% (42 creatures) */
-            break; case BonusType::FLYING: setflag(F::FLYING);
+            break; case BonusType::FLYING: setflag(F1::FLYING);
 
             /* 20% (29 creatures), but overlaps with SHOTS */
-            // break; case BonusType::SHOOTER: setattr(A::SHOOTER, 1);
+            break; case BonusType::SHOOTER: setflag(F1::SHOOTER);
 
             /* 10% (15 creatures) undead */
             /* +4% (6 creatures) unliving */
             /* +all war machines */
-            // break; case BonusType::UNDEAD: setattr(A::NON_LIVING, 2); minmorale = maxmorale = 0;
-            // break; case BonusType::NON_LIVING: setattr(A::NON_LIVING, 1); minmorale = maxmorale = 0;
-            // break; case BonusType::SIEGE_WEAPON:
+            break; case BonusType::UNDEAD: setflag(F1::NON_LIVING);
+            break; case BonusType::NON_LIVING: setflag(F1::NON_LIVING);
+            break; case BonusType::SIEGE_WEAPON: setflag(F1::WAR_MACHINE);
 
             /* 8.8% (13 creatures) */
-            break; case BonusType::BLOCKS_RETALIATION: setflag(F::BLOCKS_RETALIATION);
+            break; case BonusType::BLOCKS_RETALIATION: setflag(F1::BLOCKS_RETALIATION);
 
             /* 5.4% (8 creatures) */
-            break; case BonusType::NO_MELEE_PENALTY: setflag(F::NO_MELEE_PENALTY);
+            break; case BonusType::NO_MELEE_PENALTY: setflag(F1::NO_MELEE_PENALTY);
 
             /* 5.4% (8 creatures) */
-            break; case BonusType::TWO_HEX_ATTACK_BREATH: setflag(F::TWO_HEX_ATTACK_BREATH);
+            break; case BonusType::TWO_HEX_ATTACK_BREATH: setflag(F1::TWO_HEX_ATTACK_BREATH);
 
             /* 2.7% (4 creatures) */
-            break; case BonusType::ADDITIONAL_ATTACK: setflag(F::ADDITIONAL_ATTACK);
+            break; case BonusType::ADDITIONAL_ATTACK: setflag(F1::ADDITIONAL_ATTACK);
 
             break; case BonusType::SPELL_AFTER_ATTACK:
                 switch(bonus->subtype.as<SpellID>()) {
                 /* 1.4% (2 creatures) blind */
                 /* +2.7% (4 creatures) petrify */
                 /* +0.7% (1 creature) paralyze */
-                break; case SpellID::BLIND:
-                       case SpellID::STONE_GAZE:
-                       case SpellID::PARALYZE:
-                    setflag(F::BLIND_LIKE_ATTACK);
+                break; case SpellID::BLIND: setflag(F2::BLIND_ATTACK);
+                break; case SpellID::PARALYZE: setflag(F2::BLIND_ATTACK);
+                break; case SpellID::STONE_GAZE: setflag(F2::PETRIFY_ATTACK);
+
+                /* 1.4% (2 creatures) bind */
+                break; case SpellID::BIND: setflag(F2::BIND_ATTACK);
 
                 /* 1.4% (2 creatures) */
-                // break; case SpellID::WEAKNESS:
+                break; case SpellID::WEAKNESS: setflag(F2::WEAKNESS_ATTACK);
 
                 /* 1.4% (2 creatures) */
-                // break; case SpellID::DISEASE:
+                // break; case SpellID::DISEASE: setflag(F2::DISEASE_ATTACK);
 
                 /* 1.4% (2 creatures) */
-                // break; case SpellID::DISPEL:
+                break; case SpellID::DISPEL: setflag(F2::DISPEL_ATTACK);
+                break; case SpellID::DISPEL_HELPFUL_SPELLS: setflag(F2::DISPEL_ATTACK);
 
                 /* 0.7% (1 creature) */
-                // break; case SpellID::POISON:
+                break; case SpellID::POISON: setflag(F2::POISON_ATTACK);
 
                 /* 2% (3 creatures) */
-                // break; case SpellID::CURSE:
+                break; case SpellID::CURSE: setflag(F2::CURSE_ATTACK);
 
                 /* 0.7% (1 creature) */
-                // break; case SpellID::AGE:
+                break; case SpellID::AGE: setflag(F2::AGE_ATTACK);
 
                 /* 0.7% (1 creature) */
                 // break; case SpellID::THUNDERBOLT:
@@ -285,11 +289,11 @@ namespace MMAI::BAI::V10 {
             // break; case BonusType::SPELLCASTER:
 
             /* 2% (3 creatures) */
-            // break; case BonusType::SPELL_LIKE_ATTACK:
-            //     switch(bonus->subtype.as<SpellID>()) {
-            //     break; case SpellID::FIREBALL: addattr(A::AREA_ATTACK, 1);
-            //     break; case SpellID::DEATH_CLOUD: setattr(A::AREA_ATTACK, 2);
-            //     }
+            break; case BonusType::SPELL_LIKE_ATTACK:
+                switch(bonus->subtype.as<SpellID>()) {
+                break; case SpellID::FIREBALL: setflag(F1::FIREBALL);
+                break; case SpellID::DEATH_CLOUD: setflag(F1::DEATH_CLOUD);
+                }
 
             /* 2% (3 creatures) */
             // XXX: being near a unicorn does NOT not give MAGIC_RESISTSNCE
@@ -299,8 +303,8 @@ namespace MMAI::BAI::V10 {
 
             /* 1.4% (2 creatures) all-around attack */
             /* +0.7% (1 creature) 3-headed attack */
-            // break; case BonusType::THREE_HEADED_ATTACK: setattr(A::ATTACKS_ADJACENT, 1);
-            //        case BonusType::ATTACKS_ALL_ADJACENT: setattr(A::ATTACKS_ADJACENT, 2);
+            break; case BonusType::THREE_HEADED_ATTACK: setflag(F1::THREE_HEADED_ATTACK);
+            break; case BonusType::ATTACKS_ALL_ADJACENT: setflag(F1::ALL_AROUND_ATTACK);
 
             /* 1.4% (2 creatures) */
             // break; case BonusType::CHARGE_IMMUNITY:
@@ -312,7 +316,7 @@ namespace MMAI::BAI::V10 {
             // break; case BonusType::NO_WALL_PENALTY:
 
             /* 1.4% (2 creatures) */
-            // break; case BonusType::RETURN_AFTER_STRIKE:
+            break; case BonusType::RETURN_AFTER_STRIKE: setflag(F1::RETURN_AFTER_STRIKE);
 
             /* 0.02% (2 creatures per hate (1.4%) but only vs. 2 specific creatures (1.4%)) */
             // break; case BonusType::HATE:
@@ -333,16 +337,16 @@ namespace MMAI::BAI::V10 {
             // break; case BonusType::MIND_IMMUNITY:
 
             /* 1.4% (2 creatures) */
-            // break; case BonusType::ENEMY_DEFENCE_REDUCTION:
+            break; case BonusType::ENEMY_DEFENCE_REDUCTION: setflag(F1::ENEMY_DEFENCE_REDUCTION);
 
             /* 0.7% (1 creature) */
-            // break; case BonusType::FIRE_SHIELD:
+            // break; case BonusType::FIRE_SHIELD: setflag(F2::FIRE_SHIELD);
 
             /* 0.7% (1 creature) */
-            // break; case BonusType::LIFE_DRAIN:
+            break; case BonusType::LIFE_DRAIN: setflag(F1::LIFE_DRAIN);
 
             /* 0.7% (1 creature) */
-            // break; case BonusType::DOUBLE_DAMAGE_CHANCE:
+            break; case BonusType::DOUBLE_DAMAGE_CHANCE: setflag(F1::DOUBLE_DAMAGE_CHANCE);
 
             /* 0.7% (1 creature); but requires extra "cast" action */
             // break; case BonusType::RANDOM_SPELLCASTER:
@@ -353,7 +357,7 @@ namespace MMAI::BAI::V10 {
             /* 0.1% (7 creatures can cast this spell with a 20% chance). Overlaps with QUEUE_POS */
             break; case BonusType::NOT_ACTIVE:
                 if (cstack->unitType()->getId() != CreatureID::AMMO_CART)
-                    setflag(F::SLEEPING);
+                    setflag(F1::SLEEPING);
 
 
             /* <1% (petrified units, but only 2 other creatures may cast petrify wuth a small chance)) */
@@ -404,10 +408,10 @@ namespace MMAI::BAI::V10 {
             // break; case BonusType::FORGETFULL:
 
             /* 0.7% (1 creature) */
-            // break; case BonusType::DEATH_STARE:
+            break; case BonusType::DEATH_STARE: setflag(F1::DEATH_STARE);
 
             /* <0.1% only 1 creature may cast this spell with a small chance */
-            // break; case BonusType::POISON:
+            // break; case BonusType::POISON: setflag(F2::POISONED);
 
             /* 0.7% (1 creature) */
             // break; case BonusType::ACID_BREATH:
@@ -429,35 +433,61 @@ namespace MMAI::BAI::V10 {
             //     else if (st == SpellSchool::FIRE) addattr(A::FIRE_DAMAGE_REDUCTION, 100);
             //     else if (st == SpellSchool::EARTH) addattr(A::EARTH_DAMAGE_REDUCTION, 100);
             // }
-            break;
-          }
+            }
+
+            if (bonus->source == BonusSource::SPELL_EFFECT) {
+                switch (bonus->sid.as<SpellID>()) {
+                // break; case SpellID::ACID_BREATH_DAMAGE: setflag();
+                // break; case SpellID::ACID_BREATH_DEFENSE: setflag();
+                break; case SpellID::AGE: setflag(F2::AGE);
+                // break; case SpellID::AIR_SHIELD: setflag();
+                // break; case SpellID::ANTI_MAGIC: setflag();
+                // break; case SpellID::BERSERK: setflag();
+                break; case SpellID::BIND: setflag(F2::BIND);
+                // break; case SpellID::BLESS: setflag();
+                break; case SpellID::BLIND: setflag(F2::BLIND);
+                // break; case SpellID::BLOODLUST: setflag();
+                // break; case SpellID::CLONE: setflag();
+                break; case SpellID::CURSE: setflag(F2::CURSE);
+                // break; case SpellID::DISEASE: setflag();
+                // break; case SpellID::HASTE: setflag();
+                break; case SpellID::PARALYZE: setflag(F2::BLIND);
+                break; case SpellID::POISON: setflag(F2::POISON);
+                // break; case SpellID::PRAYER: setflag();
+                // break; case SpellID::SHIELD: setflag();
+                // break; case SpellID::SLOW: setflag();
+                break; case SpellID::STONE_GAZE: setflag(F2::PETRIFY);
+                // break; case SpellID::STONE_SKIN: setflag();
+                break; case SpellID::WEAKNESS: setflag(F2::WEAKNESS);
+                }
+            }
         }
 
         // double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
         // auto dmgPercentHP = std::clamp<int>(std::round(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
 
         if (cstack->willMove()) {
-            setflag(F::WILL_ACT);
+            setflag(F1::WILL_ACT);
             // XXX: do NOT use cstack->waited()
             //      (it returns cstack->waiting, which becomes false after acting)
             if (!cstack->waitedThisTurn)
-                setflag(F::CAN_WAIT);
+                setflag(F1::CAN_WAIT);
         }
 
         if (cstack->ableToRetaliate())
-            setflag(F::CAN_RETALIATE);
+            setflag(F1::CAN_RETALIATE);
 
         if (blocked)
-            setflag(F::BLOCKED);
+            setflag(F1::BLOCKED);
 
         if (blocking)
-            setflag(F::BLOCKING);
+            setflag(F1::BLOCKING);
 
         if (cstack->occupiedHex().isAvailable())
-            setflag(F::IS_WIDE);
+            setflag(F1::IS_WIDE);
 
         if (qbits.test(0))
-            setflag(F::IS_ACTIVE);
+            setflag(F1::IS_ACTIVE);
 
         shots = cstack->shots.available();
 
@@ -525,20 +555,32 @@ namespace MMAI::BAI::V10 {
         return attr(a);
     }
 
-    int Stack::getFlag(StackFlag sf) const {
+    int Stack::getFlag(StackFlag1 sf) const {
         return flag(sf);
     }
 
-    bool Stack::flag(StackFlag f) const {
-        return flags.test(EI(f));
+    int Stack::getFlag(StackFlag2 sf) const {
+        return flag(sf);
+    }
+
+    bool Stack::flag(StackFlag1 f) const {
+        return flags1.test(EI(f));
+    };
+
+    bool Stack::flag(StackFlag2 f) const {
+        return flags2.test(EI(f));
     };
 
     int Stack::attr(StackAttribute a) const {
         return attrs.at(EI(a));
     };
 
-    void Stack::setflag(StackFlag f) {
-        flags.set(EI(f));
+    void Stack::setflag(StackFlag1 f) {
+        flags1.set(EI(f));
+    };
+
+    void Stack::setflag(StackFlag2 f) {
+        flags2.set(EI(f));
     };
 
     void Stack::setattr(StackAttribute a, int value) {
@@ -552,6 +594,7 @@ namespace MMAI::BAI::V10 {
     std::map<const CCreature*, int> warned {};
 
     void Stack::finalize() {
-        setattr(A::FLAGS, flags.to_ulong());
+        setattr(A::FLAGS1, flags1.to_ulong());
+        setattr(A::FLAGS2, flags2.to_ulong());
     }
 }

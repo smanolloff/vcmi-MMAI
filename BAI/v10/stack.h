@@ -68,20 +68,24 @@ namespace MMAI::BAI::V10 {
         // IStack impl
         const StackAttrs& getAttrs() const override;
         int getAttr(StackAttribute a) const override;
-        int getFlag(StackFlag sf) const override;
+        int getFlag(StackFlag1 sf) const override;
+        int getFlag(StackFlag2 sf) const override;
         char getAlias() const override;
         char alias;
 
         const CStack* const cstack;
         const ReachabilityInfo rinfo;
         StackAttrs attrs = {};
-        StackFlags flags = 0;   //
+        StackFlags1 flags1 = 0;   //
+        StackFlags2 flags2 = 0;   //
 
         int attr(StackAttribute a) const;
-        bool flag(StackFlag f) const;
+        bool flag(StackFlag1 f) const;
+        bool flag(StackFlag2 f) const;
         int shots;
     private:
-        void setflag(StackFlag f);
+        void setflag(StackFlag1 f);
+        void setflag(StackFlag2 f);
         void setattr(StackAttribute a, int value);
         void addattr(StackAttribute a, int value);
         void finalize();

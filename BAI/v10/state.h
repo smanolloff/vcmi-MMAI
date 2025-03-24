@@ -52,6 +52,7 @@ namespace MMAI::BAI::V10 {
         void onBattleStacksAttacked(const std::vector<BattleStackAttacked> &bsa);
         void onBattleTriggerEffect(const BattleTriggerEffect &bte);
         void onActionStarted(const BattleAction &action);
+        void _onActionStarted(const BattleAction &action);
         void onActionFinished(const BattleAction &action);
         void onBattleEnd(const BattleResult *br);
 

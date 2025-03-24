@@ -220,7 +220,8 @@ namespace MMAI::Schema::V10 {
         E4(HA::STACK_QUEUE,             BZ, (1<<STACK_QUEUE_SIZE)-1),       // 0..14, 0=active stack
         // H4(SSTACK_A::ESTIMATED_DMG,  NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
         E4(HA::STACK_VALUE_ONE,         EE, STACK_VALUE_ONE_MAX),
-        E4(HA::STACK_FLAGS,             BE, (1<<EI(StackFlag::_count))-1),
+        E4(HA::STACK_FLAGS1,            BE, (1<<EI(StackFlag1::_count))-1),
+        E4(HA::STACK_FLAGS2,            BE, (1<<EI(StackFlag2::_count))-1),
 
         E4(HA::STACK_VALUE_REL,             LE, 100),
         E4(HA::STACK_VALUE_REL0,            LE, 100),

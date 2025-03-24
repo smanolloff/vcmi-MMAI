@@ -380,7 +380,8 @@ namespace MMAI::Schema::V10 {
         STACK_QUEUE,
         // STACK_ESTIMATED_DMG,
         STACK_VALUE_ONE,
-        STACK_FLAGS,
+        STACK_FLAGS1,
+        STACK_FLAGS2,
 
         STACK_VALUE_REL,
         STACK_VALUE_REL0,
@@ -411,7 +412,8 @@ namespace MMAI::Schema::V10 {
         QUEUE,
         // ESTIMATED_DMG,
         VALUE_ONE,
-        FLAGS,
+        FLAGS1,
+        FLAGS2,
 
 
         // RELATIVE values
@@ -428,7 +430,8 @@ namespace MMAI::Schema::V10 {
         _count
     };
 
-    enum class StackFlag : int {
+    // flags are split into two, as they can't fit in a single int
+    enum class StackFlag1 : int {
         IS_ACTIVE,
         WILL_ACT,
         CAN_WAIT,
@@ -438,12 +441,42 @@ namespace MMAI::Schema::V10 {
         BLOCKING,
         IS_WIDE,
         FLYING,
-        BLIND_LIKE_ATTACK,          // 1=20% chance (unicorns, medusas, basilisks, scorpicores)
         ADDITIONAL_ATTACK,          /*val: number of additional attacks to perform*/
         NO_MELEE_PENALTY,
         TWO_HEX_ATTACK_BREATH,      /*eg. dragons*/
         BLOCKS_RETALIATION,         /*eg. naga*/
+        SHOOTER,
+        NON_LIVING,
+        WAR_MACHINE,
+        FIREBALL,
+        DEATH_CLOUD,
+        THREE_HEADED_ATTACK,
+        ALL_AROUND_ATTACK,
+        RETURN_AFTER_STRIKE,
+        ENEMY_DEFENCE_REDUCTION,
+        LIFE_DRAIN,
+        DOUBLE_DAMAGE_CHANCE,
+        DEATH_STARE,
 
+        _count
+    };
+
+    enum class StackFlag2 : int {
+        AGE,
+        AGE_ATTACK,
+        BIND,
+        BIND_ATTACK,
+        BLIND,
+        BLIND_ATTACK,
+        CURSE,
+        CURSE_ATTACK,
+        DISPEL_ATTACK,
+        PETRIFY,
+        PETRIFY_ATTACK,
+        POISON,
+        POISON_ATTACK,
+        WEAKNESS,
+        WEAKNESS_ATTACK,
         _count
     };
 
@@ -505,13 +538,15 @@ namespace MMAI::Schema::V10 {
     using PlayerAttrs = std::array<int, static_cast<int>(PlayerAttribute::_count)>;
     using HexAttrs = std::array<int, static_cast<int>(HexAttribute::_count)>;
     using StackAttrs = std::array<int, static_cast<int>(StackAttribute::_count)>;
-    using StackFlags = std::bitset<EI(StackFlag::_count)>;
+    using StackFlags1 = std::bitset<EI(StackFlag1::_count)>;
+    using StackFlags2 = std::bitset<EI(StackFlag2::_count)>;
 
     class IStack {
     public:
         virtual const StackAttrs& getAttrs() const = 0;
         virtual int getAttr(StackAttribute) const = 0;
-        virtual int getFlag(StackFlag) const = 0;
+        virtual int getFlag(StackFlag1) const = 0;
+        virtual int getFlag(StackFlag2) const = 0;
         virtual char getAlias() const = 0;
         virtual ~IStack() = default;
     };

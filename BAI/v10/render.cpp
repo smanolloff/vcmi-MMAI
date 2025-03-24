@@ -18,6 +18,7 @@
 #include "battle/BattleAttackInfo.h"
 #include "battle/CObstacleInstance.h"
 #include "battle/IBattleInfoCallback.h"
+#include "bonuses/Bonus.h"
 #include "constants/EntityIdentifiers.h"
 #include "mapObjects/CGTownInstance.h"
 #include "vcmi/spells/Caster.h"
@@ -30,7 +31,8 @@
 
 namespace MMAI::BAI::V10 {
     using SA = StackAttribute;
-    using SF = StackFlag;
+    using SF1 = StackFlag1;
+    using SF2 = StackFlag2;
     using LT = LinkType;
 
     std::string PadLeft(const std::string& input, size_t desiredLength, char paddingChar) {
@@ -155,8 +157,10 @@ namespace MMAI::BAI::V10 {
             expect(checkReachable(bh, v, stack), "%s: (bhex=%d) reachability expected: %d", attrname, bh.toInt(), v);
         };
 
-        auto ensureValueMatch = [](int have, int want, const char* attrname) {
-            expect(have == want, "%s: have: %d, want: %d", attrname, have, want);
+        auto ensureValueMatch = [](int have, int want, const char* attrname, std::string desc = "") {
+            desc.empty()
+                ? expect(have == want, "%s: have: %d, want: %d", attrname, have, want)
+                : expect(have == want, "%s: have: %d, want: %d (%s)", attrname, have, want, desc.c_str());
         };
 
         auto ensureStackNullOrMatch = [=](HexAttribute a, const CStack* cstack, int have, std::function<int()> wantfunc, const char* attrname) {
@@ -398,7 +402,7 @@ namespace MMAI::BAI::V10 {
                     }
                 }
                 break; case HA::IS_REAR: {
-                    ensureValueMatch(v, cstack ? cstack->occupiedHex() == hex->bhex : 0, "HEX.STACK_FLAGS.IS_REAR");
+                    ensureValueMatch(v, cstack ? cstack->occupiedHex() == hex->bhex : 0, "HEX.IS_REAR");
                 }
                 break; case HA::STACK_SIDE:
                     ensureStackNullOrMatch(attr, cstack, v, [&] { return EI(cstack->unitSide()); }, "HA.STACK_SIDE");
@@ -478,40 +482,40 @@ namespace MMAI::BAI::V10 {
                 break; case HA::STACK_DMG_RECEIVED_REL:
                 break; case HA::STACK_DMG_RECEIVED_ACC_REL0:
 
-                break; case HA::STACK_FLAGS: {
+                break; case HA::STACK_FLAGS1: {
                     if (!isNA(v, cstack, "HEX.STACK_FLAGS")) {
-                        for (int j=0; j<EI(StackFlag::_count); j++) {
-                            auto f = StackFlag(j);
+                        for (int j=0; j<EI(StackFlag1::_count); j++) {
+                            auto f = StackFlag1(j);
                             auto vf = hex->stack->flag(f);
 
                             switch(f) {
-                            break; case SF::IS_ACTIVE:
+                            break; case SF1::IS_ACTIVE:
                                 // at battle end, queue is messed up
                                 // (the stack that dealt the killing blow is still "active", but not on 0 pos)
                                 if (ended)
                                     break;
 
                                 if (vf == 0)
-                                    expect(cstack != astack, "HEX.STACK_FLAGS.IS_ACTIVE: =0 but cstack == astack");
+                                    expect(cstack != astack, "HEX.STACK_FLAGS1.IS_ACTIVE: =0 but cstack == astack");
                                 else
-                                    expect(cstack == astack, "HEX.STACK_FLAGS.IS_ACTIVE: =%d but cstack != astack", vf);
-                            break; case SF::CAN_WAIT:
-                                ensureValueMatch(vf, cstack->willMove() && !cstack->waitedThisTurn, "HEX.STACK_FLAGS.CAN_WAIT");
-                            break; case SF::WILL_ACT:
-                                ensureValueMatch(vf, cstack->willMove(), "HEX.STACK_FLAGS.WILL_ACT");
-                            break; case SF::CAN_RETALIATE:
+                                    expect(cstack == astack, "HEX.STACK_FLAGS1.IS_ACTIVE: =%d but cstack != astack", vf);
+                            break; case SF1::WILL_ACT:
+                                ensureValueMatch(vf, cstack->willMove(), "HEX.STACK_FLAGS1.WILL_ACT");
+                            break; case SF1::CAN_WAIT:
+                                ensureValueMatch(vf, cstack->willMove() && !cstack->waitedThisTurn, "HEX.STACK_FLAGS1.CAN_WAIT");
+                            break; case SF1::CAN_RETALIATE:
                                 // XXX: ableToRetaliate() calls CAmmo's (i.e. CRetaliations's) canUse() method
                                 //      which takes into account relevant bonuses (e.g. NO_RETALIATION from expert Blind)
                                 //      It does *NOT* take into account the attacker's BLOCKS_RETALIATION bonus
                                 //      (if it did, what would be the correct CAN_RETALIATE value for friendly units?)
-                                ensureValueMatch(vf, cstack->ableToRetaliate(), "HEX.STACK_FLAGS.CAN_RETALIATE");
-                            break; case SF::SLEEPING:
+                                ensureValueMatch(vf, cstack->ableToRetaliate(), "HEX.STACK_FLAGS1.CAN_RETALIATE");
+                            break; case SF1::SLEEPING:
                                 cstack->unitType()->getId() == CreatureID::AMMO_CART
-                                    ? ensureValueMatch(vf, false, "HEX.STACK_FLAGS.SLEEPING")
-                                    : ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NOT_ACTIVE), "HEX.STACK_FLAGS.SLEEPING");
-                            break; case SF::BLOCKED:
-                                ensureValueMatch(vf, cstack->canShoot() && battle->battleIsUnitBlocked(cstack), "HEX.STACK_FLAGS.TWO_HEX_ATTACK_BREATH");
-                            break; case SF::BLOCKING: {
+                                    ? ensureValueMatch(vf, false, "HEX.STACK_FLAGS1.SLEEPING")
+                                    : ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NOT_ACTIVE), "HEX.STACK_FLAGS1.SLEEPING");
+                            break; case SF1::BLOCKED:
+                                ensureValueMatch(vf, cstack->canShoot() && battle->battleIsUnitBlocked(cstack), "HEX.STACK_FLAGS1.TWO_HEX_ATTACK_BREATH");
+                            break; case SF1::BLOCKING: {
                                 auto want = 0;
                                 for (auto &adjstack : battle->battleAdjacentUnits(cstack)) {
                                     if (adjstack->unitSide() != cstack->unitSide() && adjstack->canShoot() && battle->battleIsUnitBlocked(adjstack)) {
@@ -519,44 +523,98 @@ namespace MMAI::BAI::V10 {
                                         break;
                                     }
                                 }
-                                ensureValueMatch(vf, bool(want), "HEX.STACK_FLAGS.BLOCKING");
+                                ensureValueMatch(vf, bool(want), "HEX.STACK_FLAGS1.BLOCKING");
                             }
-                            break; case SF::IS_WIDE:
-                                ensureValueMatch(vf, cstack->doubleWide(), "HEX.STACK_FLAGS.IS_WIDE");
-                            break; case SF::FLYING:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "HEX.STACK_FLAGS.FLYING");
-                            break; case SF::BLIND_LIKE_ATTACK: {
-                                auto spell_after_attack_bonuses = BonusList();
-                                auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
-                                bonuses->getBonuses(spell_after_attack_bonuses, Selector::type()(BonusType::SPELL_AFTER_ATTACK), nullptr);
-                                auto castchance = [&spell_after_attack_bonuses](std::vector<SpellID> spellids) {
-                                    // TODO: what about BLOCK_MAGIC_ABOVE / BLOCK_ALL_MAGIC
-                                    //       Isn't the chance always 0 then?
-                                    int res = 0;
+                            break; case SF1::IS_WIDE:
+                                ensureValueMatch(vf, cstack->doubleWide(), "HEX.STACK_FLAGS1.IS_WIDE");
+                            break; case SF1::FLYING:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "HEX.STACK_FLAGS1.FLYING");
+                            break; case SF1::ADDITIONAL_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ADDITIONAL_ATTACK), "HEX.STACK_FLAGS1.ADDITIONAL_ATTACK");
+                            break; case SF1::NO_MELEE_PENALTY:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NO_MELEE_PENALTY), "HEX.STACK_FLAGS1.NO_MELEE_PENALTY");
+                            break; case SF1::TWO_HEX_ATTACK_BREATH:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::TWO_HEX_ATTACK_BREATH), "HEX.STACK_FLAGS1.TWO_HEX_ATTACK_BREATH");
+                            break; case SF1::BLOCKS_RETALIATION:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::BLOCKS_RETALIATION), "HEX.STACK_FLAGS1.BLOCKS_RETALIATION");
 
-                                    auto sel = CSelector(Selector::subtype()(spellids.at(0)));
-                                    for (auto it = spellids.begin()+1; it != spellids.end(); ++it)
-                                        sel = sel.Or(Selector::subtype()(*it));
 
-                                    auto selected = BonusList();
-                                    spell_after_attack_bonuses.getBonuses(selected, sel);
-                                    for (auto &bonus : selected)
-                                        res += bonus->val;
-                                    return res;
-                                };
-
-                                ensureValueMatch(vf, castchance({SpellID::BLIND, SpellID::STONE_GAZE, SpellID::PARALYZE}) > 0, "HEX.STACK_FLAGS.BLIND_LIKE_ATTACK");
+                            break; case SF1::SHOOTER:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SHOOTER), "HEX.STACK_FLAGS1.SHOOTER");
+                                ensureValueMatch(vf, cstack->canShoot(), "HEX.STACK_FLAGS1.SHOOTER (canShoot)");
+                            break; case SF1::NON_LIVING: {
+                                auto undead = cstack->hasBonusOfType(BonusType::UNDEAD);
+                                auto nonliving = cstack->hasBonusOfType(BonusType::NON_LIVING);
+                                ensureValueMatch(vf, undead || nonliving, "HEX.STACK_FLAGS1.NON_LIVING", cstack->getDescription());
                             }
-                            break; case SF::ADDITIONAL_ATTACK:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ADDITIONAL_ATTACK), "HEX.STACK_FLAGS.ADDITIONAL_ATTACK");
-                            break; case SF::NO_MELEE_PENALTY:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::NO_MELEE_PENALTY), "HEX.STACK_FLAGS.NO_MELEE_PENALTY");
-                            break; case SF::TWO_HEX_ATTACK_BREATH:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::TWO_HEX_ATTACK_BREATH), "HEX.STACK_FLAGS.TWO_HEX_ATTACK_BREATH");
-                            break; case SF::BLOCKS_RETALIATION:
-                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::BLOCKS_RETALIATION), "HEX.STACK_FLAGS.BLOCKS_RETALIATION");
+                            break; case SF1::WAR_MACHINE:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SIEGE_WEAPON), "HEX.STACK_FLAGS1.WAR_MACHINE");
+                            break; case SF1::FIREBALL:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_LIKE_ATTACK, SpellID(SpellID::FIREBALL)), "HEX.STACK_FLAGS1.FIREBALL");
+                            break; case SF1::DEATH_CLOUD:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_LIKE_ATTACK, SpellID(SpellID::DEATH_CLOUD)), "HEX.STACK_FLAGS1.DEATH_CLOUD");
+                            break; case SF1::THREE_HEADED_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::THREE_HEADED_ATTACK), "HEX.STACK_FLAGS1.THREE_HEADED_ATTACK");
+                            break; case SF1::ALL_AROUND_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ATTACKS_ALL_ADJACENT), "HEX.STACK_FLAGS1.ALL_AROUND_ATTACK");
+                            break; case SF1::RETURN_AFTER_STRIKE:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::RETURN_AFTER_STRIKE), "HEX.STACK_FLAGS1.RETURN_AFTER_STRIKE");
+                            break; case SF1::ENEMY_DEFENCE_REDUCTION:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::ENEMY_DEFENCE_REDUCTION), "HEX.STACK_FLAGS1.ENEMY_DEFENCE_REDUCTION");
+                            break; case SF1::LIFE_DRAIN:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::LIFE_DRAIN), "HEX.STACK_FLAGS1.LIFE_DRAIN");
+                            break; case SF1::DOUBLE_DAMAGE_CHANCE:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::DOUBLE_DAMAGE_CHANCE), "HEX.STACK_FLAGS1.DOUBLE_DAMAGE_CHANCE");
+                            break; case SF1::DEATH_STARE:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::DEATH_STARE), "HEX.STACK_FLAGS1.DEATH_STARE");
                             break; default:
                                 THROW_FORMAT("Unexpected StackFlag: %d", EI(f));
+                            }
+                        }
+                    }
+                }
+                break; case HA::STACK_FLAGS2: {
+                    if (!isNA(v, cstack, "HEX.STACK_FLAGS")) {
+                        for (int j=0; j<EI(StackFlag2::_count); j++) {
+                            auto f = StackFlag2(j);
+                            auto vf = hex->stack->flag(f);
+
+                            switch(f) {
+                            break; case SF2::AGE:
+                                ensureValueMatch(vf, cstack->hasBonusFrom(BonusSource::SPELL_EFFECT, SpellID(SpellID::AGE)), "HEX.STACK_FLAGS2.AGE");
+                            break; case SF2::AGE_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::AGE)), "HEX.STACK_FLAGS2.AGE_ATTACK");
+                            break; case SF2::BIND:
+                                ensureValueMatch(vf, cstack->hasBonusFrom(BonusSource::SPELL_EFFECT, SpellID(SpellID::BIND)), "HEX.STACK_FLAGS2.BIND");
+                            break; case SF2::BIND_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::BIND)), "HEX.STACK_FLAGS2.BIND_ATTACK");
+                            break; case SF2::BLIND:
+                                ensureValueMatch(vf, cstack->hasBonusFrom(BonusSource::SPELL_EFFECT, SpellID(SpellID::BLIND)), "HEX.STACK_FLAGS2.BLIND");
+                            break; case SF2::BLIND_ATTACK: {
+                                auto blind = cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::BLIND));
+                                auto paralyze = cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::PARALYZE));
+                                ensureValueMatch(vf, blind || paralyze, "HEX.STACK_FLAGS2.BLIND_ATTACK");
+                            }
+                            break; case SF2::CURSE:
+                                ensureValueMatch(vf, cstack->hasBonusFrom(BonusSource::SPELL_EFFECT, SpellID(SpellID::CURSE)), "HEX.STACK_FLAGS2.CURSE");
+                            break; case SF2::CURSE_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::CURSE)), "HEX.STACK_FLAGS2.CURSE_ATTACK");
+                            break; case SF2::DISPEL_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::DISPEL_HELPFUL_SPELLS)), "HEX.STACK_FLAGS2.DISPEL_ATTACK");
+                            break; case SF2::PETRIFY:
+                                ensureValueMatch(vf, cstack->hasBonusFrom(BonusSource::SPELL_EFFECT, SpellID(SpellID::STONE_GAZE)), "HEX.STACK_FLAGS2.PETRIFY");
+                            break; case SF2::PETRIFY_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::STONE_GAZE)), "HEX.STACK_FLAGS2.PETRIFY_ATTACK");
+                            break; case SF2::POISON:
+                                ensureValueMatch(vf, cstack->hasBonusFrom(BonusSource::SPELL_EFFECT, SpellID(SpellID::POISON)), "HEX.STACK_FLAGS2.POISON");
+                            break; case SF2::POISON_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::POISON)), "HEX.STACK_FLAGS2.POISON_ATTACK");
+                            break; case SF2::WEAKNESS:
+                                ensureValueMatch(vf, cstack->hasBonusFrom(BonusSource::SPELL_EFFECT, SpellID(SpellID::WEAKNESS)), "HEX.STACK_FLAGS2.WEAKNESS");
+                            break; case SF2::WEAKNESS_ATTACK:
+                                ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::SPELL_AFTER_ATTACK, SpellID(SpellID::WEAKNESS)), "HEX.STACK_FLAGS2.WEAKNESS_ATTACK");
+                            break; default:
+                                THROW_FORMAT("Unexpected StackFlag2: %d", EI(f));
                             }
                         }
                     }
@@ -595,7 +653,7 @@ namespace MMAI::BAI::V10 {
         for (auto &row : hexes) {
             for (auto &hex : row) {
                 auto stack = hex->getStack();
-                if (stack && stack->getFlag(SF::IS_ACTIVE)) {
+                if (stack && stack->getFlag(SF1::IS_ACTIVE)) {
                     expect(!astack || astack == stack, "two active stacks found");
                     astack = stack;
                 }
@@ -747,15 +805,15 @@ namespace MMAI::BAI::V10 {
 
                 if (stack) {
                     auto seen = seenstacks.find(stack) != seenstacks.end();
-                    auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS));
-                    auto flags = std::bitset<n>(stack->getAttr(SA::FLAGS));
+                    auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
+                    auto flags = std::bitset<n>(stack->getAttr(SA::FLAGS1));
                     sym = std::string(1, stack->getAlias());
                     col = stack->getAttr(SA::SIDE) ? bluecol : redcol;
 
                     if ((stack->getAttr(SA::QUEUE) & 1)) // && !supdata->getIsBattleEnded()
                         col += activemod;
 
-                    if (flags.test(EI(SF::IS_WIDE)) && !seen) {
+                    if (flags.test(EI(SF1::IS_WIDE)) && !seen) {
                         if (stack->getAttr(SA::SIDE) == 0) {
                             sym += "↠";
                             addspace = false;
@@ -851,7 +909,7 @@ namespace MMAI::BAI::V10 {
 
         // All cell text is aligned right
         auto colwidths = std::array<int, 4 + 2*max_stacks_per_side>{};
-        colwidths.fill(4); // default col width
+        colwidths.fill(5); // default col width
         colwidths.at(0) = 16; // header col
 
         // Divider column indexes
@@ -862,7 +920,7 @@ namespace MMAI::BAI::V10 {
 
         // {Attribute, name, colwidth}
         const auto rowdefs = std::vector<RowDef> {
-            RowDef{SA::FLAGS, "Stack #"},  // stack alias (1..7, S or M)
+            RowDef{SA::FLAGS1, "Stack #"},  // stack alias (1..7, S or M)
             RowDef{SA::SIDE, ""},  // divider row
             RowDef{SA::QUANTITY, "Qty"},
             RowDef{SA::ATTACK, "Attack"},
@@ -877,13 +935,13 @@ namespace MMAI::BAI::V10 {
             RowDef{SA::VALUE_ONE, "Value (one)"},
             RowDef{SA::VALUE_REL, "Value (%)"},
             // RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
-            RowDef{SA::FLAGS, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
-            RowDef{SA::FLAGS, "Attack mods"}, // "DB" = Double, Blinding
+            RowDef{SA::FLAGS1, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
+            RowDef{SA::FLAGS1, "Attack mods"}, // "DB" = Double, Blinding
             // 2 values per column to avoid too long table
-            RowDef{SA::FLAGS, "Blocked/ing"},
-            RowDef{SA::FLAGS, "Fly/Sleep"},
-            RowDef{SA::FLAGS, "NoRetal/NoMelee"},
-            RowDef{SA::FLAGS, "Wide/Breath"},
+            RowDef{SA::FLAGS1, "Blocked/ing"},
+            RowDef{SA::FLAGS1, "Fly/Sleep"},
+            RowDef{SA::FLAGS1, "NoRetal/NoMelee"},
+            RowDef{SA::FLAGS1, "Wide/Breath"},
             RowDef{SA::SIDE, ""},  // divider row
         };
 
@@ -942,8 +1000,9 @@ namespace MMAI::BAI::V10 {
                     std::string value = "";
 
                     if (stack) {
-                        auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS));
-                        auto flags = std::bitset<n>(stack->getAttr(SA::FLAGS));
+                        auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
+                        auto flags1 = std::bitset<n>(stack->getAttr(SA::FLAGS1));
+                        auto flags2 = std::bitset<n>(stack->getAttr(SA::FLAGS1));
 
                         color = stack->getAttr(SA::SIDE) ? bluecol : redcol;
                         // } else if (a == SA::ACTSTATE) {
@@ -969,7 +1028,7 @@ namespace MMAI::BAI::V10 {
                             value[value.size()-2] = 'k';
                             if (value.rfind("K0") == (value.size() - 2))
                                 value.resize(value.size() - 1);
-                        } else if (a == SA::FLAGS) {
+                        } else if (a == SA::FLAGS1) {
                             auto fmt = boost::format("%d/%d");
 
 // Y_COORD, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
@@ -982,19 +1041,19 @@ namespace MMAI::BAI::V10 {
                             break; case 0: value = std::string(1, stack->getAlias());
                             break; case 1: {
                                 value = std::string("");
-                                value += flags.test(EI(SF::CAN_WAIT)) ? "W" : " ";
-                                value += flags.test(EI(SF::WILL_ACT)) ? "A" : " ";
-                                value += flags.test(EI(SF::CAN_RETALIATE)) ? "R" : " ";
+                                value += flags1.test(EI(SF1::CAN_WAIT)) ? "W" : " ";
+                                value += flags1.test(EI(SF1::WILL_ACT)) ? "A" : " ";
+                                value += flags1.test(EI(SF1::CAN_RETALIATE)) ? "R" : " ";
                             }
                             break; case 2: {
                                 value = std::string("");
-                                value += flags.test(EI(SF::ADDITIONAL_ATTACK)) ? "D" : " ";
-                                value += flags.test(EI(SF::BLIND_LIKE_ATTACK)) ? "B" : " ";
+                                value += flags1.test(EI(SF1::ADDITIONAL_ATTACK)) ? "D" : " ";
+                                value += flags2.test(EI(SF2::BLIND_ATTACK)) ? "B" : " ";
                             }
-                            break; case 3: value = boost::str(fmt % flags.test(EI(SF::BLOCKED)) % flags.test(EI(SF::BLOCKING)));
-                            break; case 4: value = boost::str(fmt % flags.test(EI(SF::FLYING)) % flags.test(EI(SF::SLEEPING)));
-                            break; case 5: value = boost::str(fmt % flags.test(EI(SF::BLOCKS_RETALIATION)) % flags.test(EI(SF::NO_MELEE_PENALTY)));
-                            break; case 6: value = boost::str(fmt % flags.test(EI(SF::IS_WIDE)) % flags.test(EI(SF::TWO_HEX_ATTACK_BREATH)));
+                            break; case 3: value = boost::str(fmt % flags1.test(EI(SF1::BLOCKED)) % flags1.test(EI(SF1::BLOCKING)));
+                            break; case 4: value = boost::str(fmt % flags1.test(EI(SF1::FLYING)) % flags1.test(EI(SF1::SLEEPING)));
+                            break; case 5: value = boost::str(fmt % flags1.test(EI(SF1::BLOCKS_RETALIATION)) % flags1.test(EI(SF1::NO_MELEE_PENALTY)));
+                            break; case 6: value = boost::str(fmt % flags1.test(EI(SF1::IS_WIDE)) % flags1.test(EI(SF1::TWO_HEX_ATTACK_BREATH)));
                             break; default:
                                 THROW_FORMAT("Unexpected specialcounter: %d", specialcounter);
                             }
@@ -1010,7 +1069,7 @@ namespace MMAI::BAI::V10 {
                 }
             }
 
-            if (a == SA::FLAGS)
+            if (a == SA::FLAGS1)
                 ++specialcounter;
 
             table.push_back(row);
