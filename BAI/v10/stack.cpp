@@ -163,8 +163,8 @@ namespace MMAI::BAI::V10 {
     Stack::Stack(
         const CStack* cstack_,
         Queue &q,
-        const GlobalStats *lgstats,
-        const GlobalStats *rgstats,
+        const GlobalStats* ogstats,
+        const GlobalStats* gstats,
         const Stats stats,
         const ReachabilityInfo rinfo_,
         bool blocked,
@@ -182,13 +182,13 @@ namespace MMAI::BAI::V10 {
         } else if (slot == SlotID::WAR_MACHINES_SLOT) {
             // "machine" slot
             alias = 'M';
-            slot = 7;
+            slot = STACK_SLOT_WARMACHINES;
         } else {
             // "special" slot
             // SlotID::SUMMONED_SLOT_PLACEHOLDER
             // SlotID::COMMANDER_SLOT_PLACEHOLDER
             alias = 'S';
-            slot = 8;
+            slot = STACK_SLOT_OTHER;
         }
 
         // queue pos needs to be set first to determine if stack is active
@@ -486,11 +486,11 @@ namespace MMAI::BAI::V10 {
         // setattr(A::ESTIMATED_DMG, dmgPercentHP);
 
         // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] lgstats->valueNow:" << lgstats->valueNow << ", rgstats->valueNow: " << rgstats->valueNow << "\n";
-        auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
-        auto bf_valuePrev = lgstats->valuePrev + rgstats->valuePrev;
-        auto bf_valueStart = lgstats->valueStart + rgstats->valueStart;
-        auto bf_hpPrev = lgstats->hpPrev + rgstats->hpPrev;
-        auto bf_hpStart = lgstats->hpStart + rgstats->hpStart;
+        auto bf_valueNow = gstats->attr(GA::BFIELD_VALUE_NOW_ABS);
+        auto bf_valuePrev = ogstats->attr(GA::BFIELD_VALUE_NOW_ABS);
+        auto bf_valueStart = gstats->attr(GA::BFIELD_VALUE_START_ABS);
+        auto bf_hpPrev = ogstats->attr(GA::BFIELD_HP_NOW_ABS);
+        auto bf_hpStart = gstats->attr(GA::BFIELD_HP_START_ABS);
         auto value = valueOne * cstack->getCount();
 
         // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";

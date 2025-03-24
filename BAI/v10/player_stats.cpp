@@ -25,32 +25,50 @@ namespace MMAI::BAI::V10 {
     static_assert(EI(Side::LEFT) == EI(BattleSide::LEFT_SIDE));
     static_assert(EI(Side::RIGHT) == EI(BattleSide::RIGHT_SIDE));
 
-    PlayerStats::PlayerStats(GlobalStats* gstats, BattleSide side, int value, int hp) {
+    PlayerStats::PlayerStats(BattleSide side, int value, int hp) {
+        // Fill with NA to guard against "forgotten" attrs
+        // (all attrs are strict so encoder will throw if NAs are found)
+        attrs.fill(NULL_VALUE_UNENCODED);
+
         setattr(A::BATTLE_SIDE, EI(side));
-        update(gstats, value, hp)
+        setattr(A::VALUE_KILLED_ACC_ABS, 0);
+        setattr(A::VALUE_LOST_ACC_ABS, 0);
+        setattr(A::DMG_DEALT_ACC_ABS, 0);
+        setattr(A::DMG_RECEIVED_ACC_ABS, 0);
     };
 
-    void PlayerStats::update(GlobalStats *gstats, int value, int hp) {
+    void PlayerStats::update(
+        const GlobalStats* gstats,
+        int value,
+        int hp,
+        int dmgDealt,
+        int dmgReceived,
+        int valueKilled,
+        int valueLost
+    ) {
         setattr(A::ARMY_VALUE_NOW_ABS, value);
         setattr(A::ARMY_VALUE_NOW_REL, 100 * value / gstats->attr(GA::BFIELD_VALUE_NOW_ABS));
-        setattr(A::ARMY_VALUE_NOW_REL0, 100 * value / gstats->attr(GA::BFIELD_VALUE_NOW_ABS));
-        setattr(A::VALUE_KILLED_ABS, 0);
-        setattr(A::VALUE_KILLED_REL, 0);
-        setattr(A::VALUE_KILLED_ACC_ABS, 0);
-        setattr(A::VALUE_KILLED_ACC_REL0, 0);
-        setattr(A::VALUE_LOST_ABS, 0);
-        setattr(A::VALUE_LOST_REL, 0);
-        setattr(A::VALUE_LOST_ACC_ABS, 0);
-        setattr(A::VALUE_LOST_ACC_REL0, 0);
-        setattr(A::DMG_DEALT_ABS, 0);
-        setattr(A::DMG_DEALT_REL, 0);
-        setattr(A::DMG_DEALT_ACC_ABS, 0);
-        setattr(A::DMG_DEALT_ACC_REL0, 0);
-        setattr(A::DMG_RECEIVED_ABS, 0);
-        setattr(A::DMG_RECEIVED_REL, 0);
-        setattr(A::DMG_RECEIVED_ACC_ABS, 0);
-        setattr(A::DMG_RECEIVED_ACC_REL0, 0);
-    };
+        setattr(A::ARMY_VALUE_NOW_REL0, 100 * value / gstats->attr(GA::BFIELD_VALUE_START_ABS));
+        setattr(A::ARMY_HP_NOW_ABS, hp);
+        setattr(A::ARMY_HP_NOW_REL, 100 * hp / gstats->attr(GA::BFIELD_HP_NOW_ABS));
+        setattr(A::ARMY_HP_NOW_REL0, 100 * hp / gstats->attr(GA::BFIELD_HP_START_ABS));
+        setattr(A::VALUE_KILLED_NOW_ABS, valueKilled);
+        setattr(A::VALUE_KILLED_NOW_REL, 100 * valueKilled / gstats->attr(GA::BFIELD_VALUE_NOW_ABS));
+        addattr(A::VALUE_KILLED_ACC_ABS, valueKilled);
+        setattr(A::VALUE_KILLED_ACC_REL0, 100 * attr(A::VALUE_KILLED_ACC_ABS) / gstats->attr(GA::BFIELD_VALUE_START_ABS));
+        setattr(A::VALUE_LOST_NOW_ABS, valueLost);
+        setattr(A::VALUE_LOST_NOW_REL, 100 * valueLost / gstats->attr(GA::BFIELD_VALUE_NOW_ABS));
+        addattr(A::VALUE_LOST_ACC_ABS, valueLost);
+        setattr(A::VALUE_LOST_ACC_REL0, 100 * attr(A::VALUE_LOST_ACC_ABS) / gstats->attr(GA::BFIELD_VALUE_START_ABS));
+        setattr(A::DMG_DEALT_NOW_ABS, dmgDealt);
+        setattr(A::DMG_DEALT_NOW_REL, 100 * dmgDealt / gstats->attr(GA::BFIELD_HP_NOW_ABS));
+        addattr(A::DMG_DEALT_ACC_ABS, dmgDealt);
+        setattr(A::DMG_DEALT_ACC_REL0, 100 * attr(A::DMG_DEALT_ACC_ABS) / gstats->attr(GA::BFIELD_HP_START_ABS));
+        setattr(A::DMG_RECEIVED_NOW_ABS, dmgReceived);
+        setattr(A::DMG_RECEIVED_NOW_REL, 100 * dmgReceived / gstats->attr(GA::BFIELD_HP_NOW_ABS));
+        addattr(A::DMG_RECEIVED_ACC_ABS, dmgReceived);
+        setattr(A::DMG_RECEIVED_ACC_REL0, 100 * attr(A::DMG_RECEIVED_ACC_ABS) / gstats->attr(GA::BFIELD_HP_START_ABS));
+    }
 
     int PlayerStats::getAttr(PlayerAttribute a) const {
         return attr(a);
@@ -61,7 +79,7 @@ namespace MMAI::BAI::V10 {
     };
 
     void PlayerStats::setattr(PlayerAttribute a, int value) {
-        attrs.at(EI(a)) = std::min(value, std::get<3>(GLOBAL_ENCODING.at(EI(a))));
+        attrs.at(EI(a)) = std::min(value, std::get<3>(PLAYER_ENCODING.at(EI(a))));
     };
 
     void PlayerStats::addattr(PlayerAttribute a, int value) {

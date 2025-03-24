@@ -58,7 +58,7 @@ namespace MMAI::BAI::V10 {
         // Subsequent versions may override this if they only change
         // the data type of encoded values (i.e. have their own HEX_ENCODING)
         void encodeGlobal(CombatResult result);
-        void encodePlayer(const GlobalStats* s);
+        void encodePlayer(const PlayerStats* pstats);
         void encodeHex(const Hex* hex);
         void verify();
 
@@ -72,12 +72,12 @@ namespace MMAI::BAI::V10 {
         std::unique_ptr<GlobalStats> gstats = nullptr;
         std::unique_ptr<PlayerStats> lpstats = nullptr;
         std::unique_ptr<PlayerStats> rpstats = nullptr;
+        std::map<const CStack*, Stack::Stats> sstats;
         const std::pair<int, int> initialArmyValues;
         const std::string colorname;
         const CPlayerBattleCallback* const battle;
         const BattleSide side;
         std::shared_ptr<const Battlefield> battlefield;
-        std::map<const CStack*, Stack::Stats> stacksStats;
         bool isMorale = false;
 
         int startedAction = -1;

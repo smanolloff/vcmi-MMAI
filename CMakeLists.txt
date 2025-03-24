@@ -123,11 +123,14 @@ set(MMAI_FILES
   BAI/v10/battlefield.h
   BAI/v10/encoder.cpp
   BAI/v10/encoder.h
+  BAI/v10/global_stats.cpp
   BAI/v10/global_stats.h
   BAI/v10/hex.cpp
   BAI/v10/hex.h
   BAI/v10/hexaction.h
   BAI/v10/hexactmask.h
+  BAI/v10/player_stats.cpp
+  BAI/v10/player_stats.h
   BAI/v10/render.cpp
   BAI/v10/render.h
   BAI/v10/stack.cpp

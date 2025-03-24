@@ -24,13 +24,13 @@ namespace MMAI::BAI::V10 {
 
     class PlayerStats : public IPlayerStats {
     public:
-        PlayerStats(BattleSide side, GlobalStats* gstats, int value, int hp);
-        void update(GlobalStats* gstats, int value, int hp);
+        PlayerStats(BattleSide side, int value, int hp);
+
         int getAttr(PlayerAttribute a) const override;
         int attr(PlayerAttribute a) const;
-        void addattr(PlayerAttribute a, int value);
-    private:
         void setattr(PlayerAttribute a, int value);
+        void addattr(PlayerAttribute a, int value);
+        void update(const GlobalStats* gstats, int value, int hp, int dmgDealt, int dmgReceived, int valueKilled, int valueLost);
         PlayerAttrs attrs = {};
     };
 }

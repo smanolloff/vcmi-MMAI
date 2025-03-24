@@ -56,8 +56,8 @@ namespace MMAI::BAI::V10 {
         Stack(
             const CStack* cstack,
             Queue &q,
-            const GlobalStats* lgstats,
-            const GlobalStats* rgstats,
+            const GlobalStats* ogstats,
+            const GlobalStats* gstats,
             const Stats stats,
             const ReachabilityInfo rinfo,
             bool blocked,

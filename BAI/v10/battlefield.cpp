@@ -67,12 +67,12 @@ namespace MMAI::BAI::V10 {
     std::shared_ptr<const Battlefield> Battlefield::Create(
         const CPlayerBattleCallback* battle,
         const CStack* acstack,
-        const GlobalStats* lgstats,
-        const GlobalStats* rgstats,
+        const GlobalStats* ogstats,
+        const GlobalStats* gstats,
         std::map<const CStack*, Stack::Stats> stacksStats,
         bool isMorale
     ) {
-        auto [stacks, queue] = InitStacks(battle, acstack, lgstats, rgstats, stacksStats, isMorale);
+        auto [stacks, queue] = InitStacks(battle, acstack, ogstats, gstats, stacksStats, isMorale);
         auto [hexes, astack] = InitHexes(battle, acstack, stacks);
 
         return std::make_shared<const Battlefield>(hexes, stacks, astack);
@@ -177,8 +177,8 @@ namespace MMAI::BAI::V10 {
     std::tuple<Stacks, Queue> Battlefield::InitStacks(
         const CPlayerBattleCallback* battle,
         const CStack* astack,
-        const GlobalStats* lgstats,
-        const GlobalStats* rgstats,
+        const GlobalStats* ogstats,
+        const GlobalStats* gstats,
         std::map<const CStack*, Stack::Stats> stacksStats,
         bool isMorale
     ) {
@@ -253,8 +253,8 @@ namespace MMAI::BAI::V10 {
             auto stack = std::make_shared<Stack>(
                 cstack,
                 queue,
-                lgstats,
-                rgstats,
+                ogstats,
+                gstats,
                 stacksStats[cstack],  // creates new record if missing
                 battle->getReachability(cstack),
                 blocked[cstack],

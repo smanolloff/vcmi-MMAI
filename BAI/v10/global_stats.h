@@ -24,9 +24,10 @@ namespace MMAI::BAI::V10 {
     class GlobalStats : public IGlobalStats {
     public:
         GlobalStats(BattleSide side, int value, int hp);
+
         int getAttr(GlobalAttribute a) const override;
         int attr(GlobalAttribute a) const;
-    private:
+        void update(int value, int hp);
         void setattr(GlobalAttribute a, int value);
         GlobalAttrs attrs = {};
     };

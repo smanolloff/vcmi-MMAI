@@ -404,6 +404,18 @@ namespace MMAI::BAI::V10 {
                     ensureStackNullOrMatch(attr, cstack, v, [&] { return EI(cstack->unitSide()); }, "HA.STACK_SIDE");
                 // break; case HA::STACK_CREATURE_ID:
                 //     ensureStackValueMatch(a, v, cstack->unitType()->getId(), "HEX.STACK_CREATURE_ID");
+                break; case HA::STACK_SLOT: {
+                    if (!cstack)
+                        break;
+
+                    auto want = static_cast<int>(cstack->unitSlot());
+                    if (want == SlotID::WAR_MACHINES_SLOT)
+                        want = STACK_SLOT_WARMACHINES;
+                    else if (want < 0 || want > 7)
+                        want = STACK_SLOT_OTHER;
+
+                    ensureValueMatch(v, want, "HA.STACK_SLOT");
+                }
                 break; case HA::STACK_QUANTITY:
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return std::round(STACK_QTY_MAX * float(cstack->getCount()) / STACK_QTY_MAX); }, "HEX.STACK_QUANTITY");
                 break; case HA::STACK_ATTACK:
@@ -567,13 +579,15 @@ namespace MMAI::BAI::V10 {
         auto supdata_ = istate->getSupplementaryData();
         expect(supdata_.has_value(), "supdata_ holds no value");
         expect(supdata_.type() == typeid(const ISupplementaryData*), "supdata_ of unexpected type");
-        auto supdata = std::any_cast<const ISupplementaryData*>(supdata_);
-        expect(supdata, "supdata holds a nullptr");
-        auto lgstats = supdata->getGlobalStatsLeft();
-        auto rgstats = supdata->getGlobalStatsRight();
-        auto mystats = EI(supdata->getSide()) ? supdata->getGlobalStatsRight() : supdata->getGlobalStatsLeft();
-        auto hexes = supdata->getHexes();
-        auto color = supdata->getColor();
+        auto sup = std::any_cast<const ISupplementaryData*>(supdata_);
+        expect(sup, "sup holds a nullptr");
+        auto gstats = sup->getGlobalStats();
+        auto lpstats = sup->getLeftPlayerStats();
+        auto rpstats = sup->getRightPlayerStats();
+        auto mystats = gstats->getAttr(GA::BATTLE_SIDE) ? rpstats : lpstats;
+        auto hexes = sup->getHexes();
+        auto color = sup->getColor();
+        auto alogs = sup->getAttackLogs();
 
         const IStack* astack = nullptr;
 
@@ -588,7 +602,9 @@ namespace MMAI::BAI::V10 {
             }
         }
 
-        if (!astack && !supdata->getIsBattleEnded())
+        auto ended = gstats->getAttr(GA::BATTLE_WINNER) != NULL_VALUE_UNENCODED;
+
+        if (!astack && !ended)
             logAi->error("could not find an active stack (battle has not ended).");
 
         std::string nocol = "\033[0m";
@@ -607,7 +623,7 @@ namespace MMAI::BAI::V10 {
         // #5 attacks #1 for 4 dmg (0 killed)
         // ...
         //
-        for (auto &alog : supdata->getAttackLogs()) {
+        for (auto &alog : alogs) {
             auto row = std::stringstream();
             auto attcol = ukncol;
             auto attalias = '?';
@@ -777,33 +793,33 @@ namespace MMAI::BAI::V10 {
         for (int i=0; i<=lines.size(); i++) {
             std::string name;
             std::string value;
-            auto side = EI(supdata->getSide());
+            auto side = gstats->getAttr(GA::BATTLE_SIDE);
 
             switch(i) {
             break; case 1:
                 name = "Player";
-                if (supdata->getIsBattleEnded())
+                if (ended)
                     value = "";
                 else
                     value = side ? bluecol + "BLUE" + nocol : redcol + "RED" + nocol;
             break; case 2:
                 name = "Last action";
                 value = action ? action->name() + " [" + std::to_string(action->action) + "]" : "";
-            break; case 3: name = "DMG dealt"; value = boost::str(boost::format("%d (%d since start)") % mystats->getDmgDealtNow() % mystats->getDmgDealtTotal());
-            break; case 4: name = "DMG received"; value = boost::str(boost::format("%d (%d since start)") % mystats->getDmgReceivedNow() % mystats->getDmgReceivedTotal());
-            break; case 5: name = "Value killed"; value = boost::str(boost::format("%d (%d since start)") % mystats->getValueKilledNow() % mystats->getValueKilledTotal());
-            break; case 6: name = "Value lost"; value = boost::str(boost::format("%d (%d since start)") % mystats->getValueLostNow() % mystats->getValueLostTotal());
+            break; case 3: name = "DMG dealt"; value = boost::str(boost::format("%d (%d since start)") % mystats->getAttr(PA::DMG_DEALT_NOW_ABS) % mystats->getAttr(PA::DMG_DEALT_ACC_ABS));
+            break; case 4: name = "DMG received"; value = boost::str(boost::format("%d (%d since start)") % mystats->getAttr(PA::DMG_RECEIVED_NOW_ABS) % mystats->getAttr(PA::DMG_RECEIVED_ACC_ABS));
+            break; case 5: name = "Value killed"; value = boost::str(boost::format("%d (%d since start)") % mystats->getAttr(PA::VALUE_KILLED_NOW_ABS) % mystats->getAttr(PA::VALUE_KILLED_ACC_ABS));
+            break; case 6: name = "Value lost"; value = boost::str(boost::format("%d (%d since start)") % mystats->getAttr(PA::VALUE_LOST_NOW_ABS) % mystats->getAttr(PA::VALUE_LOST_ACC_ABS));
             break; case 7: {
                 // XXX: if there's a draw, this text will be incorrect
-                auto restext = supdata->getIsVictorious()
-                    ? (side ? bluecol + "BLUE WINS" : redcol + "RED WINS")
-                    : (side ? redcol + "RED WINS" : bluecol + "BLUE WINS" );
+                auto restext = gstats->getAttr(GA::BATTLE_WINNER)
+                    ? (bluecol + "BLUE WINS")
+                    : (redcol + "RED WINS");
 
-                name = "Battle result"; value = supdata->getIsBattleEnded() ? (restext + nocol) : "";
+                name = "Battle result"; value = ended ? (restext + nocol) : "";
             }
-            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % lgstats->getValueNow() % (100.0 * lgstats->getValueNow() / (lgstats->getValueNow() + rgstats->getValueNow())));
-            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % rgstats->getValueNow() % (100.0 * rgstats->getValueNow() / (lgstats->getValueNow() + rgstats->getValueNow())));
-            break; case 10: name = "Current BF value"; value = boost::str(boost::format("%d (%.0f%% of starting BF value)") % (rgstats->getValueNow() + rgstats->getValueNow()) % (100.0 * (lgstats->getValueNow() + rgstats->getValueNow()) / (lgstats->getValueStart() + rgstats->getValueStart())));
+            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % lpstats->getAttr(PA::ARMY_VALUE_NOW_ABS) % lpstats->getAttr(PA::ARMY_VALUE_NOW_REL));
+            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % rpstats->getAttr(PA::ARMY_VALUE_NOW_ABS) % rpstats->getAttr(PA::ARMY_VALUE_NOW_REL));
+            break; case 10: name = "Current BF value"; value = boost::str(boost::format("%d (%.0f%% of starting BF value)") % gstats->getAttr(GA::BFIELD_VALUE_NOW_ABS) % gstats->getAttr(GA::BFIELD_VALUE_NOW_REL0));
             break; default:
                 continue;
             }
@@ -986,7 +1002,7 @@ namespace MMAI::BAI::V10 {
                             value = std::to_string(stack->getAttr(a));
                         }
 
-                        if ((stack->getAttr(SA::QUEUE) & 1) && !supdata->getIsBattleEnded()) color += activemod;
+                        if ((stack->getAttr(SA::QUEUE) & 1) && !ended) color += activemod;
                     }
 
                     auto colid = 2 + i + side + (max_stacks_per_side*side);

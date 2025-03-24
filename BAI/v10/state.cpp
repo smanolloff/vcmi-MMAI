@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <stdexcept>
 
 namespace MMAI::BAI::V10 {
     using HA = HexAttribute;
@@ -69,10 +68,7 @@ namespace MMAI::BAI::V10 {
     };
 
     std::tuple<int, int, int, int> CalcGlobalStats(const CPlayerBattleCallback *battle) {
-        int lv = 0;
-        int lh = 0;
-        int rv = 0;
-        int rh = 0;
+        int lv = 0, lh = 0, rv = 0, rh = 0;
         for (auto &stack : battle->battleGetStacks()) {
             auto v = stack->getCount() * Stack::CalcValue(stack->unitType());
             auto h = stack->getAvailableHealth();
@@ -90,6 +86,57 @@ namespace MMAI::BAI::V10 {
         return {lv, lh, rv, rh};
     }
 
+    std::tuple<int, int, int, int, int, int, int, int> ProcessAttackLogs(
+        std::vector<std::shared_ptr<AttackLog>> attackLogs,
+        std::map<const CStack*, Stack::Stats> sstats
+    ) {
+        // dmg dealt / dmg received / value killed / value lost
+        int ldd = 0, ldr = 0, lvk = 0, lvl = 0;
+        int rdd = 0, rdr = 0, rvk = 0, rvl = 0;
+
+        for (auto &[cstack, ss] : sstats) {
+            ss.dmgDealtNow = 0;
+            ss.dmgReceivedNow = 0;
+            ss.valueKilledNow = 0;
+            ss.valueLostNow = 0;
+        }
+
+        for (auto &al : attackLogs) {
+            if (al->cattacker) {
+                sstats[al->cattacker].dmgDealtNow += al->dmg;
+                sstats[al->cattacker].dmgDealtTotal += al->dmg;
+                sstats[al->cattacker].valueKilledNow += al->value;
+                sstats[al->cattacker].valueKilledTotal += al->value;
+
+                if (al->cattacker->unitSide() == BattleSide::LEFT_SIDE) {
+                    ldd += al->dmg;
+                    lvk += al->value;
+                } else {
+                    rdd += al->dmg;
+                    rvk += al->value;
+                }
+            }
+
+            ASSERT(al->cdefender, "AttackLog cdefender is nullptr!");
+            sstats[al->cdefender].dmgReceivedNow += al->dmg;
+            sstats[al->cdefender].dmgReceivedTotal += al->dmg;
+            sstats[al->cdefender].valueLostNow += al->value;
+            sstats[al->cdefender].valueLostTotal += al->value;
+
+            if (al->cdefender->unitSide() == BattleSide::LEFT_SIDE) {
+                ldr += al->dmg;
+                lvl += al->value;
+            } else {
+                rdr += al->dmg;
+                rvl += al->value;
+            }
+        }
+
+        return {ldd, ldr, lvk, lvl, rdd, rdr, rvk, rvl};
+    }
+
+
+
     State::State(const int version__, const std::string colorname_, const CPlayerBattleCallback* battle_)
     : version_(version__)
     , colorname(colorname_)
@@ -98,64 +145,26 @@ namespace MMAI::BAI::V10 {
     , nullstack(InitNullStack())
     {
         auto [lv, lh, rv, rh] = CalcGlobalStats(battle);
-        gstats = std::make_unique<GlobalStats>(battle->battleGetMySide(), lv + rv);
-        lpstats = std::make_unique<PlayerStats>(BattleSide::LEFT_SIDE, gstats, lv + rv, lv, lh);
-        rpstats = std::make_unique<PlayerStats>(BattleSide::RIGHT_SIDE, gstats, lv + rv, rv, rh);
+        gstats = std::make_unique<GlobalStats>(battle->battleGetMySide(), lv+rv, lh+rh);
+        lpstats = std::make_unique<PlayerStats>(BattleSide::LEFT_SIDE, lv, lh);
+        rpstats = std::make_unique<PlayerStats>(BattleSide::RIGHT_SIDE, rv, rh);
 
-        battlefield = Battlefield::Create(battle_, nullptr, lpstats.get(), rpstats.get(), {}, false);
-
+        battlefield = Battlefield::Create(battle_, nullptr, gstats.get(), gstats.get(), sstats, false);
         bfstate.reserve(Schema::V10::BATTLEFIELD_STATE_SIZE);
         actmask.reserve(Schema::V10::N_ACTIONS);
     }
 
     void State::onActiveStack(const CStack* astack, CombatResult result, bool recording, bool fastpath) {
-        for (auto &[cstack, ss] : stacksStats) {
-            ss.dmgDealtNow = 0;
-            ss.dmgReceivedNow = 0;
-            ss.valueKilledNow = 0;
-            ss.valueLostNow = 0;
-        }
-
-        // lgstats->valuePrev = lgstats->valueNow;
-        // lgstats->valueNow = lv;
-        // lgstats->hpPrev = lgstats->hpNow;
-        // lgstats->hpNow = lh;
-
-        // rgstats->valuePrev = rgstats->valueNow;
-        // rgstats->valueNow = rv;
-        // rgstats->hpPrev = rgstats->hpNow;
-        // rgstats->hpNow = rh;
-
-        for (auto &al : attackLogs) {
-            if (al->cattacker) {
-                stacksStats[al->cattacker].dmgDealtNow += al->dmg;
-                stacksStats[al->cattacker].dmgDealtTotal += al->dmg;
-                stacksStats[al->cattacker].valueKilledNow += al->value;
-                stacksStats[al->cattacker].valueKilledTotal += al->value;
-
-                auto pstats = (al->cattacker->unitSide() == BattleSide::LEFT_SIDE)
-                    ? lpstats.get() : rpstats.get();
-
-                pstats->addattr(PA::DMG_DEALT_ABS, al->dmg);
-                pstats->addattr(PA::DMG_DEALT_ACC_ABS, al->dmg);
-                pstats->addattr(PA::VALUE_KILLED_ABS, al->value);
-                pstats->addattr(PA::VALUE_KILLED_ACC_ABS, al->value);
-            }
-
-            ASSERT(al->cdefender, "AttackLog cdefender is nullptr!");
-
-            auto pstats = (al->cdefender->unitSide() == BattleSide::LEFT_SIDE)
-                ? lpstats.get() : rpstats.get();
-
-            pstats->addattr(PA::DMG_RECEIVED_ABS, al->dmg);
-            pstats->addattr(PA::DMG_RECEIVED_ACC_ABS, al->dmg);
-            pstats->addattr(PA::VALUE_LOST_ABS, al->value);
-            pstats->addattr(PA::VALUE_LOST_ACC_ABS, al->value);
-        }
+        auto [lv, lh, rv, rh] = CalcGlobalStats(battle);
+        auto [ldd, ldr, lvk, lvl, rdd, rdr, rvk, rvl] = ProcessAttackLogs(attackLogs, sstats);
+        auto ogstats = *gstats;  // a copy of the "old" gstats
+        gstats->update(lv+rv, lh+rh);
+        lpstats->update(&ogstats, lv, lh, ldd, ldr, lvk, lvl);
+        rpstats->update(&ogstats, rv, rh, rdd, rdr, rvk, rvl);
 
         // printf("Fastpath: %d\n", fastpath);
         if (!fastpath) {
-            battlefield = Battlefield::Create(battle, astack, lpstats.get(), rpstats.get(), stacksStats, isMorale);
+            battlefield = Battlefield::Create(battle, astack, &ogstats, gstats.get(), sstats, isMorale);
             bfstate.clear();
             actmask.clear();
 
@@ -170,8 +179,8 @@ namespace MMAI::BAI::V10 {
             }
 
             encodeGlobal(result);
-            encodePlayer(lgstats.get());
-            encodePlayer(rgstats.get());
+            encodePlayer(lpstats.get());
+            encodePlayer(rpstats.get());
 
             for (auto &hexrow : *battlefield->hexes)
                 for (auto &hex : hexrow)
@@ -185,8 +194,9 @@ namespace MMAI::BAI::V10 {
         supdata = std::make_unique<SupplementaryData>(
             colorname,
             Side(side),
-            lgstats.get(),
-            rgstats.get(),
+            gstats.get(),
+            lpstats.get(),
+            rpstats.get(),
             battlefield.get(),
             attackLogs, // store the logs since last turn
             transitions, // store the states since last turn
@@ -208,53 +218,15 @@ namespace MMAI::BAI::V10 {
     }
 
     void State::encodeGlobal(CombatResult result) {
-        Encoder::Encode(GA::BATTLE_SIDE, EI(battle->battleGetMySide()), bfstate);
-
-        if (result == CombatResult::NONE) {
-            Encoder::Encode(GA::BATTLE_WINNER, NULL_VALUE_UNENCODED, bfstate);
-        } else {
-            static_assert(EI(BattleSide::LEFT_SIDE) == EI(CombatResult::LEFT_WINS));
-            static_assert(EI(BattleSide::RIGHT_SIDE) == EI(CombatResult::RIGHT_WINS));
-            auto winner = (EI(result) == EI(battle->battleGetMySide()));
-            Encoder::Encode(GA::BATTLE_WINNER, winner, bfstate);
+        for (int i=0; i<EI(GA::_count); ++i) {
+            Encoder::Encode(GA(i), gstats->attrs.at(i), bfstate);
         }
-
-        auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
-        auto bf_valueStart = lgstats->valueStart + rgstats->valueStart;
-        Encoder::Encode(GA::BFIELD_VALUE_START_ABS, bf_valueStart, bfstate);
-        Encoder::Encode(GA::BFIELD_VALUE_NOW_ABS, bf_valueNow, bfstate);
-        Encoder::Encode(GA::BFIELD_VALUE_NOW_REL0, 100 * bf_valueNow / bf_valueStart, bfstate);
     }
 
-    void State::encodePlayer(const GlobalStats* s) {
-        auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
-        auto bf_valuePrev = lgstats->valuePrev + rgstats->valuePrev;
-        auto bf_valueStart = lgstats->valueStart + rgstats->valueStart;
-
-        // auto bf_hpNow = lgstats->hpNow + rgstats->hpNow;
-        auto bf_hpPrev = lgstats->hpPrev + rgstats->hpPrev;
-        auto bf_hpStart = lgstats->hpStart + rgstats->hpStart;
-
-        Encoder::Encode(PA::ARMY_VALUE_NOW_ABS,     s->valueNow, bfstate);
-        Encoder::Encode(PA::ARMY_VALUE_NOW_REL,     100 * s->valueNow / bf_valueNow, bfstate);
-        Encoder::Encode(PA::ARMY_VALUE_NOW_ABS0,    s->valueNow, bfstate);
-        Encoder::Encode(PA::ARMY_VALUE_NOW_REL0,    100 * s->valueNow / bf_valueStart, bfstate);
-        Encoder::Encode(PA::VALUE_KILLED_ABS,       s->valueKilledNow, bfstate);
-        Encoder::Encode(PA::VALUE_KILLED_REL,       100 * s->valueKilledNow / bf_valuePrev, bfstate);
-        Encoder::Encode(PA::VALUE_KILLED_ACC_ABS0,  s->valueKilledTotal, bfstate);
-        Encoder::Encode(PA::VALUE_KILLED_ACC_REL0,  100 * s->valueKilledTotal / bf_valueStart, bfstate);
-        Encoder::Encode(PA::VALUE_LOST_ABS,         s->valueLostNow, bfstate);
-        Encoder::Encode(PA::VALUE_LOST_REL,         100 * s->valueLostNow / bf_valuePrev, bfstate);
-        Encoder::Encode(PA::VALUE_LOST_ACC_ABS0,    s->valueLostTotal, bfstate);
-        Encoder::Encode(PA::VALUE_LOST_ACC_REL0,    100 * s->valueLostTotal / bf_valueStart, bfstate);
-        Encoder::Encode(PA::DMG_DEALT_ABS,          s->dmgDealtNow, bfstate);
-        Encoder::Encode(PA::DMG_DEALT_REL,          100 * s->dmgDealtNow / bf_hpPrev, bfstate);
-        Encoder::Encode(PA::DMG_DEALT_ACC_ABS0,     s->dmgDealtTotal, bfstate);
-        Encoder::Encode(PA::DMG_DEALT_ACC_REL0,     100 * s->dmgDealtTotal / bf_hpStart, bfstate);
-        Encoder::Encode(PA::DMG_RECEIVED_ABS,       s->dmgReceivedNow, bfstate);
-        Encoder::Encode(PA::DMG_RECEIVED_REL,       100 * s->dmgReceivedNow / bf_hpPrev, bfstate);
-        Encoder::Encode(PA::DMG_RECEIVED_ACC_ABS0,  s->dmgReceivedTotal, bfstate);
-        Encoder::Encode(PA::DMG_RECEIVED_ACC_REL0,  100 * s->dmgReceivedTotal / bf_hpStart, bfstate);
+    void State::encodePlayer(const PlayerStats* pstats) {
+        for (int i=0; i<EI(PA::_count); ++i) {
+            Encoder::Encode(PA(i), pstats->attrs.at(i), bfstate);
+        }
     }
 
     void State::encodeHex(const Hex* hex) {
@@ -294,8 +266,8 @@ namespace MMAI::BAI::V10 {
                 return cattacker == stack->cstack;
             });
 
-            auto bf_valueNow = lgstats->valueNow + rgstats->valueNow;
-            auto bf_hpNow = lgstats->hpNow + rgstats->hpNow;
+            auto bf_valueNow = gstats->attr(GA::BFIELD_VALUE_NOW_ABS);
+            auto bf_hpNow = gstats->attr(GA::BFIELD_HP_NOW_ABS);
             auto value = elem.killedAmount * Stack::CalcValue(cdefender->unitType());
 
             attackLogs.push_back(std::make_shared<AttackLog>(
@@ -328,9 +300,9 @@ namespace MMAI::BAI::V10 {
     }
 
     /*
-     * XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-     * IMPORTANT: `battlefield` must not be used here (old state)
-     * XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     * !!!!!! IMPORTANT: `battlefield` must not be used here (old state) !!!!!!
+     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      */
     void State::onActionStarted(const BattleAction &action) {
         // Case A: << ENEMY TURN >>

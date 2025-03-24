@@ -318,11 +318,14 @@ namespace MMAI::Schema::V10 {
     };
 
     enum class GlobalAttribute : int {
-        BATTLE_SIDE,                 // 0=left, 1=right
-        BATTLE_WINNER,               // 0=left, 1=right (NA = battle not finished)
-        BFIELD_VALUE_START_ABS,      // global_value_at_start
-        BFIELD_VALUE_NOW_ABS,        // global_value_now
-        BFIELD_VALUE_NOW_REL0,       // global_value_now / global_value_at_start
+        BATTLE_SIDE,                // 0=left, 1=right
+        BATTLE_WINNER,              // 0=left, 1=right (NA = battle not finished)
+        BFIELD_VALUE_START_ABS,     // global_value_at_start
+        BFIELD_VALUE_NOW_ABS,       // global_value_now
+        BFIELD_VALUE_NOW_REL0,      // global_value_now / global_value_at_start
+        BFIELD_HP_START_ABS,        // global_hp_at_start
+        BFIELD_HP_NOW_ABS,          // global_hp_now
+        BFIELD_HP_NOW_REL0,         // global_hp_now / global_hp_at_start
 
         _count
     };
@@ -332,20 +335,23 @@ namespace MMAI::Schema::V10 {
         ARMY_VALUE_NOW_ABS,
         ARMY_VALUE_NOW_REL,         // side_army_value_now          / global_value_now
         ARMY_VALUE_NOW_REL0,        // side_army_value_now          / global_value_at_start
-        VALUE_KILLED_ABS,
-        VALUE_KILLED_REL,           // left_value_killed_this_turn  / global_value_last_turn
+        ARMY_HP_NOW_ABS,
+        ARMY_HP_NOW_REL,            // side_army_hp_now          / global_hp_now
+        ARMY_HP_NOW_REL0,           // side_army_hp_now          / global_hp_at_start
+        VALUE_KILLED_NOW_ABS,
+        VALUE_KILLED_NOW_REL,           // left_value_killed_this_turn  / global_value_last_turn
         VALUE_KILLED_ACC_ABS,
         VALUE_KILLED_ACC_REL0,      // left_value_killed_lifetime   / global_value_at_start
-        VALUE_LOST_ABS,
-        VALUE_LOST_REL,             // left_value_lost_this_turn    / global_value_last_turn
+        VALUE_LOST_NOW_ABS,
+        VALUE_LOST_NOW_REL,             // left_value_lost_this_turn    / global_value_last_turn
         VALUE_LOST_ACC_ABS,
         VALUE_LOST_ACC_REL0,        // left_value_lost_lifetime     / global_value_at_start
-        DMG_DEALT_ABS,
-        DMG_DEALT_REL,              // left_dmg_dealt_this_turn     / global_hp_last_turn
+        DMG_DEALT_NOW_ABS,
+        DMG_DEALT_NOW_REL,              // left_dmg_dealt_this_turn     / global_hp_last_turn
         DMG_DEALT_ACC_ABS,
         DMG_DEALT_ACC_REL0,         // left_dmg_dealt_lifetime      / global_hp_at_start
-        DMG_RECEIVED_ABS,
-        DMG_RECEIVED_REL,           // left_dmg_taken_this_turn     / global_hp_last_turn
+        DMG_RECEIVED_NOW_ABS,
+        DMG_RECEIVED_NOW_REL,           // left_dmg_taken_this_turn     / global_hp_last_turn
         DMG_RECEIVED_ACC_ABS,
         DMG_RECEIVED_ACC_REL0,      // left_dmg_taken_lifetime      / global_hp_at_start
 
