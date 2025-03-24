@@ -135,7 +135,7 @@ namespace MMAI::Schema::V10 {
 
     // 0-6 regular; 7=war machines; 8=other (summoned, commander, etc.)
     constexpr int STACK_SLOT_WARMACHINES = 7;
-    constexpr int STACK_SLOT_OTHER = 8;
+    constexpr int STACK_SLOT_SPECIAL = 8;
 
     // Values above MAX are simply capped
     constexpr int STACK_VALUE_ONE_MAX = 180000;     // archangel ~50K, crystal dragon ~110K, azure dragon ~180K

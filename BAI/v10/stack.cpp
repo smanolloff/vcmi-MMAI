@@ -188,7 +188,7 @@ namespace MMAI::BAI::V10 {
             // SlotID::SUMMONED_SLOT_PLACEHOLDER
             // SlotID::COMMANDER_SLOT_PLACEHOLDER
             alias = 'S';
-            slot = STACK_SLOT_OTHER;
+            slot = STACK_SLOT_SPECIAL;
         }
 
         // queue pos needs to be set first to determine if stack is active

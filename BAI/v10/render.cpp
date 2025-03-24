@@ -412,7 +412,7 @@ namespace MMAI::BAI::V10 {
                     if (want == SlotID::WAR_MACHINES_SLOT)
                         want = STACK_SLOT_WARMACHINES;
                     else if (want < 0 || want > 7)
-                        want = STACK_SLOT_OTHER;
+                        want = STACK_SLOT_SPECIAL;
 
                     ensureValueMatch(v, want, "HA.STACK_SLOT");
                 }

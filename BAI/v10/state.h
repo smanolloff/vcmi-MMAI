@@ -80,6 +80,7 @@ namespace MMAI::BAI::V10 {
         std::shared_ptr<const Battlefield> battlefield;
         bool isMorale = false;
 
+        int previousAction = -1;
         int startedAction = -1;
         const CStack* actingStack = nullptr;
 
