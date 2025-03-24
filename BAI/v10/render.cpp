@@ -603,6 +603,7 @@ namespace MMAI::BAI::V10 {
         }
 
         auto ended = gstats->getAttr(GA::BATTLE_WINNER) != NULL_VALUE_UNENCODED;
+        printf("gstats->getAttr(GA::BATTLE_WINNER): %d (!= %d)\n", gstats->getAttr(GA::BATTLE_WINNER), NULL_VALUE_UNENCODED);
 
         if (!astack && !ended)
             logAi->error("could not find an active stack (battle has not ended).");

@@ -37,7 +37,10 @@ namespace MMAI::BAI::V10 {
         setattr(A::BFIELD_HP_NOW_REL0, 100);
     }
 
-    void GlobalStats::update(int value, int hp) {
+    void GlobalStats::update(CombatResult res, int value, int hp) {
+        if (res != CombatResult::NONE)
+            setattr(A::BATTLE_WINNER, EI(res));
+
         setattr(A::BFIELD_VALUE_NOW_ABS, value);
         setattr(A::BFIELD_VALUE_NOW_REL0, 100 * value / attr(A::BFIELD_VALUE_START_ABS));
         setattr(A::BFIELD_HP_NOW_ABS, hp);

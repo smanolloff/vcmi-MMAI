@@ -158,7 +158,7 @@ namespace MMAI::BAI::V10 {
         auto [lv, lh, rv, rh] = CalcGlobalStats(battle);
         auto [ldd, ldr, lvk, lvl, rdd, rdr, rvk, rvl] = ProcessAttackLogs(attackLogs, sstats);
         auto ogstats = *gstats;  // a copy of the "old" gstats
-        gstats->update(lv+rv, lh+rh);
+        gstats->update(result, lv+rv, lh+rh);
         lpstats->update(&ogstats, lv, lh, ldd, ldr, lvk, lvl);
         rpstats->update(&ogstats, rv, rh, rdd, rdr, rvk, rvl);
 

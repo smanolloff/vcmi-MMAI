@@ -27,7 +27,7 @@ namespace MMAI::BAI::V10 {
 
         int getAttr(GlobalAttribute a) const override;
         int attr(GlobalAttribute a) const;
-        void update(int value, int hp);
+        void update(CombatResult res, int value, int hp);
         void setattr(GlobalAttribute a, int value);
         GlobalAttrs attrs = {};
     };
