@@ -182,7 +182,7 @@ namespace MMAI::BAI::V10 {
 
     int Hex::attr(HexAttribute a) const { return attrs.at(EI(a)); };
     void Hex::setattr(HexAttribute a, int value) {
-        attrs.at(EI(a)) = std::min(value, std::get<3>(HEX_ENCODING.at(EI(a))));
+        attrs.at(EI(a)) = value;
     };
 
     std::string Hex::name() const {

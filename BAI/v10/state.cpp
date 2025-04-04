@@ -275,6 +275,13 @@ namespace MMAI::BAI::V10 {
             auto bf_hpNow = gstats->attr(GA::BFIELD_HP_NOW_ABS);
             auto value = elem.killedAmount * Stack::CalcValue(cdefender->unitType());
 
+            // std::cout << "AttackLog";
+            // std::cout << ": attacker=" << (cattacker ? cattacker->getDescription() : "null");
+            // std::cout << ", defender=" << (cdefender ? cdefender->getDescription() : "null");
+            // std::cout << ", dmg=" << (elem.damageAmount);
+            // std::cout << ", value=" << (value);
+            // std::cout << "\n";
+
             attackLogs.push_back(std::make_shared<AttackLog>(
                 // XXX: attacker can be NULL when an effect does dmg (eg. Acid)
                 // XXX: attacker or defender can be NULL if it did not exist

@@ -189,7 +189,7 @@ namespace MMAI::Schema::V10 {
         E4(PA::VALUE_LOST_NOW_REL,      LS, 100),       // value_lost_this_turn    / global_value_last_turn
         E4(PA::VALUE_LOST_ACC_ABS,      ES, 5e6),
         E4(PA::VALUE_LOST_ACC_REL0,     LS, 100),       // value_lost_lifetime     / global_value_at_start
-        E4(PA::DMG_DEALT_NOW_ABS,       ES, 10e3),      // 6.5k max on 4x1024.vmap
+        E4(PA::DMG_DEALT_NOW_ABS,       ES, 10e3),      // 6.5k max on 4x1024.vmap (can be exceeded with AoE tho)
         E4(PA::DMG_DEALT_NOW_REL,       LS, 100),       // dmg_dealt_this_turn     / global_hp_last_turn
         E4(PA::DMG_DEALT_ACC_ABS,       ES, 100e3),     // 45k max on 4x1024.vmap
         E4(PA::DMG_DEALT_ACC_REL0,      LS, 100),       // dmg_dealt_lifetime      / global_hp_at_start

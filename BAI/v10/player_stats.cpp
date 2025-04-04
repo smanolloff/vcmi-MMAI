@@ -79,7 +79,7 @@ namespace MMAI::BAI::V10 {
     };
 
     void PlayerStats::setattr(PlayerAttribute a, int value) {
-        attrs.at(EI(a)) = std::min(value, std::get<3>(PLAYER_ENCODING.at(EI(a))));
+        attrs.at(EI(a)) = value;
     };
 
     void PlayerStats::addattr(PlayerAttribute a, int value) {

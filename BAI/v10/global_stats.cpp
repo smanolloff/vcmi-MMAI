@@ -44,7 +44,7 @@ namespace MMAI::BAI::V10 {
         setattr(A::BFIELD_VALUE_NOW_ABS, value);
         setattr(A::BFIELD_VALUE_NOW_REL0, 100 * value / attr(A::BFIELD_VALUE_START_ABS));
         setattr(A::BFIELD_HP_NOW_ABS, hp);
-        setattr(A::BFIELD_HP_NOW_REL0, 100 * value / attr(A::BFIELD_HP_START_ABS));
+        setattr(A::BFIELD_HP_NOW_REL0, 100 * hp / attr(A::BFIELD_HP_START_ABS));
     }
 
     int GlobalStats::getAttr(GlobalAttribute a) const {
@@ -56,6 +56,6 @@ namespace MMAI::BAI::V10 {
     };
 
     void GlobalStats::setattr(GlobalAttribute a, int value) {
-        attrs.at(EI(a)) = std::min(value, std::get<3>(GLOBAL_ENCODING.at(EI(a))));
+        attrs.at(EI(a)) = value;
     };
 }

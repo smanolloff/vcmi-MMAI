@@ -66,7 +66,7 @@ namespace MMAI::BAI::V10 {
 
         // Check if battle ended normally or was forced via a RETREAT action
         if (state->action == nullptr) {
-            // no previous action means battle ended giving us a turn (OK)
+            // no previous action means battle ended without giving us a turn (OK)
             // Happens if the enemy immediately retreats (we won)
             // or if the enemy one-shots us (we lost)
             info("Battle ended without giving us a turn: nothing to do");

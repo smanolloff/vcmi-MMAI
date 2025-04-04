@@ -24,6 +24,9 @@
 namespace MMAI::BAI::V10 {
     using namespace Schema::V10;
     using BS = Schema::BattlefieldState;
+    using clock = std::chrono::system_clock;
+
+    static std::map<std::string, std::map<int, clock::time_point>> warns;
 
     #define COERCE(v, vfallback) (v == NULL_VALUE_UNENCODED) ? vfallback : v
 
@@ -54,7 +57,17 @@ namespace MMAI::BAI::V10 {
         if (v > vmax) {
             // THROW_FORMAT("Cannot encode value: %d (vmax=%d, a=%d, n=%d, e=%d)", v % vmax % EI(a) % n % EI(e));
             // Can happen (e.g. DMG_*_ACC_REL0 > 1 if there were resurrected stacks)
-            printf("WARNING: v=%d (vmax=%d, a=%d, e=%d, n=%d, attrname=%s)\n", v, vmax, EI(a), EI(e), n, attrname);
+
+            // Warn at most once every 600s
+            auto now = clock::now();
+            auto warned_at = warns[attrname][EI(a)];
+
+            // auto warned_at_ctime = clock::to_time_t(warned_at);
+            // std::cout << "Warned at: " << std::ctime(&warned_at_ctime) << "\n";
+            if (std::chrono::duration_cast<std::chrono::seconds>(now - warned_at) > std::chrono::seconds(600)) {
+                printf("WARNING: v=%d (vmax=%d, a=%d, e=%d, n=%d, attrname=%s)\n", v, vmax, EI(a), EI(e), n, attrname);
+                warns[attrname][EI(a)] = now;
+            }
             v = vmax;
         }
 
