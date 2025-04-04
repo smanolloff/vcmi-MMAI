@@ -20,7 +20,6 @@
 
 #include "BAI/v8/encoder.h"
 #include "common.h"
-#include <c10/util/Exception.h>
 
 namespace MMAI::BAI::V8 {
     using namespace Schema::V8;
