@@ -339,19 +339,19 @@ namespace MMAI::Schema::V10 {
         ARMY_HP_NOW_REL,            // side_army_hp_now          / global_hp_now
         ARMY_HP_NOW_REL0,           // side_army_hp_now          / global_hp_at_start
         VALUE_KILLED_NOW_ABS,
-        VALUE_KILLED_NOW_REL,           // left_value_killed_this_turn  / global_value_last_turn
+        VALUE_KILLED_NOW_REL,       // left_value_killed_this_turn  / global_value_last_turn
         VALUE_KILLED_ACC_ABS,
         VALUE_KILLED_ACC_REL0,      // left_value_killed_lifetime   / global_value_at_start
         VALUE_LOST_NOW_ABS,
-        VALUE_LOST_NOW_REL,             // left_value_lost_this_turn    / global_value_last_turn
+        VALUE_LOST_NOW_REL,         // left_value_lost_this_turn    / global_value_last_turn
         VALUE_LOST_ACC_ABS,
         VALUE_LOST_ACC_REL0,        // left_value_lost_lifetime     / global_value_at_start
         DMG_DEALT_NOW_ABS,
-        DMG_DEALT_NOW_REL,              // left_dmg_dealt_this_turn     / global_hp_last_turn
+        DMG_DEALT_NOW_REL,          // left_dmg_dealt_this_turn     / global_hp_last_turn
         DMG_DEALT_ACC_ABS,
         DMG_DEALT_ACC_REL0,         // left_dmg_dealt_lifetime      / global_hp_at_start
         DMG_RECEIVED_NOW_ABS,
-        DMG_RECEIVED_NOW_REL,           // left_dmg_taken_this_turn     / global_hp_last_turn
+        DMG_RECEIVED_NOW_REL,       // left_dmg_taken_this_turn     / global_hp_last_turn
         DMG_RECEIVED_ACC_ABS,
         DMG_RECEIVED_ACC_REL0,      // left_dmg_taken_lifetime      / global_hp_at_start
 
@@ -576,10 +576,10 @@ namespace MMAI::Schema::V10 {
         virtual IStack* getDefender() const = 0;
 
         virtual int getDamageDealt() const = 0;
-        virtual int getDamageDealtPercent() const = 0;
+        virtual int getDamageDealtPermille() const = 0;
         virtual int getUnitsKilled() const = 0;
         virtual int getValueKilled() const = 0;
-        virtual int getValueKilledPercent() const = 0;
+        virtual int getValueKilledPermille() const = 0;
         virtual ~IAttackLog() = default;
     };
 

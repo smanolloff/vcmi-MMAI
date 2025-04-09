@@ -31,10 +31,10 @@ namespace MMAI::BAI::V10 {
         setattr(A::BATTLE_SIDE, EI(side));
         setattr(A::BFIELD_VALUE_START_ABS, value);
         setattr(A::BFIELD_VALUE_NOW_ABS, value);
-        setattr(A::BFIELD_VALUE_NOW_REL0, 100);
+        setattr(A::BFIELD_VALUE_NOW_REL0, 1000);
         setattr(A::BFIELD_HP_START_ABS, hp);
         setattr(A::BFIELD_HP_NOW_ABS, hp);
-        setattr(A::BFIELD_HP_NOW_REL0, 100);
+        setattr(A::BFIELD_HP_NOW_REL0, 1000);
     }
 
     void GlobalStats::update(CombatResult res, int value, int hp) {
@@ -42,9 +42,9 @@ namespace MMAI::BAI::V10 {
             setattr(A::BATTLE_WINNER, EI(res));
 
         setattr(A::BFIELD_VALUE_NOW_ABS, value);
-        setattr(A::BFIELD_VALUE_NOW_REL0, 100 * value / attr(A::BFIELD_VALUE_START_ABS));
+        setattr(A::BFIELD_VALUE_NOW_REL0, 1000 * value / attr(A::BFIELD_VALUE_START_ABS));
         setattr(A::BFIELD_HP_NOW_ABS, hp);
-        setattr(A::BFIELD_HP_NOW_REL0, 100 * hp / attr(A::BFIELD_HP_START_ABS));
+        setattr(A::BFIELD_HP_NOW_REL0, 1000 * hp / attr(A::BFIELD_HP_START_ABS));
     }
 
     int GlobalStats::getAttr(GlobalAttribute a) const {

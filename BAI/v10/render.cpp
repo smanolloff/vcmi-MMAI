@@ -467,7 +467,7 @@ namespace MMAI::BAI::V10 {
                     //     std::cout << " Have: " << v << ", want: " << vv;
                     //     std::cout << "\n";
                     // }
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return 100 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot; }, "HEX.STACK_VALUE_REL");
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return 1000 * cstack->getCount() * Stack::CalcValue(cstack->unitType()) / tot; }, "HEX.STACK_VALUE_REL");
                 }
 
                 // These require historical information
@@ -526,7 +526,7 @@ namespace MMAI::BAI::V10 {
                                 ensureValueMatch(vf, bool(want), "HEX.STACK_FLAGS1.BLOCKING");
                             }
                             break; case SF1::IS_WIDE:
-                                ensureValueMatch(vf, cstack->doubleWide(), "HEX.STACK_FLAGS1.IS_WIDE");
+                                ensureValueMatch(vf, cstack->occupiedHex().isAvailable(), "HEX.STACK_FLAGS1.IS_WIDE");
                             break; case SF1::FLYING:
                                 ensureValueMatch(vf, cstack->hasBonusOfType(BonusType::FLYING), "HEX.STACK_FLAGS1.FLYING");
                             break; case SF1::ADDITIONAL_ATTACK:
@@ -702,7 +702,7 @@ namespace MMAI::BAI::V10 {
             row << " attacks ";
             row << defcol << "#" << defalias << nocol;
             row << " for " << alog->getDamageDealt() << " dmg";
-            row << " (kills: " << alog->getUnitsKilled() << ", value: " << alog->getValueKilled() << " / " << alog->getValueKilledPercent() << "%)";
+            row << " (kills: " << alog->getUnitsKilled() << ", value: " << alog->getValueKilled() << " / " << alog->getValueKilledPermille() << "‰)";
 
             lines.push_back(std::move(row));
         }
@@ -875,9 +875,9 @@ namespace MMAI::BAI::V10 {
 
                 name = "Battle result"; value = ended ? (restext + nocol) : "";
             }
-            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % lpstats->getAttr(PA::ARMY_VALUE_NOW_ABS) % lpstats->getAttr(PA::ARMY_VALUE_NOW_REL));
-            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%.0f%% of current BF value)") % rpstats->getAttr(PA::ARMY_VALUE_NOW_ABS) % rpstats->getAttr(PA::ARMY_VALUE_NOW_REL));
-            break; case 10: name = "Current BF value"; value = boost::str(boost::format("%d (%.0f%% of starting BF value)") % gstats->getAttr(GA::BFIELD_VALUE_NOW_ABS) % gstats->getAttr(GA::BFIELD_VALUE_NOW_REL0));
+            break; case 8: name = "Army value (L)"; value = boost::str(boost::format("%d (%.0f‰ of current BF value)") % lpstats->getAttr(PA::ARMY_VALUE_NOW_ABS) % lpstats->getAttr(PA::ARMY_VALUE_NOW_REL));
+            break; case 9: name = "Army value (R)"; value = boost::str(boost::format("%d (%.0f‰ of current BF value)") % rpstats->getAttr(PA::ARMY_VALUE_NOW_ABS) % rpstats->getAttr(PA::ARMY_VALUE_NOW_REL));
+            break; case 10: name = "Current BF value"; value = boost::str(boost::format("%d (%.0f‰ of starting BF value)") % gstats->getAttr(GA::BFIELD_VALUE_NOW_ABS) % gstats->getAttr(GA::BFIELD_VALUE_NOW_REL0));
             break; default:
                 continue;
             }
@@ -933,7 +933,7 @@ namespace MMAI::BAI::V10 {
             RowDef{SA::SPEED, "Speed"},
             RowDef{SA::QUEUE, "Queue"},
             RowDef{SA::VALUE_ONE, "Value (one)"},
-            RowDef{SA::VALUE_REL, "Value (%)"},
+            RowDef{SA::VALUE_REL, "       Value (‰)"},  // manually pad to 16 (unicode length issue)
             // RowDef{SA::ESTIMATED_DMG, "Est. DMG%"},
             RowDef{SA::FLAGS1, "State"},  // "WAR" = CAN_WAIT, WILL_ACT, CAN_RETAL
             RowDef{SA::FLAGS1, "Attack mods"}, // "DB" = Double, Blinding

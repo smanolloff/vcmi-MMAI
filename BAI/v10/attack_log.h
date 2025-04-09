@@ -28,29 +28,29 @@ namespace MMAI::BAI::V10 {
             const CStack* cattacker_,
             const CStack* cdefender_,
             int dmg_,
-            int dmgPercent_,
+            int dmgPermille_,
             int units_,
             int value_,
-            int valuePercent_
+            int valuePermille_
         ) : attacker(attacker_)
           , defender(defender_)
           , cattacker(cattacker_)
           , cdefender(cdefender_)
           , dmg(dmg_)
-          , dmgPercent(dmgPercent_)
+          , dmgPermille(dmgPermille_)
           , units(units_)
           , value(value_)
-          , valuePercent(valuePercent_)
+          , valuePermille(valuePermille_)
         {}
 
         // IAttackLog impl
         Stack* getAttacker() const override { return attacker.get(); }
         Stack* getDefender() const override { return defender.get(); }
         int getDamageDealt() const override { return dmg; }
-        int getDamageDealtPercent() const override { return dmgPercent; }
+        int getDamageDealtPermille() const override { return dmgPermille; }
         int getUnitsKilled() const override { return units; }
         int getValueKilled() const override { return value; }
-        int getValueKilledPercent() const override { return valuePercent; }
+        int getValueKilledPermille() const override { return valuePermille; }
 
 
         /*
@@ -67,12 +67,12 @@ namespace MMAI::BAI::V10 {
         const CStack* cattacker;
         const CStack* cdefender;
         const int dmg;
-        const int dmgPercent;
+        const int dmgPermille;
         const int units;
 
         // NOTE: "value" is hard-coded in original H3 and can be found online:
         // https://heroes.thelazy.net/index.php/List_of_creatures
         const int value;
-        const int valuePercent;
+        const int valuePermille;
     };
 }

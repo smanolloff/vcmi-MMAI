@@ -464,7 +464,7 @@ namespace MMAI::BAI::V10 {
         }
 
         // double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
-        // auto dmgPercentHP = std::clamp<int>(std::round(100 * avgdmg / cstack->getAvailableHealth()), 0, 100);
+        // auto dmgPermilleHP = std::clamp<int>(std::round(1000 * avgdmg / cstack->getAvailableHealth()), 0, 1000);
 
         if (cstack->willMove()) {
             setflag(F1::WILL_ACT);
@@ -513,7 +513,7 @@ namespace MMAI::BAI::V10 {
         setattr(A::HP_LEFT, cstack->getFirstHPleft());
         setattr(A::SPEED, cstack->getMovementRange());
         setattr(A::QUEUE, qbits.to_ulong());
-        // setattr(A::ESTIMATED_DMG, dmgPercentHP);
+        // setattr(A::ESTIMATED_DMG, dmgPermilleHP);
 
         // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] lgstats->valueNow:" << lgstats->valueNow << ", rgstats->valueNow: " << rgstats->valueNow << "\n";
         auto bf_valueNow = gstats->attr(GA::BFIELD_VALUE_NOW_ABS);
@@ -524,21 +524,21 @@ namespace MMAI::BAI::V10 {
         auto value = valueOne * cstack->getCount();
 
         // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
-        auto percent = [](int v1, int v2) {
-            return 100 * v1 / v2;
+        auto permille = [](int v1, int v2) {
+            return 1000 * v1 / v2;
         };
 
         setattr(A::VALUE_ONE, valueOne);
-        setattr(A::VALUE_REL,             percent(value, bf_valueNow));
-        setattr(A::VALUE_REL0,            percent(value, bf_valueStart));
-        setattr(A::VALUE_KILLED_REL,      percent(stats.valueKilledNow, bf_valuePrev));
-        setattr(A::VALUE_KILLED_ACC_REL0, percent(stats.valueKilledTotal, bf_valueStart));
-        setattr(A::VALUE_LOST_REL,        percent(stats.valueLostNow, bf_valuePrev));
-        setattr(A::VALUE_LOST_ACC_REL0,   percent(stats.valueLostTotal, bf_valueStart));
-        setattr(A::DMG_DEALT_REL,         percent(stats.dmgDealtNow, bf_hpPrev));
-        setattr(A::DMG_DEALT_ACC_REL0,    percent(stats.dmgDealtTotal, bf_hpStart));
-        setattr(A::DMG_RECEIVED_REL,      percent(stats.dmgReceivedNow, bf_hpPrev));
-        setattr(A::DMG_RECEIVED_ACC_REL0, percent(stats.dmgReceivedTotal, bf_hpStart));
+        setattr(A::VALUE_REL,             permille(value, bf_valueNow));
+        setattr(A::VALUE_REL0,            permille(value, bf_valueStart));
+        setattr(A::VALUE_KILLED_REL,      permille(stats.valueKilledNow, bf_valuePrev));
+        setattr(A::VALUE_KILLED_ACC_REL0, permille(stats.valueKilledTotal, bf_valueStart));
+        setattr(A::VALUE_LOST_REL,        permille(stats.valueLostNow, bf_valuePrev));
+        setattr(A::VALUE_LOST_ACC_REL0,   permille(stats.valueLostTotal, bf_valueStart));
+        setattr(A::DMG_DEALT_REL,         permille(stats.dmgDealtNow, bf_hpPrev));
+        setattr(A::DMG_DEALT_ACC_REL0,    permille(stats.dmgDealtTotal, bf_hpStart));
+        setattr(A::DMG_RECEIVED_REL,      permille(stats.dmgReceivedNow, bf_hpPrev));
+        setattr(A::DMG_RECEIVED_ACC_REL0, permille(stats.dmgReceivedTotal, bf_hpStart));
 
         finalize();
     }

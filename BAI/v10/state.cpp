@@ -168,7 +168,9 @@ namespace MMAI::BAI::V10 {
         if (fastpath) {
             // means we are done with onActiveStack, and we can safely clear transitions now
             transitions.clear();
+            persistentAttackLogs.clear();
         } else {
+            persistentAttackLogs.insert(persistentAttackLogs.end(), attackLogs.begin(), attackLogs.end());
             battlefield = Battlefield::Create(battle, astack, &ogstats, gstats.get(), sstats, isMorale);
             bfstate.clear();
             actmask.clear();
@@ -203,7 +205,7 @@ namespace MMAI::BAI::V10 {
             lpstats.get(),
             rpstats.get(),
             battlefield.get(),
-            attackLogs, // store the logs since last turn
+            persistentAttackLogs, // store the logs since OUR last turn
             transitions, // store the states since last turn
             result
         );
@@ -292,10 +294,10 @@ namespace MMAI::BAI::V10 {
                 cattacker,
                 cdefender,
                 elem.damageAmount,
-                100 * elem.damageAmount / bf_hpNow,
+                1000 * elem.damageAmount / bf_hpNow,
                 elem.killedAmount,
                 value,
-                100 * value / bf_valueNow
+                1000 * value / bf_valueNow
             ));
         }
     }

@@ -167,36 +167,36 @@ namespace MMAI::Schema::V10 {
         E4(GA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
         E4(GA::BFIELD_VALUE_START_ABS,      ES, 10e6),      // 4.2M max for 4x1024.vmap
         E4(GA::BFIELD_VALUE_NOW_ABS,        ES, 10e6),
-        E4(GA::BFIELD_VALUE_NOW_REL0,       LS, 100),       // bfield_value_now             / bfield_value_at_start
+        E4(GA::BFIELD_VALUE_NOW_REL0,       LS, 1000),       // bfield_value_now             / bfield_value_at_start
         E4(GA::BFIELD_HP_START_ABS,         ES, 200e3),     // 90k max for 4x1024.vmap
         E4(GA::BFIELD_HP_NOW_ABS,           ES, 200e3),
-        E4(GA::BFIELD_HP_NOW_REL0,          LS, 100),       // bfield_hp_now             / bfield_hp_at_start
+        E4(GA::BFIELD_HP_NOW_REL0,          LS, 1000),       // bfield_hp_now             / bfield_hp_at_start
     };
 
     constexpr PlayerEncoding PLAYER_ENCODING {
         E4(PA::BATTLE_SIDE,             CS, 1),
         E4(PA::ARMY_VALUE_NOW_ABS,      ES, 5e6),       // 2.2M max on 4x1024.vmap
-        E4(PA::ARMY_VALUE_NOW_REL,      LS, 100),       // army_value_now          / global_value_now
-        E4(PA::ARMY_VALUE_NOW_REL0,     LS, 100),       // army_value_now          / global_value_at_start
+        E4(PA::ARMY_VALUE_NOW_REL,      LS, 1000),       // army_value_now          / global_value_now
+        E4(PA::ARMY_VALUE_NOW_REL0,     LS, 1000),       // army_value_now          / global_value_at_start
         E4(PA::ARMY_HP_NOW_ABS,         ES, 100e3),     // 90k max on 4x1024.vmap
-        E4(PA::ARMY_HP_NOW_REL,         LS, 100),       // army_hp_now             / global_hp_now
-        E4(PA::ARMY_HP_NOW_REL0,        LS, 100),       // army_hp_now             / global_hp_at_start
+        E4(PA::ARMY_HP_NOW_REL,         LS, 1000),       // army_hp_now             / global_hp_now
+        E4(PA::ARMY_HP_NOW_REL0,        LS, 1000),       // army_hp_now             / global_hp_at_start
         E4(PA::VALUE_KILLED_NOW_ABS,    ES, 5e6),
-        E4(PA::VALUE_KILLED_NOW_REL,    LS, 100),       // value_killed_this_turn  / global_value_last_turn
+        E4(PA::VALUE_KILLED_NOW_REL,    LS, 1000),       // value_killed_this_turn  / global_value_last_turn
         E4(PA::VALUE_KILLED_ACC_ABS,    ES, 5e6),
-        E4(PA::VALUE_KILLED_ACC_REL0,   LS, 100),       // value_killed_lifetime   / global_value_at_start
+        E4(PA::VALUE_KILLED_ACC_REL0,   LS, 1000),       // value_killed_lifetime   / global_value_at_start
         E4(PA::VALUE_LOST_NOW_ABS,      ES, 5e6),
-        E4(PA::VALUE_LOST_NOW_REL,      LS, 100),       // value_lost_this_turn    / global_value_last_turn
+        E4(PA::VALUE_LOST_NOW_REL,      LS, 1000),       // value_lost_this_turn    / global_value_last_turn
         E4(PA::VALUE_LOST_ACC_ABS,      ES, 5e6),
-        E4(PA::VALUE_LOST_ACC_REL0,     LS, 100),       // value_lost_lifetime     / global_value_at_start
-        E4(PA::DMG_DEALT_NOW_ABS,       ES, 10e3),      // 6.5k max on 4x1024.vmap (can be exceeded with AoE tho)
-        E4(PA::DMG_DEALT_NOW_REL,       LS, 100),       // dmg_dealt_this_turn     / global_hp_last_turn
+        E4(PA::VALUE_LOST_ACC_REL0,     LS, 1000),       // value_lost_lifetime     / global_value_at_start
+        E4(PA::DMG_DEALT_NOW_ABS,       ES, 10e3),      // 6.5k max on 4x1024.vmap (can be exceeded with AoE it can be exceeded tho)
+        E4(PA::DMG_DEALT_NOW_REL,       LS, 1000),       // dmg_dealt_this_turn     / global_hp_last_turn
         E4(PA::DMG_DEALT_ACC_ABS,       ES, 100e3),     // 45k max on 4x1024.vmap
-        E4(PA::DMG_DEALT_ACC_REL0,      LS, 100),       // dmg_dealt_lifetime      / global_hp_at_start
+        E4(PA::DMG_DEALT_ACC_REL0,      LS, 1000),       // dmg_dealt_lifetime      / global_hp_at_start
         E4(PA::DMG_RECEIVED_NOW_ABS,    ES, 10e3),
-        E4(PA::DMG_RECEIVED_NOW_REL,    LS, 100),       // dmg_received_this_turn  / global_hp_last_turn
+        E4(PA::DMG_RECEIVED_NOW_REL,    LS, 1000),       // dmg_received_this_turn  / global_hp_last_turn
         E4(PA::DMG_RECEIVED_ACC_ABS,    ES, 100e3),
-        E4(PA::DMG_RECEIVED_ACC_REL0,   LS, 100),       // dmg_received_lifetime   / global_hp_at_start
+        E4(PA::DMG_RECEIVED_ACC_REL0,   LS, 1000),       // dmg_received_lifetime   / global_hp_at_start
     };
 
     constexpr HexEncoding HEX_ENCODING {
@@ -218,21 +218,21 @@ namespace MMAI::Schema::V10 {
         E4(HA::STACK_HP_LEFT,           EZ, 1300),
         E4(HA::STACK_SPEED,             EZ, 30),       // at 19=full reach; max is... 37?
         E4(HA::STACK_QUEUE,             BZ, (1<<STACK_QUEUE_SIZE)-1),       // 0..14, 0=active stack
-        // H4(SSTACK_A::ESTIMATED_DMG,  NE, 100),      // est. dmg by the active stack as a percentage of this stack's total HP
+        // H4(SSTACK_A::ESTIMATED_DMG,  NE, 1000),      // est. dmg by the active stack as a permillage of this stack's total HP
         E4(HA::STACK_VALUE_ONE,         EE, STACK_VALUE_ONE_MAX),
         E4(HA::STACK_FLAGS1,            BE, (1<<EI(StackFlag1::_count))-1),
         E4(HA::STACK_FLAGS2,            BE, (1<<EI(StackFlag2::_count))-1),
 
-        E4(HA::STACK_VALUE_REL,             LE, 100),
-        E4(HA::STACK_VALUE_REL0,            LE, 100),
-        E4(HA::STACK_VALUE_KILLED_REL,      LE, 100),
-        E4(HA::STACK_VALUE_KILLED_ACC_REL0, LE, 100),
-        E4(HA::STACK_VALUE_LOST_REL,        LE, 100),
-        E4(HA::STACK_VALUE_LOST_ACC_REL0,   LE, 100),
-        E4(HA::STACK_DMG_DEALT_REL,         LE, 100),
-        E4(HA::STACK_DMG_DEALT_ACC_REL0,    LE, 100),
-        E4(HA::STACK_DMG_RECEIVED_REL,      LE, 100),
-        E4(HA::STACK_DMG_RECEIVED_ACC_REL0, LE, 100),
+        E4(HA::STACK_VALUE_REL,             LE, 1000),
+        E4(HA::STACK_VALUE_REL0,            LE, 1000),
+        E4(HA::STACK_VALUE_KILLED_REL,      LE, 1000),
+        E4(HA::STACK_VALUE_KILLED_ACC_REL0, LE, 1000),
+        E4(HA::STACK_VALUE_LOST_REL,        LE, 1000),
+        E4(HA::STACK_VALUE_LOST_ACC_REL0,   LE, 1000),
+        E4(HA::STACK_DMG_DEALT_REL,         LE, 1000),
+        E4(HA::STACK_DMG_DEALT_ACC_REL0,    LE, 1000),
+        E4(HA::STACK_DMG_RECEIVED_REL,      LE, 1000),
+        E4(HA::STACK_DMG_RECEIVED_ACC_REL0, LE, 1000),
     };
 
     constexpr LinkEncoding LINK_ENCODING {
