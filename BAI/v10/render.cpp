@@ -518,7 +518,12 @@ namespace MMAI::BAI::V10 {
                             break; case SF1::BLOCKING: {
                                 auto want = 0;
                                 for (auto &adjstack : battle->battleAdjacentUnits(cstack)) {
-                                    if (adjstack->unitSide() != cstack->unitSide() && adjstack->canShoot() && battle->battleIsUnitBlocked(adjstack)) {
+                                    if (adjstack->unitSide() != cstack->unitSide() \
+                                        && adjstack->canShoot() \
+                                        && battle->battleIsUnitBlocked(adjstack) \
+                                        && !adjstack->hasBonusOfType(BonusType::FREE_SHOOTING) \
+                                        && !adjstack->hasBonusOfType(BonusType::SIEGE_WEAPON) \
+                                    ) {
                                         want = 1;
                                         break;
                                     }
