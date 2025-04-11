@@ -464,7 +464,7 @@ namespace MMAI::BAI::V10 {
         }
 
         // double avgdmg = 0.5*(estdmg.damage.max + estdmg.damage.min);
-        // auto dmgPermilleHP = std::clamp<int>(std::round(1000 * avgdmg / cstack->getAvailableHealth()), 0, 1000);
+        // auto dmgPermilleHP = std::clamp<int>(std::round(1000ll * avgdmg / cstack->getAvailableHealth()), 0, 1000);
 
         if (cstack->willMove()) {
             setflag(F1::WILL_ACT);
@@ -525,7 +525,8 @@ namespace MMAI::BAI::V10 {
 
         // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
         auto permille = [](int v1, int v2) {
-            return 1000 * v1 / v2;
+            // ll (long long) ensures long is 64-bit even on 32-bit systems
+            return (1000ll * v1) / v2;
         };
 
         setattr(A::VALUE_ONE, valueOne);

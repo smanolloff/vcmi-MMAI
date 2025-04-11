@@ -224,104 +224,6 @@ namespace MMAI::BAI::V10 {
         attackLogs.clear(); // accumulate new logs until next turn
     }
 
-    void State::encodeGlobal(CombatResult result) {
-        for (int i=0; i<EI(GA::_count); ++i) {
-            Encoder::Encode(GA(i), gstats->attrs.at(i), bfstate);
-        }
-    }
-
-    void State::encodePlayer(const PlayerStats* pstats) {
-        for (int i=0; i<EI(PA::_count); ++i) {
-            Encoder::Encode(PA(i), pstats->attrs.at(i), bfstate);
-        }
-    }
-
-    void State::encodeHex(const Hex* hex) {
-        // Battlefield state
-        for (int i=0; i<EI(HA::_count); ++i)
-            Encoder::Encode(HA(i), hex->attrs.at(i), bfstate);
-
-        // Action mask
-        for (int m=0; m<hex->actmask.size(); ++m)
-            actmask.push_back(hex->actmask.test(m));
-    }
-
-    void State::verify() {
-        ASSERT(bfstate.size() == BATTLEFIELD_STATE_SIZE, "unexpected bfstate.size(): " + std::to_string(bfstate.size()));
-        ASSERT(actmask.size() == N_ACTIONS, "unexpected actmask.size(): " + std::to_string(actmask.size()));
-    }
-
-    void State::onBattleStacksAttacked(const std::vector<BattleStackAttacked> &bsa) {
-        auto stacks = battlefield->stacks;
-
-        for(auto & elem : bsa) {
-            auto cdefender = battle->battleGetStackByID(elem.stackAttacked, false);
-            auto cattacker = battle->battleGetStackByID(elem.attackerID, false);
-
-            ASSERT(cdefender, "defender cannot be NULL");
-            // logAi->debug("Attack: %s -> %s (%d dmg, %d died)", attacker->getName(), defender->getName(), elem.damageAmount, elem.killedAmount);
-
-            auto defender = std::find_if(stacks.begin(), stacks.end(), [&cdefender](std::shared_ptr<Stack> stack) {
-                return cdefender == stack->cstack;
-            });
-
-            if (defender == stacks.end()) {
-                logAi->info("defender cstack '%s' not found in stacks. Maybe it was just summoned/resurrected?", cdefender->getDescription());
-            }
-
-            auto attacker = std::find_if(stacks.begin(), stacks.end(), [&cattacker](std::shared_ptr<Stack> stack) {
-                return cattacker == stack->cstack;
-            });
-
-            auto bf_valueNow = gstats->attr(GA::BFIELD_VALUE_NOW_ABS);
-            auto bf_hpNow = gstats->attr(GA::BFIELD_HP_NOW_ABS);
-            auto value = elem.killedAmount * Stack::CalcValue(cdefender->unitType());
-
-            // std::cout << "AttackLog";
-            // std::cout << ": attacker=" << (cattacker ? cattacker->getDescription() : "null");
-            // std::cout << ", defender=" << (cdefender ? cdefender->getDescription() : "null");
-            // std::cout << ", dmg=" << (elem.damageAmount);
-            // std::cout << ", value=" << (value);
-            // std::cout << "\n";
-
-            attackLogs.push_back(std::make_shared<AttackLog>(
-                // XXX: attacker can be NULL when an effect does dmg (eg. Acid)
-                // XXX: attacker or defender can be NULL if it did not exist
-                //      when `stacks` was built (e.g. during our last turn),
-                //      but the enemy just summonned/resurrected it
-                attacker != stacks.end() ? *attacker : nullptr,
-                defender != stacks.end() ? *defender : nullptr,
-                cattacker,
-                cdefender,
-                elem.damageAmount,
-                1000 * elem.damageAmount / bf_hpNow,
-                elem.killedAmount,
-                value,
-                1000 * value / bf_valueNow
-            ));
-        }
-    }
-
-    void State::onBattleTriggerEffect(const BattleTriggerEffect &bte) {
-        if (static_cast<BonusType>(bte.effect) != BonusType::MORALE)
-            return;
-
-        isMorale = true;
-    }
-
-    void State::onActionFinished(const BattleAction &action) {
-        // XXX: assuming action was OK (no server error about failed/fishy action)
-    }
-
-    /*
-     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     * !!!!!! IMPORTANT: `battlefield` must not be used here (old state) !!!!!!
-     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     */
-    void State::onActionStarted(const BattleAction &action) {
-        _onActionStarted(action);
-        actingStack = nullptr;
-    }
 
     void State::_onActionStarted(const BattleAction &action) {
         if (!action.isUnitAction()) {
@@ -445,6 +347,104 @@ namespace MMAI::BAI::V10 {
         onActiveStack(actingStack, CombatResult::NONE, true, fastpath);
     }
 
+    void State::encodeGlobal(CombatResult result) {
+        for (int i=0; i<EI(GA::_count); ++i) {
+            Encoder::Encode(GA(i), gstats->attrs.at(i), bfstate);
+        }
+    }
+
+    void State::encodePlayer(const PlayerStats* pstats) {
+        for (int i=0; i<EI(PA::_count); ++i) {
+            Encoder::Encode(PA(i), pstats->attrs.at(i), bfstate);
+        }
+    }
+
+    void State::encodeHex(const Hex* hex) {
+        // Battlefield state
+        for (int i=0; i<EI(HA::_count); ++i)
+            Encoder::Encode(HA(i), hex->attrs.at(i), bfstate);
+
+        // Action mask
+        for (int m=0; m<hex->actmask.size(); ++m)
+            actmask.push_back(hex->actmask.test(m));
+    }
+
+    void State::verify() {
+        ASSERT(bfstate.size() == BATTLEFIELD_STATE_SIZE, "unexpected bfstate.size(): " + std::to_string(bfstate.size()));
+        ASSERT(actmask.size() == N_ACTIONS, "unexpected actmask.size(): " + std::to_string(actmask.size()));
+    }
+
+    void State::onBattleStacksAttacked(const std::vector<BattleStackAttacked> &bsa) {
+        auto stacks = battlefield->stacks;
+
+        for(auto & elem : bsa) {
+            auto cdefender = battle->battleGetStackByID(elem.stackAttacked, false);
+            auto cattacker = battle->battleGetStackByID(elem.attackerID, false);
+
+            ASSERT(cdefender, "defender cannot be NULL");
+            // logAi->debug("Attack: %s -> %s (%d dmg, %d died)", attacker->getName(), defender->getName(), elem.damageAmount, elem.killedAmount);
+
+            auto defender = std::find_if(stacks.begin(), stacks.end(), [&cdefender](std::shared_ptr<Stack> stack) {
+                return cdefender == stack->cstack;
+            });
+
+            if (defender == stacks.end()) {
+                logAi->info("defender cstack '%s' not found in stacks. Maybe it was just summoned/resurrected?", cdefender->getDescription());
+            }
+
+            auto attacker = std::find_if(stacks.begin(), stacks.end(), [&cattacker](std::shared_ptr<Stack> stack) {
+                return cattacker == stack->cstack;
+            });
+
+            auto bf_valueNow = gstats->attr(GA::BFIELD_VALUE_NOW_ABS);
+            auto bf_hpNow = gstats->attr(GA::BFIELD_HP_NOW_ABS);
+            auto value = elem.killedAmount * Stack::CalcValue(cdefender->unitType());
+
+            // std::cout << "AttackLog";
+            // std::cout << ": attacker=" << (cattacker ? cattacker->getDescription() : "null");
+            // std::cout << ", defender=" << (cdefender ? cdefender->getDescription() : "null");
+            // std::cout << ", dmg=" << (elem.damageAmount);
+            // std::cout << ", value=" << (value);
+            // std::cout << "\n";
+
+            attackLogs.push_back(std::make_shared<AttackLog>(
+                // XXX: attacker can be NULL when an effect does dmg (eg. Acid)
+                // XXX: attacker or defender can be NULL if it did not exist
+                //      when `stacks` was built (e.g. during our last turn),
+                //      but the enemy just summonned/resurrected it
+                attacker != stacks.end() ? *attacker : nullptr,
+                defender != stacks.end() ? *defender : nullptr,
+                cattacker,
+                cdefender,
+                elem.damageAmount,
+                1000 * elem.damageAmount / bf_hpNow,
+                elem.killedAmount,
+                value,
+                1000 * value / bf_valueNow
+            ));
+        }
+    }
+
+    void State::onBattleTriggerEffect(const BattleTriggerEffect &bte) {
+        if (static_cast<BonusType>(bte.effect) != BonusType::MORALE)
+            return;
+
+        isMorale = true;
+    }
+
+    void State::onActionFinished(const BattleAction &action) {
+        // XXX: assuming action was OK (no server error about failed/fishy action)
+    }
+
+    /*
+     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     * !!!!!! IMPORTANT: `battlefield` must not be used here (old state) !!!!!!
+     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     */
+    void State::onActionStarted(const BattleAction &action) {
+        _onActionStarted(action);
+        actingStack = nullptr;
+    }
 
     void State::onBattleEnd(const BattleResult *br) {
         switch(br->winner) {

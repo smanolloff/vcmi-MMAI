@@ -41,10 +41,11 @@ namespace MMAI::BAI::V10 {
         if (res != CombatResult::NONE)
             setattr(A::BATTLE_WINNER, EI(res));
 
+        // ll (long long) ensures long is 64-bit even on 32-bit systems
         setattr(A::BFIELD_VALUE_NOW_ABS, value);
-        setattr(A::BFIELD_VALUE_NOW_REL0, 1000 * value / attr(A::BFIELD_VALUE_START_ABS));
+        setattr(A::BFIELD_VALUE_NOW_REL0, 1000ll * value / attr(A::BFIELD_VALUE_START_ABS));
         setattr(A::BFIELD_HP_NOW_ABS, hp);
-        setattr(A::BFIELD_HP_NOW_REL0, 1000 * hp / attr(A::BFIELD_HP_START_ABS));
+        setattr(A::BFIELD_HP_NOW_REL0, 1000ll * hp / attr(A::BFIELD_HP_START_ABS));
     }
 
     int GlobalStats::getAttr(GlobalAttribute a) const {

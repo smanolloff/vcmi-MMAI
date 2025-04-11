@@ -37,9 +37,9 @@ namespace MMAI::BAI::V10 {
     public:
 
         // IState impl
-        const Schema::ActionMask& getActionMask() const override { return actmask; };
-        const Schema::AttentionMask& getAttentionMask() const override { return DUMMY_ATTNMASK; }
-        const Schema::BattlefieldState& getBattlefieldState() const override { return bfstate; }
+        const Schema::ActionMask* getActionMask() const override { return &actmask; };
+        const Schema::AttentionMask* getAttentionMask() const override { return &DUMMY_ATTNMASK; }
+        const Schema::BattlefieldState* getBattlefieldState() const override { return &bfstate; }
         const std::any getSupplementaryData() const override {
             return static_cast<const MMAI::Schema::V10::ISupplementaryData*>(supdata.get());
         }

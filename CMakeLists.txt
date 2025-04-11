@@ -38,32 +38,6 @@ set(MMAI_FILES
   BAI/v3/supplementary_data.cpp
   BAI/v3/supplementary_data.h
 
-  BAI/v7/BAI.cpp
-  BAI/v7/BAI.h
-  BAI/v7/action.cpp
-  BAI/v7/action.h
-  BAI/v7/attack_log.h
-  BAI/v7/battlefield.cpp
-  BAI/v7/battlefield.h
-  BAI/v7/encoder.cpp
-  BAI/v7/encoder.h
-  BAI/v7/general_info.cpp
-  BAI/v7/general_info.h
-  BAI/v7/hex.cpp
-  BAI/v7/hex.h
-  BAI/v7/hexaction.h
-  BAI/v7/hexactmask.h
-  BAI/v7/render.cpp
-  BAI/v7/render.h
-  BAI/v7/stack.cpp
-  BAI/v7/stack.h
-  BAI/v7/state.cpp
-  BAI/v7/state.h
-  BAI/v7/supplementary_data.cpp
-  BAI/v7/supplementary_data.h
-  BAI/v7/util.cpp
-  BAI/v7/util.h
-
   BAI/v8/BAI.cpp
   BAI/v8/BAI.h
   BAI/v8/action.cpp
