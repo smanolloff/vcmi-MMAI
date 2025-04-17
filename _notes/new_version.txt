@@ -1,19 +1,22 @@
 version X -> Y
 
-1. cp -R AI/MMAI/BAI/v{X,Y}
+1. cp -r AI/MMAI/BAI/v{X,Y}
 
-2. cp -R AI/MMAI/schema/v{X,Y}
+2. cp -r AI/MMAI/schema/v{X,Y}
 
 3. Edit MMAI_FILES in AI/MMAI/CMakeLists.txt by adding the new files
   (copy the two vX file sections and replace paths to be for vY)
 
+
 4. Text replacements: replace all occurrances of
   - "/vX/" -> "/vY/"
   - "::VX" -> "::VY"
-  ^ in AI/MMAI/BAI/vY/ and in AI/MMAI/schema/vY/
+  ^ in AI/MMAI/BAI/vY/
+  ^ in AI/MMAI/schema/vY/
 
 5. Edit AI/MMAI/BAI/base.cpp and add #include + case stmt for version Y
    Edit AI/MMAI/BAI/model/TorchModel.cpp and add case stmt for version Y (2 places)
+   Edit AI/MMAI/schema/schema.h add #include for version Y
 
 6. cp ML/user_agents/agent-v{X,Y}.cpp
    cp ML/user_agents/agent-v{X,Y}.h

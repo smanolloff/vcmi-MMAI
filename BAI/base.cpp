@@ -22,6 +22,7 @@
 #include "BAI/v8/BAI.h"
 #include "BAI/v9/BAI.h"
 #include "BAI/v10/BAI.h"
+#include "BAI/v11/BAI.h"
 #include "base.h"
 
 namespace MMAI::BAI {
@@ -43,6 +44,8 @@ namespace MMAI::BAI {
             res = std::make_shared<V9::BAI>(model, version, env, cb);
         break; case 10:
             res = std::make_shared<V10::BAI>(model, version, env, cb);
+        break; case 11:
+            res = std::make_shared<V11::BAI>(model, version, env, cb);
         break; default:
             throw std::runtime_error("Unsupported schema version: " + std::to_string(version));
         }

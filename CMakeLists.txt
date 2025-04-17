@@ -116,6 +116,34 @@ set(MMAI_FILES
   BAI/v10/util.cpp
   BAI/v10/util.h
 
+  BAI/v11/BAI.cpp
+  BAI/v11/BAI.h
+  BAI/v11/action.cpp
+  BAI/v11/action.h
+  BAI/v11/attack_log.h
+  BAI/v11/battlefield.cpp
+  BAI/v11/battlefield.h
+  BAI/v11/encoder.cpp
+  BAI/v11/encoder.h
+  BAI/v11/global_stats.cpp
+  BAI/v11/global_stats.h
+  BAI/v11/hex.cpp
+  BAI/v11/hex.h
+  BAI/v11/hexaction.h
+  BAI/v11/hexactmask.h
+  BAI/v11/player_stats.cpp
+  BAI/v11/player_stats.h
+  BAI/v11/render.cpp
+  BAI/v11/render.h
+  BAI/v11/stack.cpp
+  BAI/v11/stack.h
+  BAI/v11/state.cpp
+  BAI/v11/state.h
+  BAI/v11/supplementary_data.cpp
+  BAI/v11/supplementary_data.h
+  BAI/v11/util.cpp
+  BAI/v11/util.h
+
   schema/schema.h
   schema/v3/constants.h
   schema/v3/schema.h
@@ -133,6 +161,10 @@ set(MMAI_FILES
   schema/v10/schema.h
   schema/v10/types.h
   schema/v10/util.h
+  schema/v11/constants.h
+  schema/v11/schema.h
+  schema/v11/types.h
+  schema/v11/util.h
 
   MMAI.h
   StdInc.h
