@@ -49,6 +49,9 @@ namespace MMAI::BAI {
             break; case 11:
                 sizeOneHex = MMAI::Schema::V11::BATTLEFIELD_STATE_SIZE_ONE_HEX;
                 nactions = MMAI::Schema::V11::N_ACTIONS;
+            break; case 12:
+                sizeOneHex = MMAI::Schema::V12::BATTLEFIELD_STATE_SIZE_ONE_HEX;
+                nactions = MMAI::Schema::V12::N_ACTIONS;
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }
@@ -93,6 +96,8 @@ namespace MMAI::BAI {
                 ended = std::any_cast<const MMAI::Schema::V10::ISupplementaryData*>(any)->getIsBattleEnded();
             break; case 11:
                 ended = std::any_cast<const MMAI::Schema::V11::ISupplementaryData*>(any)->getIsBattleEnded();
+            break; case 12:
+                ended = std::any_cast<const MMAI::Schema::V12::ISupplementaryData*>(any)->getIsBattleEnded();
             break; default:
                 throw std::runtime_error("Unknown MMAI version: " + std::to_string(version));
         }

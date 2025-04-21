@@ -17,9 +17,9 @@
 #pragma once
 
 #include "schema/gcem/include/gcem.hpp"
-#include "schema/v11/types.h"
+#include "schema/v12/types.h"
 
-namespace MMAI::Schema::V11 {
+namespace MMAI::Schema::V12 {
     /*
      * Compile time int(sqrt(x))
      * https://stackoverflow.com/a/27709195
@@ -138,5 +138,53 @@ namespace MMAI::Schema::V11 {
             ret += std::get<2>(elems.at(i));
         }
         return ret;
+    }
+
+
+    /*
+     * Compile-time calculation of the bin index for value `v` < `vmax` and a
+     * total number of bins `n`.
+     */
+    constexpr int LogBin(int v, int vmax, int n) {
+        double logx = gcem::log(v);
+        double logm = gcem::log(vmax);
+        double ratio = (logx / logm) * (n - 1);
+        return gcem::floor(ratio);
+    }
+
+    /*
+     * Compile-time detection for "dead" bins when encoding integer values
+     * using log binning.
+     * E.g. if vmax=80, n=13, then
+     *  bin 0 range: 0 .. 1.44      => int 0, 1
+     *  bin 1 range: 1.45 .. 2.07]  => int 2
+     *  bin 2 range: 2.08 .. 2.98]  !! "dead" bin (no integer falls inside)
+     *  bin 3 range: 2.99 .. 4.30]  => int 3, 4, 5
+     *  ... etc.
+     */
+    constexpr bool HasDeadLogBins(int vmax, int n) {
+        int old = -1;
+        for (int v = 1; v < vmax; ++v) {
+            int new_bin = LogBin(v, vmax, n);
+            if (new_bin > old + 1) {
+                return true;
+            }
+            old = new_bin;
+        }
+        return false;
+    }
+
+    /*
+     * Compile-time calculation for the optimal number of bins which
+     * can be used for log-bin encoding of values between 0 and `vmax`.
+     * ("optimal" means max without dead bins)
+     */
+    constexpr int LogBins(int vmax, int nstart = 50) {
+        for (int n = nstart - 1; n >= 1; --n) {
+            if (!HasDeadLogBins(vmax, n)) {
+                return n;
+            }
+        }
+        return -1; // Not found
     }
 }

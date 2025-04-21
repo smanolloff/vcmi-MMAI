@@ -144,6 +144,34 @@ set(MMAI_FILES
   BAI/v11/util.cpp
   BAI/v11/util.h
 
+  BAI/v12/BAI.cpp
+  BAI/v12/BAI.h
+  BAI/v12/action.cpp
+  BAI/v12/action.h
+  BAI/v12/attack_log.h
+  BAI/v12/battlefield.cpp
+  BAI/v12/battlefield.h
+  BAI/v12/encoder.cpp
+  BAI/v12/encoder.h
+  BAI/v12/global_stats.cpp
+  BAI/v12/global_stats.h
+  BAI/v12/hex.cpp
+  BAI/v12/hex.h
+  BAI/v12/hexaction.h
+  BAI/v12/hexactmask.h
+  BAI/v12/player_stats.cpp
+  BAI/v12/player_stats.h
+  BAI/v12/render.cpp
+  BAI/v12/render.h
+  BAI/v12/stack.cpp
+  BAI/v12/stack.h
+  BAI/v12/state.cpp
+  BAI/v12/state.h
+  BAI/v12/supplementary_data.cpp
+  BAI/v12/supplementary_data.h
+  BAI/v12/util.cpp
+  BAI/v12/util.h
+
   schema/schema.h
   schema/v3/constants.h
   schema/v3/schema.h
@@ -165,6 +193,11 @@ set(MMAI_FILES
   schema/v11/schema.h
   schema/v11/types.h
   schema/v11/util.h
+  schema/v12/constants.h
+  schema/v12/schema.h
+  schema/v12/types.h
+  schema/v12/util.h
+
 
   MMAI.h
   StdInc.h
@@ -197,7 +230,7 @@ be used for training). More details in vcmi-gym's `requirements.txt`.
 message(STATUS "MMAI_LIBTORCH_PATH: ${MMAI_LIBTORCH_PATH}")
 
 set(MMAI_LIBS vcmi)
-set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/schema/gcem)
 
 if(MMAI_LIBTORCH_PATH)
   add_definitions(-DUSING_LIBTORCH=1)

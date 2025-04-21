@@ -23,13 +23,13 @@
 #include "mapObjects/CGTownInstance.h"
 #include "vcmi/spells/Caster.h"
 
-#include "BAI/v11/hex.h"
-#include "BAI/v11/hexactmask.h"
-#include "BAI/v11/render.h"
-#include "schema/v11/constants.h"
-#include "schema/v11/types.h"
+#include "BAI/v12/hex.h"
+#include "BAI/v12/hexactmask.h"
+#include "BAI/v12/render.h"
+#include "schema/v12/constants.h"
+#include "schema/v12/types.h"
 
-namespace MMAI::BAI::V11 {
+namespace MMAI::BAI::V12 {
     using SA = StackAttribute;
     using SF1 = StackFlag1;
     using SF2 = StackFlag2;
