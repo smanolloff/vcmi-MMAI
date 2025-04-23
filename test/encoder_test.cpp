@@ -1,11 +1,11 @@
-#include "BAI/v8/encoder.h"
-#include "schema/v8/constants.h"
-#include "schema/v8/types.h"
+#include "BAI/v12/encoder.h"
+#include "schema/v12/constants.h"
+#include "schema/v12/types.h"
 #include "test/googletest/googletest/include/gtest/gtest.h"
 #include <stdexcept>
 
-using Encoder = MMAI::BAI::V8::Encoder;
-using namespace MMAI::Schema::V8;
+using Encoder = MMAI::BAI::V12::Encoder;
+using namespace MMAI::Schema::V12;
 
 
 TEST(Encoder, Encode) {
@@ -32,10 +32,12 @@ TEST(Encoder, Encode) {
         auto have = std::vector<float> {};
         ASSERT_THROW(Encoder::Encode(a, -1, have), std::runtime_error);
     }
-    {
-        auto have = std::vector<float> {};
-        ASSERT_THROW(Encoder::Encode(a, 666, have), std::runtime_error);
-    }
+
+    // This no longer throws (emits warning instead)
+    // {
+    //     auto have = std::vector<float> {};
+    //     ASSERT_THROW(Encoder::Encode(a, 666, have), std::runtime_error);
+    // }
   }
 }
 
@@ -519,3 +521,474 @@ TEST(Encoder, NormalizedZeroNull) {
   }
 }
 
+TEST(Encoder, ExpbinExplicitNull) {
+  static_assert(EI(Encoding::EXPBIN_EXPLICIT_NULL) == 1+EI(Encoding::LINNORM_ZERO_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0,0};
+    Encoder::EncodeExpbinExplicitNull(-1, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,0,0,0,0,0};
+    Encoder::EncodeExpbinExplicitNull(0, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,0,1,0,0};
+    Encoder::EncodeExpbinExplicitNull(3, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,0,0,0,1};
+    Encoder::EncodeExpbinExplicitNull(666, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, ExpbinImplicitNull) {
+  static_assert(EI(Encoding::EXPBIN_IMPLICIT_NULL) == 1+EI(Encoding::EXPBIN_EXPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,0,0,0};
+    Encoder::EncodeExpbinImplicitNull(-1, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeExpbinImplicitNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,1,0,0};
+    Encoder::EncodeExpbinImplicitNull(3, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,1,0,0};
+    Encoder::EncodeExpbinImplicitNull(8, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,0,1,0};
+    Encoder::EncodeExpbinImplicitNull(10, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+
+TEST(Encoder, ExpbinMaskingNull) {
+  static_assert(EI(Encoding::EXPBIN_MASKING_NULL) == 1+EI(Encoding::EXPBIN_IMPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {-1,-1,-1,-1,-1,-1};
+    Encoder::EncodeExpbinMaskingNull(-1, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeExpbinMaskingNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, ExpbinStrictNull) {
+  static_assert(EI(Encoding::EXPBIN_STRICT_NULL) == 1+EI(Encoding::EXPBIN_MASKING_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    ASSERT_THROW(Encoder::EncodeExpbinStrictNull(-1, 6, 80, 6.5, have), std::runtime_error);
+  }
+
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeExpbinStrictNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, ExpbinZeroNull) {
+  static_assert(EI(Encoding::EXPBIN_ZERO_NULL) == 1+EI(Encoding::EXPBIN_STRICT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeExpbinZeroNull(-1, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeExpbinZeroNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,1,0,0};
+    Encoder::EncodeExpbinZeroNull(3, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,0,0,1};
+    Encoder::EncodeExpbinZeroNull(666, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+
+TEST(Encoder, AccumulatingExpbinExplicitNull) {
+  static_assert(EI(Encoding::ACCUMULATING_EXPBIN_EXPLICIT_NULL) == 1+EI(Encoding::EXPBIN_ZERO_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinExplicitNull(-1, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinExplicitNull(0, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,1,1,1,0,0};
+    Encoder::EncodeAccumulatingExpbinExplicitNull(3, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,1,1,1,1,1};
+    Encoder::EncodeAccumulatingExpbinExplicitNull(666, 1+6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, AccumulatingExpbinImplicitNull) {
+  static_assert(EI(Encoding::ACCUMULATING_EXPBIN_IMPLICIT_NULL) == 1+EI(Encoding::ACCUMULATING_EXPBIN_EXPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinImplicitNull(-1, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinImplicitNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,1,1,1,0,0};
+    Encoder::EncodeAccumulatingExpbinImplicitNull(3, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,1,1,1,0,0};
+    Encoder::EncodeAccumulatingExpbinImplicitNull(8, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,1,1,1,1,0};
+    Encoder::EncodeAccumulatingExpbinImplicitNull(10, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+
+TEST(Encoder, AccumulatingExpbinMaskingNull) {
+  static_assert(EI(Encoding::ACCUMULATING_EXPBIN_MASKING_NULL) == 1+EI(Encoding::ACCUMULATING_EXPBIN_IMPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {-1,-1,-1,-1,-1,-1};
+    Encoder::EncodeAccumulatingExpbinMaskingNull(-1, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinMaskingNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, AccumulatingExpbinStrictNull) {
+  static_assert(EI(Encoding::ACCUMULATING_EXPBIN_STRICT_NULL) == 1+EI(Encoding::ACCUMULATING_EXPBIN_MASKING_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    ASSERT_THROW(Encoder::EncodeAccumulatingExpbinStrictNull(-1, 6, 80, 6.5, have), std::runtime_error);
+  }
+
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinStrictNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, AccumulatingExpbinZeroNull) {
+  static_assert(EI(Encoding::ACCUMULATING_EXPBIN_ZERO_NULL) == 1+EI(Encoding::ACCUMULATING_EXPBIN_STRICT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinZeroNull(-1, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0,0,0};
+    Encoder::EncodeAccumulatingExpbinZeroNull(0, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,1,1,1,0,0};
+    Encoder::EncodeAccumulatingExpbinZeroNull(3, 6, 80, 6.5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, LinbinExplicitNull) {
+  static_assert(EI(Encoding::LINBIN_EXPLICIT_NULL) == 1+EI(Encoding::ACCUMULATING_EXPBIN_ZERO_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0};
+    Encoder::EncodeLinbinExplicitNull(-1, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,0,0};
+    Encoder::EncodeLinbinExplicitNull(0, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,0,0};
+    Encoder::EncodeLinbinExplicitNull(3, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,1,0};
+    Encoder::EncodeLinbinExplicitNull(9, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,1};
+    Encoder::EncodeLinbinExplicitNull(10, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0,1};
+    Encoder::EncodeLinbinExplicitNull(666, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, LinbinImplicitNull) {
+  static_assert(EI(Encoding::LINBIN_IMPLICIT_NULL) == 1+EI(Encoding::LINBIN_EXPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0};
+    Encoder::EncodeLinbinImplicitNull(-1, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeLinbinImplicitNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeLinbinImplicitNull(3, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,0};
+    Encoder::EncodeLinbinImplicitNull(5, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+
+TEST(Encoder, LinbinMaskingNull) {
+  static_assert(EI(Encoding::LINBIN_MASKING_NULL) == 1+EI(Encoding::LINBIN_IMPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {-1,-1,-1};
+    Encoder::EncodeLinbinMaskingNull(-1, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeLinbinMaskingNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, LinbinStrictNull) {
+  static_assert(EI(Encoding::LINBIN_STRICT_NULL) == 1+EI(Encoding::LINBIN_MASKING_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    ASSERT_THROW(Encoder::EncodeLinbinStrictNull(-1, 3, 15, 5, have), std::runtime_error);
+  }
+
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeLinbinStrictNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, LinbinZeroNull) {
+  static_assert(EI(Encoding::LINBIN_ZERO_NULL) == 1+EI(Encoding::LINBIN_STRICT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeLinbinZeroNull(-1, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeLinbinZeroNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,0};
+    Encoder::EncodeLinbinZeroNull(5, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+
+TEST(Encoder, AccumulatingLinbinExplicitNull) {
+  static_assert(EI(Encoding::ACCUMULATING_LINBIN_EXPLICIT_NULL) == 1+EI(Encoding::LINBIN_ZERO_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0,0};
+    Encoder::EncodeAccumulatingLinbinExplicitNull(-1, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,0,0};
+    Encoder::EncodeAccumulatingLinbinExplicitNull(0, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,1,0};
+    Encoder::EncodeAccumulatingLinbinExplicitNull(5, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,1,1,1};
+    Encoder::EncodeAccumulatingLinbinExplicitNull(666, 1+3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, AccumulatingLinbinImplicitNull) {
+  static_assert(EI(Encoding::ACCUMULATING_LINBIN_IMPLICIT_NULL) == 1+EI(Encoding::ACCUMULATING_LINBIN_EXPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {0,0,0};
+    Encoder::EncodeAccumulatingLinbinImplicitNull(-1, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeAccumulatingLinbinImplicitNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,1,0};
+    Encoder::EncodeAccumulatingLinbinImplicitNull(5, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,1,1};
+    Encoder::EncodeAccumulatingLinbinImplicitNull(666, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+
+TEST(Encoder, AccumulatingLinbinMaskingNull) {
+  static_assert(EI(Encoding::ACCUMULATING_LINBIN_MASKING_NULL) == 1+EI(Encoding::ACCUMULATING_LINBIN_IMPLICIT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {-1,-1,-1};
+    Encoder::EncodeAccumulatingLinbinMaskingNull(-1, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeAccumulatingLinbinMaskingNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, AccumulatingLinbinStrictNull) {
+  static_assert(EI(Encoding::ACCUMULATING_LINBIN_STRICT_NULL) == 1+EI(Encoding::ACCUMULATING_LINBIN_MASKING_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    ASSERT_THROW(Encoder::EncodeAccumulatingLinbinStrictNull(-1, 3, 15, 5, have), std::runtime_error);
+  }
+
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeAccumulatingLinbinStrictNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}
+
+TEST(Encoder, AccumulatingLinbinZeroNull) {
+  static_assert(EI(Encoding::ACCUMULATING_LINBIN_ZERO_NULL) == 1+EI(Encoding::ACCUMULATING_LINBIN_STRICT_NULL), "Encoding list has changed");
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeAccumulatingLinbinZeroNull(-1, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,0,0};
+    Encoder::EncodeAccumulatingLinbinZeroNull(0, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+  {
+    auto have = std::vector<float> {};
+    auto want = std::vector<float> {1,1,0};
+    Encoder::EncodeAccumulatingLinbinZeroNull(5, 3, 15, 5, have);
+    ASSERT_EQ(want, have);
+  }
+}

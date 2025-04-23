@@ -33,7 +33,6 @@ namespace MMAI::BAI::V12 {
     using SA = StackAttribute;
     using SF1 = StackFlag1;
     using SF2 = StackFlag2;
-    using LT = LinkType;
 
     std::string PadLeft(const std::string& input, size_t desiredLength, char paddingChar) {
         std::ostringstream ss;
@@ -459,8 +458,8 @@ namespace MMAI::BAI::V12 {
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxDamage(false); }, "HEX.STACK_DMG_MAX");
                 break; case HA::STACK_HP:
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxHealth(); }, "HEX.STACK_HP");
-                break; case HA::STACK_HP_LEFT:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getFirstHPleft(); }, "HEX.STACK_HP_LEFT");
+                break; case HA::STACK_HP_LEFT_REL:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return 1000ll * cstack->getFirstHPleft() / cstack->getMaxHealth(); }, "HEX.STACK_VALUE_REL");
                 break; case HA::STACK_SPEED:
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMovementRange(); }, "HEX.STACK_SPEED");
                 break; case HA::STACK_QUEUE: {
@@ -837,7 +836,7 @@ namespace MMAI::BAI::V12 {
 
                 if (stack) {
                     auto seen = seenstacks.find(stack) != seenstacks.end();
-                    auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
+                    auto &[_, _e, n, _vmax, _p] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
                     auto flags = std::bitset<n>(stack->getAttr(SA::FLAGS1));
                     sym = std::string(1, stack->getAlias());
                     col = stack->getAttr(SA::SIDE) ? bluecol : redcol;
@@ -959,7 +958,7 @@ namespace MMAI::BAI::V12 {
             RowDef{SA::DMG_MIN, "Dmg (min)"},
             RowDef{SA::DMG_MAX, "Dmg (max)"},
             RowDef{SA::HP, "HP"},
-            RowDef{SA::HP_LEFT, "HP left"},
+            RowDef{SA::HP_LEFT_REL, "     HP left (‰)"},  // manually pad to 16 (unicode length issue)
             RowDef{SA::SPEED, "Speed"},
             RowDef{SA::QUEUE, "Queue"},
             RowDef{SA::VALUE_ONE, "Value (one)"},
@@ -1030,7 +1029,7 @@ namespace MMAI::BAI::V12 {
                     std::string value = "";
 
                     if (stack) {
-                        auto &[_, _e, n, _vmax] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
+                        auto &[_, _e, n, _vmax, _p] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
                         auto flags1 = std::bitset<n>(stack->getAttr(SA::FLAGS1));
                         auto flags2 = std::bitset<n>(stack->getAttr(SA::FLAGS2));
 

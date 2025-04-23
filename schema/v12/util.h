@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "schema/gcem/include/gcem.hpp"
+#include "schema/v12/expbin.h"
 #include "schema/v12/types.h"
 
 namespace MMAI::Schema::V12 {
@@ -45,14 +45,14 @@ namespace MMAI::Schema::V12 {
      */
     template <typename T>
     constexpr int UninitializedEncodingAttributes(T elems) {
-        // E4S / E4H:
-        using E4Type = typename T::value_type;
+        // E5S / E5H:
+        using E5Type = typename T::value_type;
 
         // Stack Attribute / HexAttribute:
-        using EnumType = typename std::tuple_element<0, E4Type>::type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
 
         for (int i = 0; i < EI(EnumType::_count); i++) {
-            if (elems.at(i) == E4Type{}) return EI(EnumType::_count) - i;
+            if (elems.at(i) == E5Type{}) return EI(EnumType::_count) - i;
         }
 
         return 0;
@@ -65,11 +65,11 @@ namespace MMAI::Schema::V12 {
      */
     template <typename T>
     constexpr int DisarrayedEncodingAttributeIndex(T elems) {
-        // E4S / E4H:
-        using E4Type = typename T::value_type;
+        // E5S / E5H:
+        using E5Type = typename T::value_type;
 
         // Stack Attribute / HexAttribute:
-        using EnumType = typename std::tuple_element<0, E4Type>::type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
 
         for (int i = 0; i < EI(EnumType::_count); i++) {
             if (std::get<0>(elems.at(i)) != EnumType(i)) return i;
@@ -104,7 +104,7 @@ namespace MMAI::Schema::V12 {
     constexpr int MiscalculatedBinaryAttributeUnusedValues(T elems) {
         int i = MiscalculatedBinaryAttributeIndex(elems);
         if (i == -1) return 0;
-        auto [_, e, n, vmax] = elems.at(i);
+        auto [_, e, n, vmax, _p] = elems.at(i);
         return BinaryAttributeUnusedValues(e, n, vmax);
     }
 
@@ -115,12 +115,114 @@ namespace MMAI::Schema::V12 {
      */
     template <typename T>
     constexpr int MiscalculatedBinaryAttributeIndex(T elems) {
-        using E4Type = typename T::value_type;
-        using EnumType = typename std::tuple_element<0, E4Type>::type;
+        using E5Type = typename T::value_type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
 
         for (int i = 0; i < EI(EnumType::_count); i++) {
-            auto [_, e, n, vmax] = elems.at(i);
+            auto [_, e, n, vmax, _p] = elems.at(i);
             if (BinaryAttributeUnusedValues(e, n, vmax) > 0) return i;
+        }
+
+        return -1;
+    }
+
+    /*
+     * Compile-time locator of misconfigured LINBIN or EXPBIN encodings:
+     * * checks if p == -1 (ininitialized param)
+     * * checks if vmax == -1 (error from MaxExpBins or MinExpBinsWithDedicatedZero)
+     * * checks if vmax == -2 (error from MaxExpBins)
+     */
+    template <typename T>
+    constexpr int MisconfiguredBinAttributeIndex(T elems) {
+        using E5Type = typename T::value_type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
+
+        for (int i = 0; i < EI(EnumType::_count); i++) {
+            auto [_, e, _n, vmax, p] = elems.at(i);
+            switch(e) {
+            case Encoding::EXPBIN_EXPLICIT_NULL:
+            case Encoding::EXPBIN_IMPLICIT_NULL:
+            case Encoding::EXPBIN_MASKING_NULL:
+            case Encoding::EXPBIN_STRICT_NULL:
+            case Encoding::EXPBIN_ZERO_NULL:
+            case Encoding::LINBIN_EXPLICIT_NULL:
+            case Encoding::LINBIN_IMPLICIT_NULL:
+            case Encoding::LINBIN_MASKING_NULL:
+            case Encoding::LINBIN_STRICT_NULL:
+            case Encoding::LINBIN_ZERO_NULL:
+                // Check explicitly (more informative error trace)
+                if (p == -1) return i;
+                if (vmax == -1) return i;
+                if (vmax == -2) return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /*
+     * Compile-time locator of dead bins for EXPBIN/LINBIN encodings.
+     */
+    template <typename T>
+    constexpr int DeadBinAttributeIndex(T elems) {
+        using E5Type = typename T::value_type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
+
+        for (int i = 0; i < EI(EnumType::_count); i++) {
+            auto [_, e, n, vmax, p] = elems.at(i);
+            switch(e) {
+            case Encoding::EXPBIN_EXPLICIT_NULL:
+                if (n < 2 || vmax < 1) return -2;  // misconfigured attribute
+                if (FindDeadExpBin(vmax, n-1, p) != -1) return i;
+                break;
+
+            case Encoding::EXPBIN_IMPLICIT_NULL:
+            case Encoding::EXPBIN_MASKING_NULL:
+            case Encoding::EXPBIN_STRICT_NULL:
+            case Encoding::EXPBIN_ZERO_NULL:
+                if (n < 1 || vmax < 1) return -2;  // misconfigured attribute
+                if (FindDeadExpBin(vmax, n, p) != -1) return i;
+                break;
+
+            case Encoding::LINBIN_EXPLICIT_NULL:
+                if (n < 2 || vmax < 1) return -2;  // misconfigured attribute
+                if (vmax < n - 1) return i;
+                break;
+
+            case Encoding::LINBIN_IMPLICIT_NULL:
+            case Encoding::LINBIN_MASKING_NULL:
+            case Encoding::LINBIN_STRICT_NULL:
+            case Encoding::LINBIN_ZERO_NULL:
+                if (n < 1 || vmax < 1) return -2;  // misconfigured attribute
+                if (vmax < n) return i;
+                break;
+            }
+        }
+
+        return -1;
+    }
+
+    /*
+     * Compile-time locator for lack of dedicated zero bin
+     * for EXPBIN/LINBIN ZERO_NULL encodings.
+     * (null is coerced to 0 => it must have its own bin)
+     */
+    template <typename T>
+    constexpr int NoDedicatedZeroBinAttributeIndex(T elems) {
+        using E5Type = typename T::value_type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
+
+
+        for (int i = 0; i < EI(EnumType::_count); i++) {
+            auto [_, e, n, vmax, p] = elems.at(i);
+            switch(e) {
+            case Encoding::EXPBIN_ZERO_NULL:
+                if (!HasDedicatedZeroExpBin(vmax, n, p)) return i;
+                break;
+            case Encoding::LINBIN_ZERO_NULL:
+                if (vmax > n) return i;
+                break;
+            }
         }
 
         return -1;
@@ -131,8 +233,8 @@ namespace MMAI::Schema::V12 {
      */
     template <typename T>
     constexpr int EncodedSize(T elems) {
-        using E4Type = typename T::value_type;
-        using EnumType = typename std::tuple_element<0, E4Type>::type;
+        using E5Type = typename T::value_type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
         int ret = 0;
         for (int i = 0; i < EI(EnumType::_count); i++) {
             ret += std::get<2>(elems.at(i));
@@ -140,51 +242,4 @@ namespace MMAI::Schema::V12 {
         return ret;
     }
 
-
-    /*
-     * Compile-time calculation of the bin index for value `v` < `vmax` and a
-     * total number of bins `n`.
-     */
-    constexpr int LogBin(int v, int vmax, int n) {
-        double logx = gcem::log(v);
-        double logm = gcem::log(vmax);
-        double ratio = (logx / logm) * (n - 1);
-        return gcem::floor(ratio);
-    }
-
-    /*
-     * Compile-time detection for "dead" bins when encoding integer values
-     * using log binning.
-     * E.g. if vmax=80, n=13, then
-     *  bin 0 range: 0 .. 1.44      => int 0, 1
-     *  bin 1 range: 1.45 .. 2.07]  => int 2
-     *  bin 2 range: 2.08 .. 2.98]  !! "dead" bin (no integer falls inside)
-     *  bin 3 range: 2.99 .. 4.30]  => int 3, 4, 5
-     *  ... etc.
-     */
-    constexpr bool HasDeadLogBins(int vmax, int n) {
-        int old = -1;
-        for (int v = 1; v < vmax; ++v) {
-            int new_bin = LogBin(v, vmax, n);
-            if (new_bin > old + 1) {
-                return true;
-            }
-            old = new_bin;
-        }
-        return false;
-    }
-
-    /*
-     * Compile-time calculation for the optimal number of bins which
-     * can be used for log-bin encoding of values between 0 and `vmax`.
-     * ("optimal" means max without dead bins)
-     */
-    constexpr int LogBins(int vmax, int nstart = 50) {
-        for (int n = nstart - 1; n >= 1; --n) {
-            if (!HasDeadLogBins(vmax, n)) {
-                return n;
-            }
-        }
-        return -1; // Not found
-    }
 }

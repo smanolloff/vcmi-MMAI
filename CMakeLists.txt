@@ -194,6 +194,8 @@ set(MMAI_FILES
   schema/v11/types.h
   schema/v11/util.h
   schema/v12/constants.h
+  schema/v12/expbin.h
+  schema/v12/linbin.h
   schema/v12/schema.h
   schema/v12/types.h
   schema/v12/util.h

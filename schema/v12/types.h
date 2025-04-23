@@ -174,16 +174,6 @@ namespace MMAI::Schema::V12 {
         CATEGORICAL_ZERO_NULL,
 
         /*
-         * LOGBIN is a type of CATEGORICAL where the "ON" bit corresponds
-         * to `LogBin(v)` instead of `v`.
-         */
-        LOGBIN_EXPLICIT_NULL,  // XXX: the "ON" bit index is `LogBin(v)+1` here
-        LOGBIN_IMPLICIT_NULL,
-        LOGBIN_MASKING_NULL,
-        LOGBIN_STRICT_NULL,
-        LOGBIN_ZERO_NULL,
-
-        /*
          * Normalize `v+1` exponentially with base `vmax`
          * and represent it as `[0, vnorm]`.
          * If `v=-1` (a.k.a. "NULL"), the result will be `[1, 0]
@@ -209,7 +199,7 @@ namespace MMAI::Schema::V12 {
 
         /*
          * Normalize `v+1` exponentially with base `vmax`.
-         * If `v=0` or `v=-1` (a.k.a. "NULL"), an error will be thrown.
+         * If `v=-1` (a.k.a. "NULL"), an error will be thrown.
          *
          * Examples:
          * * `v=3`,  `vmax=10` => `0.6`
@@ -276,6 +266,40 @@ namespace MMAI::Schema::V12 {
          */
         LINNORM_ZERO_NULL,
         // XXX: NORMALIZED_ZERO_NULL obsoletes NORMALIZED_IMPLICIT_NULL
+
+        /*
+         * EXPBIN is similar to LINBIN, but the index calculation
+         * involves logarithmic operations (see expbin.h)
+         */
+        EXPBIN_EXPLICIT_NULL,
+        EXPBIN_IMPLICIT_NULL,
+        EXPBIN_MASKING_NULL,
+        EXPBIN_STRICT_NULL,
+        EXPBIN_ZERO_NULL,
+
+        ACCUMULATING_EXPBIN_EXPLICIT_NULL,
+        ACCUMULATING_EXPBIN_IMPLICIT_NULL,
+        ACCUMULATING_EXPBIN_MASKING_NULL,
+        ACCUMULATING_EXPBIN_STRICT_NULL,
+        ACCUMULATING_EXPBIN_ZERO_NULL,
+
+        /*
+         * LINBIN is a type of CATEGORICAL encoding for numeric
+         * values where the "ON" bit corresponds to `int(v/p)` instead of `v`
+         * (where `p` is a "slope" parameter)
+         */
+        LINBIN_EXPLICIT_NULL,  // XXX: the "ON" bit index is `(v/x)+1` here
+        LINBIN_IMPLICIT_NULL,
+        LINBIN_MASKING_NULL,
+        LINBIN_STRICT_NULL,
+        LINBIN_ZERO_NULL,
+
+        ACCUMULATING_LINBIN_EXPLICIT_NULL,
+        ACCUMULATING_LINBIN_IMPLICIT_NULL,
+        ACCUMULATING_LINBIN_MASKING_NULL,
+        ACCUMULATING_LINBIN_STRICT_NULL,
+        ACCUMULATING_LINBIN_ZERO_NULL,
+
 
         /*
          * Don't normalize, use as-is.
@@ -393,7 +417,7 @@ namespace MMAI::Schema::V12 {
         STACK_DMG_MIN,
         STACK_DMG_MAX,
         STACK_HP,
-        STACK_HP_LEFT,
+        STACK_HP_LEFT_REL,
         STACK_SPEED,
         STACK_QUEUE,
         // STACK_ESTIMATED_DMG,
@@ -425,7 +449,7 @@ namespace MMAI::Schema::V12 {
         DMG_MIN,
         DMG_MAX,
         HP,
-        HP_LEFT,
+        HP_LEFT_REL,
         SPEED,
         QUEUE,
         // ESTIMATED_DMG,
@@ -498,32 +522,6 @@ namespace MMAI::Schema::V12 {
         _count
     };
 
-    enum class LinkType : int {
-        // XXX: types are sorted by frequency (desc) as a micro-optimization
-
-        // ACTION           // TODO? link with v=action (SRC=active stack)
-        ADJACENT,
-        REACH,              // i.e. "can move to"
-        RANGED_MOD,         // v=0.25 / 0.5 / 1
-        ACTS_BEFORE,        // v=num of actions (e.g. 2 if waited)
-        // BLOCKS,          // adds further attention to blocking units
-        MELEE_DMG_REL,      // v=frac. of DST stack HP
-        RETAL_DMG_REL,      // v=frac. of SRC stack HP after hypothetical attack
-        RANGED_DMG_REL,     // v=frac. of DST stack HP
-        BLOCKED_BY,
-        REAR_HEX,           // DST=rear hex of wide unit
-        _count
-    };
-
-    enum class LinkAttribute : int {
-        SRC_HEX_ID,
-        DST_HEX_ID,
-        VALUE,
-        TYPE,               // last on purpose (only attribute with >1 encsize)
-
-        _count
-    };
-
     enum class ErrorCode : int {
         OK,
         ALREADY_WAITED,
@@ -578,15 +576,6 @@ namespace MMAI::Schema::V12 {
         virtual ~IHex() = default;
     };
 
-    class ILink {
-    public:
-        virtual LinkType getType() const = 0;
-        virtual const IHex* getSrc() const = 0;
-        virtual const IHex* getDst() const = 0;
-        virtual float getValue() const = 0;
-        virtual ~ILink() = default;
-    };
-
     class IAttackLog {
     public:
         // NOTE: each of those can be nullptr if cstack was just resurrected/summoned
@@ -604,7 +593,6 @@ namespace MMAI::Schema::V12 {
     using AttackLogs = std::vector<IAttackLog*>;
     using Stacks = std::vector<IStack*>;
     using Hexes = std::array<std::array<IHex*, 15>, 11>;
-    using Links = std::vector<ILink*>;
 
     enum class Side : int {LEFT, RIGHT}; // corresponds to BattleSide::Type
 

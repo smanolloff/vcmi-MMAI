@@ -500,6 +500,12 @@ namespace MMAI::BAI::V12 {
 
         auto valueOne = CalcValue(cstack->unitType());
 
+        // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
+        auto permille = [](int v1, int v2) {
+            // ll (long long) ensures long is 64-bit even on 32-bit systems
+            return (1000ll * v1) / v2;
+        };
+
         setattr(A::SIDE, EI(cstack->unitSide()));
         // setattr(A::CREATURE_ID, cid);
         setattr(A::SLOT, slot);
@@ -510,7 +516,7 @@ namespace MMAI::BAI::V12 {
         setattr(A::DMG_MIN, cstack->getMinDamage(shots > 0));
         setattr(A::DMG_MAX, cstack->getMaxDamage(shots > 0));
         setattr(A::HP, cstack->getMaxHealth());
-        setattr(A::HP_LEFT, cstack->getFirstHPleft());
+        setattr(A::HP_LEFT_REL, permille(cstack->getFirstHPleft(), cstack->getMaxHealth()));
         setattr(A::SPEED, cstack->getMovementRange());
         setattr(A::QUEUE, qbits.to_ulong());
         // setattr(A::ESTIMATED_DMG, dmgPermilleHP);
@@ -522,12 +528,6 @@ namespace MMAI::BAI::V12 {
         auto bf_hpPrev = ogstats->attr(GA::BFIELD_HP_NOW_ABS);
         auto bf_hpStart = gstats->attr(GA::BFIELD_HP_START_ABS);
         auto value = valueOne * cstack->getCount();
-
-        // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] VALUE_ONE:" << valueOne << ", VALUE: " << value << ", bf_valueNow: " << bf_valueNow << "\n";
-        auto permille = [](int v1, int v2) {
-            // ll (long long) ensures long is 64-bit even on 32-bit systems
-            return (1000ll * v1) / v2;
-        };
 
         setattr(A::VALUE_ONE, valueOne);
         setattr(A::VALUE_REL,             permille(value, bf_valueNow));

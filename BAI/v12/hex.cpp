@@ -129,7 +129,7 @@ namespace MMAI::BAI::V12 {
             {A::STACK_DMG_MIN,               SA::DMG_MIN},
             {A::STACK_DMG_MAX,               SA::DMG_MAX},
             {A::STACK_HP,                    SA::HP},
-            {A::STACK_HP_LEFT,               SA::HP_LEFT},
+            {A::STACK_HP_LEFT_REL,           SA::HP_LEFT_REL},
             {A::STACK_SPEED,                 SA::SPEED},
             {A::STACK_QUEUE,                 SA::QUEUE},
             {A::STACK_VALUE_ONE,             SA::VALUE_ONE},

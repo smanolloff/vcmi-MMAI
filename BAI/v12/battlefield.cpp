@@ -27,7 +27,6 @@
 namespace MMAI::BAI::V12 {
     using HA = HexAttribute;
     using SA = StackAttribute;
-    using LT = LinkType;
 
     // A custom hash function must be provided for the buffer
     struct PairHash {

@@ -48,7 +48,16 @@ namespace MMAI::BAI::V12 {
             throw std::runtime_error("NULL values are not allowed for strict encoding"); \
         }
 
-    void Encoder::Encode(const char* attrname, const int a, const Encoding e, const int n, int v, const int vmax, BS &vec) {
+    void Encoder::Encode(
+        const char* attrname,
+        const int a,
+        const Encoding e,
+        const int n,
+        const int vmax,
+        const double p,
+        int v,
+        BS &vec
+    ) {
         if (e == Encoding::RAW) {
             vec.push_back(v);
             return;
@@ -89,6 +98,26 @@ namespace MMAI::BAI::V12 {
         break; case Encoding::CATEGORICAL_MASKING_NULL: EncodeCategoricalMaskingNull(v, n, vec);
         break; case Encoding::CATEGORICAL_STRICT_NULL: EncodeCategoricalStrictNull(v, n, vec);
         break; case Encoding::CATEGORICAL_ZERO_NULL: EncodeCategoricalZeroNull(v, n, vec);
+        break; case Encoding::EXPBIN_EXPLICIT_NULL: EncodeExpbinExplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::EXPBIN_IMPLICIT_NULL: EncodeExpbinImplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::EXPBIN_MASKING_NULL: EncodeExpbinMaskingNull(v, n, vmax, p, vec);
+        break; case Encoding::EXPBIN_STRICT_NULL: EncodeExpbinStrictNull(v, n, vmax, p, vec);
+        break; case Encoding::EXPBIN_ZERO_NULL: EncodeExpbinZeroNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_EXPBIN_EXPLICIT_NULL: EncodeAccumulatingExpbinExplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_EXPBIN_IMPLICIT_NULL: EncodeAccumulatingExpbinImplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_EXPBIN_MASKING_NULL: EncodeAccumulatingExpbinMaskingNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_EXPBIN_STRICT_NULL: EncodeAccumulatingExpbinStrictNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_EXPBIN_ZERO_NULL: EncodeAccumulatingExpbinZeroNull(v, n, vmax, p, vec);
+        break; case Encoding::LINBIN_EXPLICIT_NULL: EncodeLinbinExplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::LINBIN_IMPLICIT_NULL: EncodeLinbinImplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::LINBIN_MASKING_NULL: EncodeLinbinMaskingNull(v, n, vmax, p, vec);
+        break; case Encoding::LINBIN_STRICT_NULL: EncodeLinbinStrictNull(v, n, vmax, p, vec);
+        break; case Encoding::LINBIN_ZERO_NULL: EncodeLinbinZeroNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_LINBIN_EXPLICIT_NULL: EncodeAccumulatingLinbinExplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_LINBIN_IMPLICIT_NULL: EncodeAccumulatingLinbinImplicitNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_LINBIN_MASKING_NULL: EncodeAccumulatingLinbinMaskingNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_LINBIN_STRICT_NULL: EncodeAccumulatingLinbinStrictNull(v, n, vmax, p, vec);
+        break; case Encoding::ACCUMULATING_LINBIN_ZERO_NULL: EncodeAccumulatingLinbinZeroNull(v, n, vmax, p, vec);
         break; case Encoding::ACCUMULATING_EXPLICIT_NULL: EncodeAccumulatingExplicitNull(v, n, vec);
         break; case Encoding::ACCUMULATING_IMPLICIT_NULL: EncodeAccumulatingImplicitNull(v, n, vec);
         break; case Encoding::ACCUMULATING_MASKING_NULL: EncodeAccumulatingMaskingNull(v, n, vec);
@@ -100,18 +129,18 @@ namespace MMAI::BAI::V12 {
     }
 
     void Encoder::Encode(const HexAttribute a, const int v, BS &vec) {
-        auto &[_, e, n, vmax] = HEX_ENCODING.at(EI(a));
-        Encode("HexAttribute", EI(a), e, n, v, vmax, vec);
+        auto &[_, e, n, vmax, p] = HEX_ENCODING.at(EI(a));
+        Encode("HexAttribute", EI(a), e, n, vmax, p, v, vec);
     }
 
     void Encoder::Encode(const PlayerAttribute a, const int v, BS &vec) {
-        auto &[_, e, n, vmax] = PLAYER_ENCODING.at(EI(a));
-        Encode("PlayerAttribute", EI(a), e, n, v, vmax, vec);
+        auto &[_, e, n, vmax, p] = PLAYER_ENCODING.at(EI(a));
+        Encode("PlayerAttribute", EI(a), e, n, vmax, p, v, vec);
     }
 
     void Encoder::Encode(const GlobalAttribute a, const int v, BS &vec) {
-        auto &[_, e, n, vmax] = GLOBAL_ENCODING.at(EI(a));
-        Encode("GlobalAttribute", EI(a), e, n, v, vmax, vec);
+        auto &[_, e, n, vmax, p] = GLOBAL_ENCODING.at(EI(a));
+        Encode("GlobalAttribute", EI(a), e, n, vmax, p, v, vec);
     }
 
     //
@@ -236,6 +265,214 @@ namespace MMAI::BAI::V12 {
                 ADD_ZEROS_AND_RETURN(n-i-1, vec);
             } else {
                 vec.push_back(0);
+            }
+        }
+    }
+
+    //
+    // EXPBIN
+    //
+
+    void Encoder::EncodeExpbinExplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            vec.push_back(v == NULL_VALUE_UNENCODED);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+        vec.push_back(0);
+        EncodeExpbin(v, n-1, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeExpbinImplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            ADD_ZEROS_AND_RETURN(n, vec);
+        }
+
+        EncodeExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeExpbinMaskingNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_ADD_MASKED_AND_RETURN(v, n, vec);
+        EncodeExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeExpbinStrictNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_THROW_STRICT_ERROR(v);
+        EncodeExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeExpbinZeroNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        EncodeExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeExpbin(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v <= 0) {
+            vec.push_back(1);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+
+        double ratio = static_cast<double>(v) / vmax;
+        double scaled = std::log1p(ratio * (std::exp(slope) - 1.0)) / slope;
+        int index = std::min(static_cast<int>(scaled * n), n - 1);
+
+        for (int i=0; i < n; ++i) {
+            if (i == index) {
+                vec.push_back(1);
+                ADD_ZEROS_AND_RETURN(n-i-1, vec);
+            } else {
+                vec.push_back(0);
+            }
+        }
+    }
+
+    void Encoder::EncodeAccumulatingExpbinExplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            vec.push_back(v == NULL_VALUE_UNENCODED);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+        vec.push_back(0);
+        EncodeAccumulatingExpbin(v, n-1, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingExpbinImplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            ADD_ZEROS_AND_RETURN(n, vec);
+        }
+
+        EncodeAccumulatingExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingExpbinMaskingNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_ADD_MASKED_AND_RETURN(v, n, vec);
+        EncodeAccumulatingExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingExpbinStrictNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_THROW_STRICT_ERROR(v);
+        EncodeAccumulatingExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingExpbinZeroNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        EncodeAccumulatingExpbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingExpbin(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v <= 0) {
+            vec.push_back(1);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+
+        double ratio = static_cast<double>(v) / vmax;
+        double scaled = std::log1p(ratio * (std::exp(slope) - 1.0)) / slope;
+        int index = static_cast<int>(scaled * n);
+
+        for (int i=0; i < n; ++i) {
+            if (i == index) {
+                vec.push_back(1);
+                ADD_ZEROS_AND_RETURN(n-i-1, vec);
+            } else {
+                vec.push_back(1);
+            }
+        }
+    }
+
+    //
+    // LINBIN
+    //
+
+    void Encoder::EncodeLinbinExplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            vec.push_back(v == NULL_VALUE_UNENCODED);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+        vec.push_back(0);
+        EncodeLinbin(v, n-1, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeLinbinImplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            ADD_ZEROS_AND_RETURN(n, vec);
+        }
+
+        EncodeLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeLinbinMaskingNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_ADD_MASKED_AND_RETURN(v, n, vec);
+        EncodeLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeLinbinStrictNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_THROW_STRICT_ERROR(v);
+        EncodeLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeLinbinZeroNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        EncodeLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeLinbin(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v <= 0) {
+            vec.push_back(1);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+
+        int index = std::min(static_cast<int>(v / slope), n - 1);
+
+        for (int i=0; i < n; ++i) {
+            if (i == index) {
+                vec.push_back(1);
+                ADD_ZEROS_AND_RETURN(n-i-1, vec);
+            } else {
+                vec.push_back(0);
+            }
+        }
+    }
+
+    void Encoder::EncodeAccumulatingLinbinExplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            vec.push_back(v == NULL_VALUE_UNENCODED);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+        vec.push_back(0);
+        EncodeAccumulatingLinbin(v, n-1, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingLinbinImplicitNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v == NULL_VALUE_UNENCODED) {
+            ADD_ZEROS_AND_RETURN(n, vec);
+        }
+
+        EncodeAccumulatingLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingLinbinMaskingNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_ADD_MASKED_AND_RETURN(v, n, vec);
+        EncodeAccumulatingLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingLinbinStrictNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        MAYBE_THROW_STRICT_ERROR(v);
+        EncodeAccumulatingLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingLinbinZeroNull(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        EncodeAccumulatingLinbin(v, n, vmax, slope, vec);
+    }
+
+    void Encoder::EncodeAccumulatingLinbin(const int v, const int n, const int vmax, const double slope, BS &vec) {
+        if (v <= 0) {
+            vec.push_back(1);
+            ADD_ZEROS_AND_RETURN(n-1, vec);
+        }
+
+        int index = static_cast<int>(v / slope);
+
+        for (int i=0; i < n; ++i) {
+            if (i == index) {
+                vec.push_back(1);
+                ADD_ZEROS_AND_RETURN(n-i-1, vec);
+            } else {
+                vec.push_back(1);
             }
         }
     }
