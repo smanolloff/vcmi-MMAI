@@ -23,16 +23,16 @@ namespace MMAI::Schema::V12 {
      * Compile-time calculation of the min value (inclusive) for bin index `i`.
      */
     constexpr int LinBinValueMin(int i, int vmax, int n) {
-        double width = static_cast<double>(vmax) / n;
-        return gcem::ceil(i * width);
+        double slope = static_cast<double>(vmax) / n;
+        return gcem::ceil(i * slope);
     }
 
     /*
      * Compile-time calculation of the max value (inclusive) for bin index `i`.
      */
     constexpr int LinBinValueMax(int i, int vmax, int n) {
-        double width = static_cast<double>(vmax) / n;
-        return gcem::ceil((i + 1) * width) - 1;
+        double slope = static_cast<double>(vmax) / n;
+        return gcem::ceil((i + 1) * slope) - 1;
     }
 
     constexpr auto binmin = LinBinValueMin(1, 100, 3);

@@ -154,6 +154,9 @@ namespace MMAI::Schema::V12 {
                 if (p == -1) return i;
                 if (vmax == -1) return i;
                 if (vmax == -2) return i;
+                break;
+            default:
+                break;
             }
         }
 
@@ -196,6 +199,8 @@ namespace MMAI::Schema::V12 {
                 if (n < 1 || vmax < 1) return -2;  // misconfigured attribute
                 if (vmax < n) return i;
                 break;
+            default:
+                break;
             }
         }
 
@@ -221,6 +226,8 @@ namespace MMAI::Schema::V12 {
                 break;
             case Encoding::LINBIN_ZERO_NULL:
                 if (vmax > n) return i;
+                break;
+            default:
                 break;
             }
         }

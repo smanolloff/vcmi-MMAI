@@ -506,21 +506,6 @@ namespace MMAI::BAI::V12 {
             return (1000ll * v1) / v2;
         };
 
-        setattr(A::SIDE, EI(cstack->unitSide()));
-        // setattr(A::CREATURE_ID, cid);
-        setattr(A::SLOT, slot);
-        setattr(A::QUANTITY, cstack->getCount());
-        setattr(A::ATTACK, cstack->getAttack(shots > 0));
-        setattr(A::DEFENSE, cstack->getDefense(false));
-        setattr(A::SHOTS, shots);
-        setattr(A::DMG_MIN, cstack->getMinDamage(shots > 0));
-        setattr(A::DMG_MAX, cstack->getMaxDamage(shots > 0));
-        setattr(A::HP, cstack->getMaxHealth());
-        setattr(A::HP_LEFT_REL, permille(cstack->getFirstHPleft(), cstack->getMaxHealth()));
-        setattr(A::SPEED, cstack->getMovementRange());
-        setattr(A::QUEUE, qbits.to_ulong());
-        // setattr(A::ESTIMATED_DMG, dmgPermilleHP);
-
         // std::cout << "[" << cstack->unitType()->getNameSingularTextID() << "] lgstats->valueNow:" << lgstats->valueNow << ", rgstats->valueNow: " << rgstats->valueNow << "\n";
         auto bf_valueNow = gstats->attr(GA::BFIELD_VALUE_NOW_ABS);
         auto bf_valuePrev = ogstats->attr(GA::BFIELD_VALUE_NOW_ABS);
@@ -529,7 +514,30 @@ namespace MMAI::BAI::V12 {
         auto bf_hpStart = gstats->attr(GA::BFIELD_HP_START_ABS);
         auto value = valueOne * cstack->getCount();
 
+        static_assert(EI(A::_count) == 32, "whistleblower in case attributes change");
+
+        setattr(A::SIDE, EI(cstack->unitSide()));
+        // setattr(A::CREATURE_ID, cid);
+        setattr(A::SLOT, slot);
+        setattr(A::QUANTITY, cstack->getCount());
+        setattr(A::QUANTITY_BINS, attr(A::QUANTITY));
+        setattr(A::ATTACK, cstack->getAttack(shots > 0));
+        setattr(A::ATTACK_BINS, attr(A::ATTACK));
+        setattr(A::DEFENSE, cstack->getDefense(false));
+        setattr(A::DEFENSE_BINS, attr(A::DEFENSE));
+        setattr(A::SHOTS, shots);
+        setattr(A::DMG_MIN, cstack->getMinDamage(shots > 0));
+        setattr(A::DMG_MIN_BINS, attr(A::DMG_MIN));
+        setattr(A::DMG_MAX, cstack->getMaxDamage(shots > 0));
+        setattr(A::DMG_MAX_BINS, attr(A::DMG_MAX));
+        setattr(A::HP, cstack->getMaxHealth());
+        setattr(A::HP_BINS, attr(A::HP));
+        setattr(A::HP_LEFT_REL, permille(cstack->getFirstHPleft(), cstack->getMaxHealth()));
+        setattr(A::SPEED, cstack->getMovementRange());
+        setattr(A::QUEUE, qbits.to_ulong());
+        // setattr(A::ESTIMATED_DMG, dmgPermilleHP);
         setattr(A::VALUE_ONE, valueOne);
+        setattr(A::VALUE_ONE_BINS, attr(A::VALUE_ONE));
         setattr(A::VALUE_REL,             permille(value, bf_valueNow));
         setattr(A::VALUE_REL0,            permille(value, bf_valueStart));
         setattr(A::VALUE_KILLED_REL,      permille(stats.valueKilledNow, bf_valuePrev));
