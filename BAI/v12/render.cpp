@@ -458,8 +458,10 @@ namespace MMAI::BAI::V12 {
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxDamage(false); }, "HEX.STACK_DMG_MAX");
                 break; case HA::STACK_HP:
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMaxHealth(); }, "HEX.STACK_HP");
-                break; case HA::STACK_HP_LEFT_REL:
-                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return 1000ll * cstack->getFirstHPleft() / cstack->getMaxHealth(); }, "HEX.STACK_VALUE_REL");
+                break; case HA::STACK_HP_LEFT:
+                    ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getFirstHPleft(); }, "HEX.STACK_VALUE");
+                // break; case HA::STACK_HP_LEFT_REL:
+                //     ensureStackNullOrMatch(attr, cstack, v, [&]{ return 1000ll * cstack->getFirstHPleft() / cstack->getMaxHealth(); }, "HEX.STACK_VALUE_REL");
                 break; case HA::STACK_SPEED:
                     ensureStackNullOrMatch(attr, cstack, v, [&]{ return cstack->getMovementRange(); }, "HEX.STACK_SPEED");
                 break; case HA::STACK_QUEUE: {
@@ -958,7 +960,8 @@ namespace MMAI::BAI::V12 {
             RowDef{SA::DMG_MIN, "Dmg (min)"},
             RowDef{SA::DMG_MAX, "Dmg (max)"},
             RowDef{SA::HP, "HP"},
-            RowDef{SA::HP_LEFT_REL, "     HP left (‰)"},  // manually pad to 16 (unicode length issue)
+            // RowDef{SA::HP_LEFT_REL, "     HP left (‰)"},  // manually pad to 16 (unicode length issue)
+            RowDef{SA::HP_LEFT, "HP left"},
             RowDef{SA::SPEED, "Speed"},
             RowDef{SA::QUEUE, "Queue"},
             RowDef{SA::VALUE_ONE, "Value (one)"},

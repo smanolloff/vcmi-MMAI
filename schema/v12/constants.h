@@ -221,98 +221,6 @@ namespace MMAI::Schema::V12 {
     // XXX: THIS IS NOW LEFT UNUSED (switched to relative values instead)
     // constexpr int ARMY_VALUE_MAX = 10 * 1000 * 1000; // 10M
 
-    constexpr auto BFIELD_VALUE_MAX = int(10e6);  // 4.2M max for 4x1024.vmap
-    constexpr auto BFIELD_VALUE_NBINS = 50;
-    constexpr auto BFIELD_VALUE_SLOPE = 7.5;
-    // 10000000 50 7
-    // [0, 1372, 2950, 4765, 6852, 9253, 12015, 15192, 18847, 23050, 27886,
-    //  33448, 39846, 47205, 55670, 65407, 76608, 89491, 104311, 121358,
-    //  ...
-    //  4961259, 5708178, 6567339, 7555609, 8692390, 10000000]
-
-    constexpr auto BFIELD_HP_MAX = int(200e3);  // 90k max for 4x1024.vmap
-    constexpr auto BFIELD_HP_NBINS = 50;
-    constexpr auto BFIELD_HP_SLOPE = 7.5;
-    // 200000 50 7
-    // [0, 28, 59, 96, 138, 186, 241, 304, 377, 461, 558, 669, 797, 945, 1114,
-    //  1309, 1533, 1790, 2087, 2428, 2820, 3271, 3790, 4387, 5073, 5863, 6771,
-    //  7816, 9018, 10401, 11991, 13820, 15925, 18345, 21129, 24332, 28015, 32253,
-    //  37127, 42733, 49182, 56601, 65133, 74949, 86239, 99226, 114164, 131347,
-    //  151113, 173848, 200000]
-
-    constexpr GlobalEncoding GLOBAL_ENCODING {
-        E5(GA::BATTLE_SIDE,                 CS, 1),
-        E5(GA::BATTLE_SIDE_ACTIVE_PLAYER,   CE, 1),         // NULL means no battle
-        E5(GA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
-        E5(GA::BFIELD_VALUE_START_ABS,      ES, BFIELD_VALUE_MAX),
-        E5(GA::BFIELD_VALUE_START_ABS_BINS, AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
-        E5(GA::BFIELD_VALUE_NOW_ABS,        ES, BFIELD_VALUE_MAX),
-        E5(GA::BFIELD_VALUE_NOW_ABS_BINS,   AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
-        E5(GA::BFIELD_VALUE_NOW_REL0,       LS, 1000),      // bfield_value_now          / bfield_value_at_start
-        E5(GA::BFIELD_HP_START_ABS,         ES, BFIELD_HP_MAX),
-        E5(GA::BFIELD_HP_START_ABS_BINS,    AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
-        E5(GA::BFIELD_HP_NOW_ABS,           ES, BFIELD_HP_MAX),
-        E5(GA::BFIELD_HP_NOW_ABS_BINS,      AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
-        E5(GA::BFIELD_HP_NOW_REL0,          LS, 1000),      // bfield_hp_now             / bfield_hp_at_start
-        E5(GA::ACTION_MASK,                 BS, (1<<EI(GlobalAction::_count))-1)
-    };
-
-    constexpr auto VALUE_KILLED_NOW_MAX = int(2e6); // 4x1096 has 98 Ghost dragons => ~4K dmg => 8K (+22 attack)
-    constexpr auto VALUE_KILLED_NOW_NBINS = 50;     // ^ vs. grand elf(15 HP) = 667 kills * 1.8k value = 1.2M
-    constexpr auto VALUE_KILLED_NOW_SLOPE = 7.5;    // granularity at low values OK (1 imp = 213)
-    // 2000000 50 6
-    // [0, 634, 1349, 2154, 3062, 4086, 5241, 6543, 8010, 9665, 11531, 13635,
-    //  16007, 18681, 21697, 25096, 28930, 33252, 38125, 43619, 49814, 56799,
-    //  64674, 73553, 83564, 94852, 107579, 121929, 138108, 156350, 176917,
-    //  200107, 226254, 255734, 288973, 326450, 368705, 416347, 470064, 530629,
-    //  598916, 675909, 762719, 860597, 970954, 1095381, 1235673, 1393851,
-    //  1572196, 1773279, 2000000]
-
-    constexpr auto DMG_DEALT_NOW_MAX = int(20e3);
-    constexpr auto DMG_DEALT_NOW_NBINS = 50;
-    constexpr auto DMG_DEALT_NOW_SLOPE = 7.5;
-    // 200000 50 7.5
-    // [0, 18, 39, 63, 91, 124, 162, 206, 257, 317, 386, 466, 559, 668, 794,
-    //  940, 1110, 1307, 1537, 1803, 2113, 2473, 2891, 3376, 3940, 4596, 5358,
-    //  6242, 7271, 8465, 9853, 11465, 13338, 15515, 18043, 20981, 24395,
-    //  28360, 32968, 38321, 44541, 51767, 60162, 69916, 81249, 94415, 109713,
-    //  127486, 148135, 172127, 200000]
-
-    constexpr PlayerEncoding PLAYER_ENCODING {
-        E5(PA::BATTLE_SIDE,               CS, 1),
-        E5(PA::ARMY_VALUE_NOW_ABS,        ES, BFIELD_VALUE_MAX),
-        E5(PA::ARMY_VALUE_NOW_ABS_BINS,   AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
-        E5(PA::ARMY_VALUE_NOW_REL,        LS, 1000),       // army_value_now          / global_value_now
-        E5(PA::ARMY_VALUE_NOW_REL0  ,     LS, 1000),       // army_value_now          / global_value_at_start
-        E5(PA::ARMY_HP_NOW_ABS,           ES, BFIELD_HP_MAX),
-        E5(PA::ARMY_HP_NOW_ABS_BINS,      AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
-        E5(PA::ARMY_HP_NOW_REL,           LS, 1000),       // army_hp_now             / global_hp_now
-        E5(PA::ARMY_HP_NOW_REL0,          LS, 1000),       // army_hp_now             / global_hp_at_start
-        E5(PA::VALUE_KILLED_NOW_ABS,      ES, VALUE_KILLED_NOW_MAX),
-        E5(PA::VALUE_KILLED_NOW_ABS_BINS, AEBS, VALUE_KILLED_NOW_MAX, VALUE_KILLED_NOW_SLOPE, VALUE_KILLED_NOW_NBINS),
-        E5(PA::VALUE_KILLED_NOW_REL,      LS, 1000),       // value_killed_this_turn  / global_value_last_turn
-        E5(PA::VALUE_KILLED_ACC_ABS,      ES, BFIELD_VALUE_MAX),
-        E5(PA::VALUE_KILLED_ACC_ABS_BINS, AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
-        E5(PA::VALUE_KILLED_ACC_REL0,     LS, 1000),       // value_killed_lifetime   / global_value_at_start
-        E5(PA::VALUE_LOST_NOW_ABS,        ES, VALUE_KILLED_NOW_MAX),
-        E5(PA::VALUE_LOST_NOW_ABS_BINS,   AEBS, VALUE_KILLED_NOW_MAX, VALUE_KILLED_NOW_SLOPE, VALUE_KILLED_NOW_NBINS),
-        E5(PA::VALUE_LOST_NOW_REL,        LS, 1000),       // value_lost_this_turn    / global_value_last_turn
-        E5(PA::VALUE_LOST_ACC_ABS,        ES, BFIELD_VALUE_MAX),
-        E5(PA::VALUE_LOST_ACC_ABS_BINS,   AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
-        E5(PA::VALUE_LOST_ACC_REL0,       LS, 1000),       // value_lost_lifetime     / global_value_at_start
-        E5(PA::DMG_DEALT_NOW_ABS,         ES, DMG_DEALT_NOW_MAX),
-        E5(PA::DMG_DEALT_NOW_ABS_BINS,    AEBS, DMG_DEALT_NOW_MAX, DMG_DEALT_NOW_SLOPE, DMG_DEALT_NOW_NBINS),
-        E5(PA::DMG_DEALT_NOW_REL,         LS, 1000),       // dmg_dealt_this_turn     / global_hp_last_turn
-        E5(PA::DMG_DEALT_ACC_ABS,         ES, BFIELD_HP_MAX),
-        E5(PA::DMG_DEALT_ACC_ABS_BINS,    AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
-        E5(PA::DMG_DEALT_ACC_REL0,        LS, 1000),       // dmg_dealt_lifetime      / global_hp_at_start
-        E5(PA::DMG_RECEIVED_NOW_ABS,      ES, DMG_DEALT_NOW_MAX),
-        E5(PA::DMG_RECEIVED_NOW_ABS_BINS, AEBS, DMG_DEALT_NOW_MAX, DMG_DEALT_NOW_SLOPE, DMG_DEALT_NOW_NBINS),
-        E5(PA::DMG_RECEIVED_NOW_REL,      LS, 1000),       // dmg_received_this_turn  / global_hp_last_turn
-        E5(PA::DMG_RECEIVED_ACC_ABS,      ES, BFIELD_HP_MAX),
-        E5(PA::DMG_RECEIVED_ACC_ABS_BINS, AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
-        E5(PA::DMG_RECEIVED_ACC_REL0,     LS, 1000),       // dmg_received_lifetime   / global_hp_at_start
-    };
 
     /*
     BASH code snipped for printing the bins. Args:
@@ -327,6 +235,113 @@ print([math.ceil(b) for b in bins])
  ' 1500 30 6.5
 
     */
+
+    constexpr auto BFIELD_VALUE_MAX = int(5e6);  // 4.2M max for 4x1024.vmap
+    constexpr auto BFIELD_VALUE_NBINS = 50;
+    constexpr auto BFIELD_VALUE_SLOPE = 7.5;
+    // 10000000 50 7
+    // [0, 1372, 2950, 4765, 6852, 9253, 12015, 15192, 18847, 23050, 27886,
+    //  33448, 39846, 47205, 55670, 65407, 76608, 89491, 104311, 121358,
+    //  ...
+    //  4961259, 5708178, 6567339, 7555609, 8692390, 10000000]
+
+    constexpr auto BFIELD_HP_MAX = int(100e3);  // 90k max for 4x1024.vmap
+    constexpr auto BFIELD_HP_NBINS = 50;
+    constexpr auto BFIELD_HP_SLOPE = 7.5;
+    // 200000 50 7
+    // [0, 28, 59, 96, 138, 186, 241, 304, 377, 461, 558, 669, 797, 945, 1114,
+    //  1309, 1533, 1790, 2087, 2428, 2820, 3271, 3790, 4387, 5073, 5863, 6771,
+    //  7816, 9018, 10401, 11991, 13820, 15925, 18345, 21129, 24332, 28015, 32253,
+    //  37127, 42733, 49182, 56601, 65133, 74949, 86239, 99226, 114164, 131347,
+    //  151113, 173848, 200000]
+
+    constexpr GlobalEncoding GLOBAL_ENCODING {
+        E5(GA::BATTLE_SIDE,                 CS, 1),
+        E5(GA::BATTLE_SIDE_ACTIVE_PLAYER,   CE, 1),         // NULL means no battle
+        E5(GA::BATTLE_WINNER,               CE, 1),         // NULL means ongoing battle
+        E5(GA::BFIELD_VALUE_START_ABS,      LS, BFIELD_VALUE_MAX),
+        // E5(GA::BFIELD_VALUE_START_ABS,      ES, BFIELD_VALUE_MAX),
+        // E5(GA::BFIELD_VALUE_START_ABS_BINS, AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
+        E5(GA::BFIELD_VALUE_NOW_ABS,        LS, BFIELD_VALUE_MAX),
+        // E5(GA::BFIELD_VALUE_NOW_ABS,        ES, BFIELD_VALUE_MAX),
+        // E5(GA::BFIELD_VALUE_NOW_ABS_BINS,   AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
+        E5(GA::BFIELD_VALUE_NOW_REL0,       LS, 1000),      // bfield_value_now          / bfield_value_at_start
+        E5(GA::BFIELD_HP_START_ABS,         LS, BFIELD_HP_MAX),
+        // E5(GA::BFIELD_HP_START_ABS,         ES, BFIELD_HP_MAX),
+        // E5(GA::BFIELD_HP_START_ABS_BINS,    AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
+        E5(GA::BFIELD_HP_NOW_ABS,           LS, BFIELD_HP_MAX),
+        // E5(GA::BFIELD_HP_NOW_ABS,           ES, BFIELD_HP_MAX),
+        // E5(GA::BFIELD_HP_NOW_ABS_BINS,      AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
+        E5(GA::BFIELD_HP_NOW_REL0,          LS, 1000),      // bfield_hp_now             / bfield_hp_at_start
+        E5(GA::ACTION_MASK,                 BS, (1<<EI(GlobalAction::_count))-1)
+    };
+
+    constexpr auto VALUE_KILLED_NOW_MAX = int(800e3); // 4x1096 has 98 Ghost dragons => ~4K dmg => 8K (+22 attack)
+    constexpr auto VALUE_KILLED_NOW_NBINS = 50;     // ^ vs. grand elf(15 HP) = 667 kills * 1.8k value = 1.2M
+    constexpr auto VALUE_KILLED_NOW_SLOPE = 7.5;    // granularity at low values OK (1 imp = 213)
+    // 2000000 50 6
+    // [0, 634, 1349, 2154, 3062, 4086, 5241, 6543, 8010, 9665, 11531, 13635,
+    //  16007, 18681, 21697, 25096, 28930, 33252, 38125, 43619, 49814, 56799,
+    //  64674, 73553, 83564, 94852, 107579, 121929, 138108, 156350, 176917,
+    //  200107, 226254, 255734, 288973, 326450, 368705, 416347, 470064, 530629,
+    //  598916, 675909, 762719, 860597, 970954, 1095381, 1235673, 1393851,
+    //  1572196, 1773279, 2000000]
+
+    constexpr auto DMG_DEALT_NOW_MAX = int(5e3);
+    constexpr auto DMG_DEALT_NOW_NBINS = 50;
+    constexpr auto DMG_DEALT_NOW_SLOPE = 7.5;
+    // 200000 50 7.5
+    // [0, 18, 39, 63, 91, 124, 162, 206, 257, 317, 386, 466, 559, 668, 794,
+    //  940, 1110, 1307, 1537, 1803, 2113, 2473, 2891, 3376, 3940, 4596, 5358,
+    //  6242, 7271, 8465, 9853, 11465, 13338, 15515, 18043, 20981, 24395,
+    //  28360, 32968, 38321, 44541, 51767, 60162, 69916, 81249, 94415, 109713,
+    //  127486, 148135, 172127, 200000]
+
+    constexpr PlayerEncoding PLAYER_ENCODING {
+        E5(PA::BATTLE_SIDE,               CS, 1),
+        E5(PA::ARMY_VALUE_NOW_ABS,        LS, BFIELD_VALUE_MAX),
+        // E5(PA::ARMY_VALUE_NOW_ABS,        ES, BFIELD_VALUE_MAX),
+        // E5(PA::ARMY_VALUE_NOW_ABS_BINS,   AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
+        E5(PA::ARMY_VALUE_NOW_REL,        LS, 1000),       // army_value_now          / global_value_now
+        E5(PA::ARMY_VALUE_NOW_REL0  ,     LS, 1000),       // army_value_now          / global_value_at_start
+        E5(PA::ARMY_HP_NOW_ABS,           LS, BFIELD_HP_MAX),
+        // E5(PA::ARMY_HP_NOW_ABS,           ES, BFIELD_HP_MAX),
+        // E5(PA::ARMY_HP_NOW_ABS_BINS,      AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
+        E5(PA::ARMY_HP_NOW_REL,           LS, 1000),       // army_hp_now             / global_hp_now
+        E5(PA::ARMY_HP_NOW_REL0,          LS, 1000),       // army_hp_now             / global_hp_at_start
+        E5(PA::VALUE_KILLED_NOW_ABS,      LS, VALUE_KILLED_NOW_MAX),
+        // E5(PA::VALUE_KILLED_NOW_ABS,      ES, VALUE_KILLED_NOW_MAX),
+        // E5(PA::VALUE_KILLED_NOW_ABS_BINS, AEBS, VALUE_KILLED_NOW_MAX, VALUE_KILLED_NOW_SLOPE, VALUE_KILLED_NOW_NBINS),
+        E5(PA::VALUE_KILLED_NOW_REL,      LS, 1000),       // value_killed_this_turn  / global_value_last_turn
+        E5(PA::VALUE_KILLED_ACC_ABS,      LS, BFIELD_VALUE_MAX),
+        // E5(PA::VALUE_KILLED_ACC_ABS,      ES, BFIELD_VALUE_MAX),
+        // E5(PA::VALUE_KILLED_ACC_ABS_BINS, AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
+        E5(PA::VALUE_KILLED_ACC_REL0,     LS, 1000),       // value_killed_lifetime   / global_value_at_start
+        E5(PA::VALUE_LOST_NOW_ABS,        LS, VALUE_KILLED_NOW_MAX),
+        // E5(PA::VALUE_LOST_NOW_ABS,        ES, VALUE_KILLED_NOW_MAX),
+        // E5(PA::VALUE_LOST_NOW_ABS_BINS,   AEBS, VALUE_KILLED_NOW_MAX, VALUE_KILLED_NOW_SLOPE, VALUE_KILLED_NOW_NBINS),
+        E5(PA::VALUE_LOST_NOW_REL,        LS, 1000),       // value_lost_this_turn    / global_value_last_turn
+        E5(PA::VALUE_LOST_ACC_ABS,        LS, BFIELD_VALUE_MAX),
+        // E5(PA::VALUE_LOST_ACC_ABS,        ES, BFIELD_VALUE_MAX),
+        // E5(PA::VALUE_LOST_ACC_ABS_BINS,   AEBS, BFIELD_VALUE_MAX, BFIELD_VALUE_SLOPE, BFIELD_VALUE_NBINS),
+        E5(PA::VALUE_LOST_ACC_REL0,       LS, 1000),       // value_lost_lifetime     / global_value_at_start
+        E5(PA::DMG_DEALT_NOW_ABS,         LS, DMG_DEALT_NOW_MAX),
+        // E5(PA::DMG_DEALT_NOW_ABS,         ES, DMG_DEALT_NOW_MAX),
+        // E5(PA::DMG_DEALT_NOW_ABS_BINS,    AEBS, DMG_DEALT_NOW_MAX, DMG_DEALT_NOW_SLOPE, DMG_DEALT_NOW_NBINS),
+        E5(PA::DMG_DEALT_NOW_REL,         LS, 1000),       // dmg_dealt_this_turn     / global_hp_last_turn
+        E5(PA::DMG_DEALT_ACC_ABS,         LS, BFIELD_HP_MAX),
+        // E5(PA::DMG_DEALT_ACC_ABS,         ES, BFIELD_HP_MAX),
+        // E5(PA::DMG_DEALT_ACC_ABS_BINS,    AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
+        E5(PA::DMG_DEALT_ACC_REL0,        LS, 1000),       // dmg_dealt_lifetime      / global_hp_at_start
+        E5(PA::DMG_RECEIVED_NOW_ABS,      LS, DMG_DEALT_NOW_MAX),
+        // E5(PA::DMG_RECEIVED_NOW_ABS,      ES, DMG_DEALT_NOW_MAX),
+        // E5(PA::DMG_RECEIVED_NOW_ABS_BINS, AEBS, DMG_DEALT_NOW_MAX, DMG_DEALT_NOW_SLOPE, DMG_DEALT_NOW_NBINS),
+        E5(PA::DMG_RECEIVED_NOW_REL,      LS, 1000),       // dmg_received_this_turn  / global_hp_last_turn
+        E5(PA::DMG_RECEIVED_ACC_ABS,      LS, BFIELD_HP_MAX),
+        // E5(PA::DMG_RECEIVED_ACC_ABS,      ES, BFIELD_HP_MAX),
+        // E5(PA::DMG_RECEIVED_ACC_ABS_BINS, AEBS, BFIELD_HP_MAX, BFIELD_HP_SLOPE, BFIELD_HP_NBINS),
+        E5(PA::DMG_RECEIVED_ACC_REL0,     LS, 1000),       // dmg_received_lifetime   / global_hp_at_start
+    };
 
     constexpr auto STACK_QTY_MAX = 1500;
     constexpr auto STACK_QTY_NBINS = 25;
@@ -365,25 +380,33 @@ print([math.ceil(b) for b in bins])
         E5(HA::STACK_SIDE,              CE, 1),        // 0=attacker, 1=defender
         // E5(HA::STACK_CREATURE_ID,       CE, CREATURE_ID_MAX),
         E5(HA::STACK_SLOT,              CE, STACK_SLOT_MAX),
-        E5(HA::STACK_QUANTITY,          EE, STACK_QTY_MAX, STACK_QTY_SLOPE),
-        E5(HA::STACK_QUANTITY_BINS,     AEBI, STACK_QTY_MAX, STACK_QTY_SLOPE, STACK_QTY_NBINS),
-        E5(HA::STACK_ATTACK,            EE, 60),
-        E5(HA::STACK_ATTACK_BINS,       ALBI, 60, 5),
-        E5(HA::STACK_DEFENSE,           EE, 60),        // azure dragon is 60 when defending
-        E5(HA::STACK_DEFENSE_BINS,      ALBI, 60, 5),   // azure dragon is 60 when defending
+        E5(HA::STACK_QUANTITY,          LE, STACK_QTY_MAX),
+        // E5(HA::STACK_QUANTITY,          EE, STACK_QTY_MAX, STACK_QTY_SLOPE),
+        // E5(HA::STACK_QUANTITY_BINS,     AEBI, STACK_QTY_MAX, STACK_QTY_SLOPE, STACK_QTY_NBINS),
+        E5(HA::STACK_ATTACK,            LE, 60),
+        // E5(HA::STACK_ATTACK,            EE, 60),
+        // E5(HA::STACK_ATTACK_BINS,       ALBI, 60, 5),
+        E5(HA::STACK_DEFENSE,           LE, 60),        // azure dragon is 60 when defending
+        // E5(HA::STACK_DEFENSE,           EE, 60),        // azure dragon is 60 when defending
+        // E5(HA::STACK_DEFENSE_BINS,      ALBI, 60, 5),   // azure dragon is 60 when defending
         E5(HA::STACK_SHOTS,             EZ, 32),        // sharpshooter is 32
-        E5(HA::STACK_DMG_MIN,           EE, STACK_DMG_MAX, STACK_DMG_SLOPE),
-        E5(HA::STACK_DMG_MIN_BINS,      AEBI, STACK_DMG_MAX, STACK_DMG_SLOPE, STACK_DMG_NBINS),
-        E5(HA::STACK_DMG_MAX,           EE, STACK_DMG_MAX, STACK_DMG_SLOPE),
-        E5(HA::STACK_DMG_MAX_BINS,      AEBI, STACK_DMG_MAX, STACK_DMG_SLOPE, STACK_DMG_NBINS),
-        E5(HA::STACK_HP,                EE, STACK_HP_MAX, STACK_HP_SLOPE),
-        E5(HA::STACK_HP_BINS,           AEBI, STACK_HP_MAX, STACK_HP_SLOPE, STACK_HP_NBINS),
-        E5(HA::STACK_HP_LEFT_REL,       LE, 1000),
+        E5(HA::STACK_DMG_MIN,           LE, STACK_DMG_MAX),
+        // E5(HA::STACK_DMG_MIN,           EE, STACK_DMG_MAX, STACK_DMG_SLOPE),
+        // E5(HA::STACK_DMG_MIN_BINS,      AEBI, STACK_DMG_MAX, STACK_DMG_SLOPE, STACK_DMG_NBINS),
+        E5(HA::STACK_DMG_MAX,           LE, STACK_DMG_MAX),
+        // E5(HA::STACK_DMG_MAX,           EE, STACK_DMG_MAX, STACK_DMG_SLOPE),
+        // E5(HA::STACK_DMG_MAX_BINS,      AEBI, STACK_DMG_MAX, STACK_DMG_SLOPE, STACK_DMG_NBINS),
+        E5(HA::STACK_HP,                LE, STACK_HP_MAX),
+        // E5(HA::STACK_HP,                EE, STACK_HP_MAX, STACK_HP_SLOPE),
+        // E5(HA::STACK_HP_BINS,           AEBI, STACK_HP_MAX, STACK_HP_SLOPE, STACK_HP_NBINS),
+        E5(HA::STACK_HP_LEFT,           LE, STACK_HP_MAX),
+        // E5(HA::STACK_HP_LEFT_REL,       LE, 1000),
         E5(HA::STACK_SPEED,             CE, 18),
         E5(HA::STACK_QUEUE,             BZ, (1<<STACK_QUEUE_SIZE)-1),       // 0..14, 0=active stack
         // H4(SSTACK_A::ESTIMATED_DMG,  NE, 1000),      // est. dmg by the active stack as a permillage of this stack's total HP
-        E5(HA::STACK_VALUE_ONE,         EE, STACK_VALUE_MAX, STACK_VALUE_SLOPE),
-        E5(HA::STACK_VALUE_ONE_BINS,    AEBI, STACK_VALUE_MAX, STACK_VALUE_SLOPE, STACK_VALUE_NBINS),
+        E5(HA::STACK_VALUE_ONE,         LE, STACK_VALUE_MAX),
+        // E5(HA::STACK_VALUE_ONE,         EE, STACK_VALUE_MAX, STACK_VALUE_SLOPE),
+        // E5(HA::STACK_VALUE_ONE_BINS,    AEBI, STACK_VALUE_MAX, STACK_VALUE_SLOPE, STACK_VALUE_NBINS),
         E5(HA::STACK_FLAGS1,            BE, (1<<EI(StackFlag1::_count))-1),
         E5(HA::STACK_FLAGS2,            BE, (1<<EI(StackFlag2::_count))-1),
 

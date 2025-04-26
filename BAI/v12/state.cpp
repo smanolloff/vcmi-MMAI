@@ -43,7 +43,8 @@ namespace MMAI::BAI::V12 {
     static_assert(EI(HA::STACK_DMG_MIN)                 == EI(SA::DMG_MIN) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_DMG_MAX)                 == EI(SA::DMG_MAX) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_HP)                      == EI(SA::HP) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_HP_LEFT_REL)             == EI(SA::HP_LEFT_REL) + STACK_ATTR_OFFSET);
+    // static_assert(EI(HA::STACK_HP_LEFT_REL)             == EI(SA::HP_LEFT_REL) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_HP_LEFT)                 == EI(SA::HP_LEFT) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_SPEED)                   == EI(SA::SPEED) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_QUEUE)                   == EI(SA::QUEUE) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_VALUE_ONE)               == EI(SA::VALUE_ONE) + STACK_ATTR_OFFSET);
