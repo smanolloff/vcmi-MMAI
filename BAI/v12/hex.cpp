@@ -119,30 +119,29 @@ namespace MMAI::BAI::V12 {
         // This is never N/A => set separately (not within the if below)
         setattr(A::IS_REAR, stack && bhex == stack->cstack->occupiedHex());
 
-        static_assert(EI(SA::_count) == 25, "whistleblower in case attributes change");
+        static_assert(EI(SA::_count) == 32, "whistleblower in case attributes change");
 
         auto attrmap = std::map<A, SA> {
             {A::STACK_SIDE,                  SA::SIDE},
             {A::STACK_SLOT,                  SA::SLOT},
             {A::STACK_QUANTITY,              SA::QUANTITY},
-            // {A::STACK_QUANTITY_BINS,         SA::QUANTITY_BINS},
+            {A::STACK_QUANTITY_BINS,         SA::QUANTITY_BINS},
             {A::STACK_ATTACK,                SA::ATTACK},
-            // {A::STACK_ATTACK_BINS,           SA::ATTACK_BINS},
+            {A::STACK_ATTACK_BINS,           SA::ATTACK_BINS},
             {A::STACK_DEFENSE,               SA::DEFENSE},
-            // {A::STACK_DEFENSE_BINS,          SA::DEFENSE_BINS},
+            {A::STACK_DEFENSE_BINS,          SA::DEFENSE_BINS},
             {A::STACK_SHOTS,                 SA::SHOTS},
             {A::STACK_DMG_MIN,               SA::DMG_MIN},
-            // {A::STACK_DMG_MIN_BINS,          SA::DMG_MIN_BINS},
+            {A::STACK_DMG_MIN_BINS,          SA::DMG_MIN_BINS},
             {A::STACK_DMG_MAX,               SA::DMG_MAX},
-            // {A::STACK_DMG_MAX_BINS,          SA::DMG_MAX_BINS},
+            {A::STACK_DMG_MAX_BINS,          SA::DMG_MAX_BINS},
             {A::STACK_HP,                    SA::HP},
-            // {A::STACK_HP_BINS,               SA::HP_BINS},
-            {A::STACK_HP_LEFT,               SA::HP_LEFT},
-            // {A::STACK_HP_LEFT_REL,           SA::HP_LEFT_REL},
+            {A::STACK_HP_BINS,               SA::HP_BINS},
+            {A::STACK_HP_LEFT_REL,           SA::HP_LEFT_REL},
             {A::STACK_SPEED,                 SA::SPEED},
             {A::STACK_QUEUE,                 SA::QUEUE},
             {A::STACK_VALUE_ONE,             SA::VALUE_ONE},
-            // {A::STACK_VALUE_ONE_BINS,        SA::VALUE_ONE_BINS},
+            {A::STACK_VALUE_ONE_BINS,        SA::VALUE_ONE_BINS},
             {A::STACK_FLAGS1,                SA::FLAGS1},
             {A::STACK_FLAGS2,                SA::FLAGS2},
 

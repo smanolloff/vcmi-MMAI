@@ -30,17 +30,17 @@ namespace MMAI::BAI::V12 {
         // (all attrs are strict so encoder will throw if NAs are found)
         attrs.fill(NULL_VALUE_UNENCODED);
 
-        static_assert(EI(A::_count) == 23, "whistleblower in case attributes change");
+        static_assert(EI(A::_count) == 33, "whistleblower in case attributes change");
 
         setattr(A::BATTLE_SIDE, EI(side));
         setattr(A::VALUE_KILLED_ACC_ABS, 0);
-        // setattr(A::VALUE_KILLED_ACC_ABS_BINS, 0);
+        setattr(A::VALUE_KILLED_ACC_ABS_BINS, 0);
         setattr(A::VALUE_LOST_ACC_ABS, 0);
-        // setattr(A::VALUE_LOST_ACC_ABS_BINS, 0);
+        setattr(A::VALUE_LOST_ACC_ABS_BINS, 0);
         setattr(A::DMG_DEALT_ACC_ABS, 0);
-        // setattr(A::DMG_DEALT_ACC_ABS_BINS, 0);
+        setattr(A::DMG_DEALT_ACC_ABS_BINS, 0);
         setattr(A::DMG_RECEIVED_ACC_ABS, 0);
-        // setattr(A::DMG_RECEIVED_ACC_ABS_BINS, 0);
+        setattr(A::DMG_RECEIVED_ACC_ABS_BINS, 0);
     };
 
     void PlayerStats::update(
@@ -54,36 +54,36 @@ namespace MMAI::BAI::V12 {
     ) {
         // ll (long long) ensures long is 64-bit even on 32-bit systems
         setattr(A::ARMY_VALUE_NOW_ABS, value);
-        // setattr(A::ARMY_VALUE_NOW_ABS_BINS, value);
+        setattr(A::ARMY_VALUE_NOW_ABS_BINS, value);
         setattr(A::ARMY_VALUE_NOW_REL, 1000ll * value / gstats->attr(GA::BFIELD_VALUE_NOW_ABS));
         setattr(A::ARMY_VALUE_NOW_REL0, 1000ll * value / gstats->attr(GA::BFIELD_VALUE_START_ABS));
         setattr(A::ARMY_HP_NOW_ABS, hp);
-        // setattr(A::ARMY_HP_NOW_ABS_BINS, hp);
+        setattr(A::ARMY_HP_NOW_ABS_BINS, hp);
         setattr(A::ARMY_HP_NOW_REL, 1000ll * hp / gstats->attr(GA::BFIELD_HP_NOW_ABS));
         setattr(A::ARMY_HP_NOW_REL0, 1000ll * hp / gstats->attr(GA::BFIELD_HP_START_ABS));
         setattr(A::VALUE_KILLED_NOW_ABS, valueKilled);
-        // setattr(A::VALUE_KILLED_NOW_ABS_BINS, valueKilled);
+        setattr(A::VALUE_KILLED_NOW_ABS_BINS, valueKilled);
         setattr(A::VALUE_KILLED_NOW_REL, 1000ll * valueKilled / gstats->attr(GA::BFIELD_VALUE_NOW_ABS));
         addattr(A::VALUE_KILLED_ACC_ABS, valueKilled);
-        // addattr(A::VALUE_KILLED_ACC_ABS_BINS, valueKilled);
+        addattr(A::VALUE_KILLED_ACC_ABS_BINS, valueKilled);
         setattr(A::VALUE_KILLED_ACC_REL0, 1000ll * attr(A::VALUE_KILLED_ACC_ABS) / gstats->attr(GA::BFIELD_VALUE_START_ABS));
         setattr(A::VALUE_LOST_NOW_ABS, valueLost);
-        // setattr(A::VALUE_LOST_NOW_ABS_BINS, valueLost);
+        setattr(A::VALUE_LOST_NOW_ABS_BINS, valueLost);
         setattr(A::VALUE_LOST_NOW_REL, 1000ll * valueLost / gstats->attr(GA::BFIELD_VALUE_NOW_ABS));
         addattr(A::VALUE_LOST_ACC_ABS, valueLost);
-        // addattr(A::VALUE_LOST_ACC_ABS_BINS, valueLost);
+        addattr(A::VALUE_LOST_ACC_ABS_BINS, valueLost);
         setattr(A::VALUE_LOST_ACC_REL0, 1000ll * attr(A::VALUE_LOST_ACC_ABS) / gstats->attr(GA::BFIELD_VALUE_START_ABS));
         setattr(A::DMG_DEALT_NOW_ABS, dmgDealt);
-        // setattr(A::DMG_DEALT_NOW_ABS_BINS, dmgDealt);
+        setattr(A::DMG_DEALT_NOW_ABS_BINS, dmgDealt);
         setattr(A::DMG_DEALT_NOW_REL, 1000ll * dmgDealt / gstats->attr(GA::BFIELD_HP_NOW_ABS));
         addattr(A::DMG_DEALT_ACC_ABS, dmgDealt);
-        // addattr(A::DMG_DEALT_ACC_ABS_BINS, dmgDealt);
+        addattr(A::DMG_DEALT_ACC_ABS_BINS, dmgDealt);
         setattr(A::DMG_DEALT_ACC_REL0, 1000ll * attr(A::DMG_DEALT_ACC_ABS) / gstats->attr(GA::BFIELD_HP_START_ABS));
         setattr(A::DMG_RECEIVED_NOW_ABS, dmgReceived);
-        // setattr(A::DMG_RECEIVED_NOW_ABS_BINS, dmgReceived);
+        setattr(A::DMG_RECEIVED_NOW_ABS_BINS, dmgReceived);
         setattr(A::DMG_RECEIVED_NOW_REL, 1000ll * dmgReceived / gstats->attr(GA::BFIELD_HP_NOW_ABS));
         addattr(A::DMG_RECEIVED_ACC_ABS, dmgReceived);
-        // addattr(A::DMG_RECEIVED_ACC_ABS_BINS, dmgReceived);
+        addattr(A::DMG_RECEIVED_ACC_ABS_BINS, dmgReceived);
         setattr(A::DMG_RECEIVED_ACC_REL0, 1000ll * attr(A::DMG_RECEIVED_ACC_ABS) / gstats->attr(GA::BFIELD_HP_START_ABS));
     }
 

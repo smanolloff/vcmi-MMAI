@@ -28,20 +28,20 @@ namespace MMAI::BAI::V12 {
         // (all attrs are strict so encoder will throw if NAs are found)
         attrs.fill(NULL_VALUE_UNENCODED);
 
-        static_assert(EI(A::_count) == 10, "whistleblower in case attributes change");
+        static_assert(EI(A::_count) == 14, "whistleblower in case attributes change");
 
         setattr(A::BATTLE_WINNER, NULL_VALUE_UNENCODED);
         setattr(A::BATTLE_SIDE, EI(side));
         setattr(A::BATTLE_SIDE_ACTIVE_PLAYER, NULL_VALUE_UNENCODED);
         setattr(A::BFIELD_VALUE_START_ABS, value);
-        // setattr(A::BFIELD_VALUE_START_ABS_BINS, value);
+        setattr(A::BFIELD_VALUE_START_ABS_BINS, value);
         setattr(A::BFIELD_VALUE_NOW_ABS, value);
-        // setattr(A::BFIELD_VALUE_NOW_ABS_BINS, value);
+        setattr(A::BFIELD_VALUE_NOW_ABS_BINS, value);
         setattr(A::BFIELD_VALUE_NOW_REL0, 1000);
         setattr(A::BFIELD_HP_START_ABS, hp);
-        // setattr(A::BFIELD_HP_START_ABS_BINS, hp);
+        setattr(A::BFIELD_HP_START_ABS_BINS, hp);
         setattr(A::BFIELD_HP_NOW_ABS, hp);
-        // setattr(A::BFIELD_HP_NOW_ABS_BINS, hp);
+        setattr(A::BFIELD_HP_NOW_ABS_BINS, hp);
         setattr(A::BFIELD_HP_NOW_REL0, 1000);
         setattr(A::ACTION_MASK, 0);
     }
@@ -59,10 +59,10 @@ namespace MMAI::BAI::V12 {
 
         // ll (long long) ensures long is 64-bit even on 32-bit systems
         setattr(A::BFIELD_VALUE_NOW_ABS, value);
-        // setattr(A::BFIELD_VALUE_NOW_ABS_BINS, value);
+        setattr(A::BFIELD_VALUE_NOW_ABS_BINS, value);
         setattr(A::BFIELD_VALUE_NOW_REL0, 1000ll * value / attr(A::BFIELD_VALUE_START_ABS));
         setattr(A::BFIELD_HP_NOW_ABS, hp);
-        // setattr(A::BFIELD_HP_NOW_ABS_BINS, hp);
+        setattr(A::BFIELD_HP_NOW_ABS_BINS, hp);
         setattr(A::BFIELD_HP_NOW_REL0, 1000ll * hp / attr(A::BFIELD_HP_START_ABS));
 
         canWait
