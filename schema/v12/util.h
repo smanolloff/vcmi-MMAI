@@ -108,6 +108,33 @@ namespace MMAI::Schema::V12 {
         return BinaryAttributeUnusedValues(e, n, vmax);
     }
 
+
+    /*
+     * Compile-time locator of misconfigured EXPNORM encodings:
+     * * checks if p <= 0 (must be positive)
+     */
+    template <typename T>
+    constexpr int MisconfiguredExpnormSlopeIndex(T elems) {
+        using E5Type = typename T::value_type;
+        using EnumType = typename std::tuple_element<0, E5Type>::type;
+
+        for (int i = 0; i < EI(EnumType::_count); i++) {
+            auto [_, e, _n, vmax, p] = elems.at(i);
+            switch(e) {
+            case Encoding::EXPNORM_EXPLICIT_NULL:
+            case Encoding::EXPNORM_MASKING_NULL:
+            case Encoding::EXPNORM_STRICT_NULL:
+            case Encoding::EXPNORM_ZERO_NULL:
+                if (p <= 0) return i;
+                break;
+            default:
+                break;
+            }
+        }
+
+        return -1;
+    }
+
     /*
      * Compile-time locator of sub-optimal BINARY encodings.
      * (see BinaryAttributeUnusedValues())

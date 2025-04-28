@@ -348,8 +348,8 @@ TEST(Encoder, NormalizedExpExplicitNull) {
   static_assert(EI(Encoding::EXPNORM_EXPLICIT_NULL) == 1+EI(Encoding::CATEGORICAL_ZERO_NULL), "Encoding list has changed");
   {
     auto have = std::vector<float> {};
-    auto want = std::vector<float> {0, 0.861};
-    Encoder::EncodeExpnormExplicitNull(3, 5, have);
+    auto want = std::vector<float> {0, 0.943};
+    Encoder::EncodeExpnormExplicitNull(3, 5, 4, have);
     ASSERT_EQ(have.size(), 2);
     ASSERT_EQ(want.at(0), have.at(0));
     ASSERT_NEAR(want.at(1), have.at(1), 1e-3);
@@ -357,13 +357,13 @@ TEST(Encoder, NormalizedExpExplicitNull) {
   {
     auto have = std::vector<float> {};
     auto want = std::vector<float> {0, 0};
-    Encoder::EncodeExpnormExplicitNull(0, 5, have);
+    Encoder::EncodeExpnormExplicitNull(0, 5, 4, have);
     ASSERT_EQ(want, have);
   }
   {
     auto have = std::vector<float> {};
     auto want = std::vector<float> {1, 0};
-    Encoder::EncodeExpnormExplicitNull(-1, 5, have);
+    Encoder::EncodeExpnormExplicitNull(-1, 5, 4, have);
     ASSERT_EQ(want, have);
   }
 }
@@ -372,21 +372,21 @@ TEST(Encoder, NormalizedExpMaskingNull) {
   static_assert(EI(Encoding::EXPNORM_MASKING_NULL) == 1+EI(Encoding::EXPNORM_EXPLICIT_NULL), "Encoding list has changed");
   {
     auto have = std::vector<float> {};
-    auto want = std::vector<float> {0.861};
-    Encoder::EncodeExpnormMaskingNull(3, 5, have);
+    auto want = std::vector<float> {0.943};
+    Encoder::EncodeExpnormMaskingNull(3, 5, 4, have);
     ASSERT_EQ(have.size(), 1);
     ASSERT_NEAR(want.at(0), have.at(0), 1e-3);
   }
   {
     auto have = std::vector<float> {};
     auto want = std::vector<float> {0};
-    Encoder::EncodeExpnormMaskingNull(0, 5, have);
+    Encoder::EncodeExpnormMaskingNull(0, 5, 4, have);
     ASSERT_EQ(want, have);
   }
   {
     auto have = std::vector<float> {};
     auto want = std::vector<float> {-1};
-    Encoder::EncodeExpnormMaskingNull(-1, 5, have);
+    Encoder::EncodeExpnormMaskingNull(-1, 5, 4, have);
     ASSERT_EQ(want, have);
   }
 }
@@ -395,20 +395,20 @@ TEST(Encoder, NormalizedExpStrictNull) {
   static_assert(EI(Encoding::EXPNORM_STRICT_NULL) == 1+EI(Encoding::EXPNORM_MASKING_NULL), "Encoding list has changed");
   {
     auto have = std::vector<float> {};
-    auto want = std::vector<float> {0.861};
-    Encoder::EncodeExpnormStrictNull(3, 5, have);
+    auto want = std::vector<float> {0.943};
+    Encoder::EncodeExpnormStrictNull(3, 5, 4, have);
     ASSERT_EQ(have.size(), 1);
     ASSERT_NEAR(want.at(0), have.at(0), 1e-3);
   }
   {
     auto have = std::vector<float> {};
     auto want = std::vector<float> {0};
-    Encoder::EncodeExpnormStrictNull(0, 5, have);
+    Encoder::EncodeExpnormStrictNull(0, 5, 4, have);
     ASSERT_EQ(want, have);
   }
   {
     auto have = std::vector<float> {};
-    ASSERT_THROW(Encoder::EncodeExpnormStrictNull(-1, 5, have), std::runtime_error);
+    ASSERT_THROW(Encoder::EncodeExpnormStrictNull(-1, 5, 4, have), std::runtime_error);
   }
 }
 
@@ -416,21 +416,21 @@ TEST(Encoder, NormalizedExpZeroNull) {
   static_assert(EI(Encoding::EXPNORM_ZERO_NULL) == 1+EI(Encoding::EXPNORM_STRICT_NULL), "Encoding list has changed");
   {
     auto have = std::vector<float> {};
-    auto want = std::vector<float> {0.861};
-    Encoder::EncodeExpnormZeroNull(3, 5, have);
+    auto want = std::vector<float> {0.943};
+    Encoder::EncodeExpnormZeroNull(3, 5, 4, have);
     ASSERT_EQ(have.size(), 1);
     ASSERT_NEAR(want.at(0), have.at(0), 1e-3);
   }
   {
     auto have = std::vector<float> {};
     auto want = std::vector<float> {0};
-    Encoder::EncodeExpnormZeroNull(0, 5, have);
+    Encoder::EncodeExpnormZeroNull(0, 5, 4, have);
     ASSERT_EQ(want, have);
   }
   {
     auto have = std::vector<float> {};
     auto want = std::vector<float> {0};
-    Encoder::EncodeExpnormZeroNull(-1, 5, have);
+    Encoder::EncodeExpnormZeroNull(-1, 5, 4, have);
     ASSERT_EQ(want, have);
   }
 }

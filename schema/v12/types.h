@@ -362,14 +362,10 @@ namespace MMAI::Schema::V12 {
         BATTLE_SIDE_ACTIVE_PLAYER,   // 0=left, 1=right (NA = battle finished)
         BATTLE_WINNER,               // 0=left, 1=right (NA = battle not finished)
         BFIELD_VALUE_START_ABS,      // global_value_at_start
-        BFIELD_VALUE_START_ABS_BINS, // global_value_at_start
         BFIELD_VALUE_NOW_ABS,        // global_value_now
-        BFIELD_VALUE_NOW_ABS_BINS,   // global_value_now
         BFIELD_VALUE_NOW_REL0,       // global_value_now / global_value_at_start
         BFIELD_HP_START_ABS,         // global_hp_at_start
-        BFIELD_HP_START_ABS_BINS,    // global_hp_at_start
         BFIELD_HP_NOW_ABS,           // global_hp_now
-        BFIELD_HP_NOW_ABS_BINS,      // global_hp_now
         BFIELD_HP_NOW_REL0,          // global_hp_now / global_hp_at_start
         ACTION_MASK,                 // mask for global actions (retreat, wait)
 
@@ -379,36 +375,26 @@ namespace MMAI::Schema::V12 {
     enum class PlayerAttribute : int {
         BATTLE_SIDE,                // 0=left, 1=right
         ARMY_VALUE_NOW_ABS,
-        ARMY_VALUE_NOW_ABS_BINS,
         ARMY_VALUE_NOW_REL,         // side_army_value_now          / global_value_now
         ARMY_VALUE_NOW_REL0,        // side_army_value_now          / global_value_at_start
         ARMY_HP_NOW_ABS,
-        ARMY_HP_NOW_ABS_BINS,
         ARMY_HP_NOW_REL,            // side_army_hp_now          / global_hp_now
         ARMY_HP_NOW_REL0,           // side_army_hp_now          / global_hp_at_start
         VALUE_KILLED_NOW_ABS,
-        VALUE_KILLED_NOW_ABS_BINS,
         VALUE_KILLED_NOW_REL,       // left_value_killed_this_turn  / global_value_last_turn
         VALUE_KILLED_ACC_ABS,
-        VALUE_KILLED_ACC_ABS_BINS,
         VALUE_KILLED_ACC_REL0,      // left_value_killed_lifetime   / global_value_at_start
         VALUE_LOST_NOW_ABS,
-        VALUE_LOST_NOW_ABS_BINS,
         VALUE_LOST_NOW_REL,         // left_value_lost_this_turn    / global_value_last_turn
         VALUE_LOST_ACC_ABS,
-        VALUE_LOST_ACC_ABS_BINS,
         VALUE_LOST_ACC_REL0,        // left_value_lost_lifetime     / global_value_at_start
         DMG_DEALT_NOW_ABS,
-        DMG_DEALT_NOW_ABS_BINS,
         DMG_DEALT_NOW_REL,          // left_dmg_dealt_this_turn     / global_hp_last_turn
         DMG_DEALT_ACC_ABS,
-        DMG_DEALT_ACC_ABS_BINS,
         DMG_DEALT_ACC_REL0,         // left_dmg_dealt_lifetime      / global_hp_at_start
         DMG_RECEIVED_NOW_ABS,
-        DMG_RECEIVED_NOW_ABS_BINS,
         DMG_RECEIVED_NOW_REL,       // left_dmg_taken_this_turn     / global_hp_last_turn
         DMG_RECEIVED_ACC_ABS,
-        DMG_RECEIVED_ACC_ABS_BINS,
         DMG_RECEIVED_ACC_REL0,      // left_dmg_taken_lifetime      / global_hp_at_start
 
         _count
@@ -425,24 +411,17 @@ namespace MMAI::Schema::V12 {
         // STACK_CREATURE_ID,
         STACK_SLOT,
         STACK_QUANTITY,
-        STACK_QUANTITY_BINS,
         STACK_ATTACK,
-        STACK_ATTACK_BINS,
         STACK_DEFENSE,
-        STACK_DEFENSE_BINS,
         STACK_SHOTS,
         STACK_DMG_MIN,
-        STACK_DMG_MIN_BINS,
         STACK_DMG_MAX,
-        STACK_DMG_MAX_BINS,
         STACK_HP,
-        STACK_HP_BINS,
-        STACK_HP_LEFT_REL,
+        STACK_HP_LEFT,
         STACK_SPEED,
         STACK_QUEUE,
         // STACK_ESTIMATED_DMG,
         STACK_VALUE_ONE,
-        STACK_VALUE_ONE_BINS,
         STACK_FLAGS1,
         STACK_FLAGS2,
 
@@ -464,24 +443,17 @@ namespace MMAI::Schema::V12 {
         SIDE,
         SLOT,
         QUANTITY,
-        QUANTITY_BINS,
         ATTACK,
-        ATTACK_BINS,
         DEFENSE,
-        DEFENSE_BINS,
         SHOTS,
         DMG_MIN,
-        DMG_MIN_BINS,
         DMG_MAX,
-        DMG_MAX_BINS,
         HP,
-        HP_BINS,
-        HP_LEFT_REL,
+        HP_LEFT,
         SPEED,
         QUEUE,
         // ESTIMATED_DMG,
         VALUE_ONE,
-        VALUE_ONE_BINS,
         FLAGS1,
         FLAGS2,
 

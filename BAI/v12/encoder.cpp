@@ -85,10 +85,10 @@ namespace MMAI::BAI::V12 {
         break; case Encoding::BINARY_MASKING_NULL: EncodeBinaryMaskingNull(v, n, vec);
         break; case Encoding::BINARY_STRICT_NULL: EncodeBinaryStrictNull(v, n, vec);
         break; case Encoding::BINARY_ZERO_NULL: EncodeBinaryZeroNull(v, n, vec);
-        break; case Encoding::EXPNORM_EXPLICIT_NULL: EncodeExpnormExplicitNull(v, vmax, vec);
-        break; case Encoding::EXPNORM_MASKING_NULL: EncodeExpnormMaskingNull(v, vmax, vec);
-        break; case Encoding::EXPNORM_STRICT_NULL: EncodeExpnormStrictNull(v, vmax, vec);
-        break; case Encoding::EXPNORM_ZERO_NULL: EncodeExpnormZeroNull(v, vmax, vec);
+        break; case Encoding::EXPNORM_EXPLICIT_NULL: EncodeExpnormExplicitNull(v, vmax, p, vec);
+        break; case Encoding::EXPNORM_MASKING_NULL: EncodeExpnormMaskingNull(v, vmax, p, vec);
+        break; case Encoding::EXPNORM_STRICT_NULL: EncodeExpnormStrictNull(v, vmax, p, vec);
+        break; case Encoding::EXPNORM_ZERO_NULL: EncodeExpnormZeroNull(v, vmax, p, vec);
         break; case Encoding::LINNORM_EXPLICIT_NULL: EncodeLinnormExplicitNull(v, vmax, vec);
         break; case Encoding::LINNORM_MASKING_NULL: EncodeLinnormMaskingNull(v, vmax, vec);
         break; case Encoding::LINNORM_STRICT_NULL: EncodeLinnormStrictNull(v, vmax, vec);
@@ -304,6 +304,22 @@ namespace MMAI::BAI::V12 {
         EncodeExpbin(v, n, vmax, slope, vec);
     }
 
+
+    /*
+    BASH code snipped for printing the bins. Args:
+    vmax n slope
+
+python -c '
+import numpy as np, math, sys;
+vmax, n, slope = int(sys.argv[1]), int(sys.argv[2]), float(sys.argv[3])
+x = np.linspace(0, 1, n + 1)
+bins = (np.exp(slope * x) - 1) / (np.exp(slope) - 1) * vmax
+print([math.ceil(b) for b in bins])
+ ' 1500 30 6.5
+
+    See also CalcExpnorm() for visualisation example.
+    */
+
     void Encoder::EncodeExpbin(const int v, const int n, const int vmax, const double slope, BS &vec) {
         if (v <= 0) {
             vec.push_back(1);
@@ -481,39 +497,45 @@ namespace MMAI::BAI::V12 {
     // EXPNORM
     //
 
-    void Encoder::EncodeExpnormExplicitNull(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnormExplicitNull(const int v, const int vmax, double slope, BS &vec) {
         vec.push_back(v == NULL_VALUE_UNENCODED);
-        EncodeExpnorm(v, vmax, vec);
+        EncodeExpnorm(v, vmax, slope, vec);
     }
 
-    void Encoder::EncodeExpnormMaskingNull(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnormMaskingNull(const int v, const int vmax, double slope, BS &vec) {
         if (v == NULL_VALUE_UNENCODED) {
             vec.push_back(NULL_VALUE_ENCODED);
             return;
         }
-        EncodeExpnorm(v, vmax, vec);
+        EncodeExpnorm(v, vmax, slope, vec);
     }
 
-    void Encoder::EncodeExpnormStrictNull(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnormStrictNull(const int v, const int vmax, double slope, BS &vec) {
         MAYBE_THROW_STRICT_ERROR(v);
-        EncodeExpnorm(v, vmax, vec);
+        EncodeExpnorm(v, vmax, slope, vec);
     }
 
-    void Encoder::EncodeExpnormZeroNull(const int v, const int vmax, BS &vec) {
-        EncodeExpnorm(v, vmax, vec);
+    void Encoder::EncodeExpnormZeroNull(const int v, const int vmax, double slope, BS &vec) {
+        EncodeExpnorm(v, vmax, slope, vec);
     }
 
-    void Encoder::EncodeExpnorm(const int v, const int vmax, BS &vec) {
+    void Encoder::EncodeExpnorm(const int v, const int vmax, double slope, BS &vec) {
         if (v <= 0) {
             vec.push_back(0);
             return;
         }
 
-        vec.push_back(CalcExpnorm(v, vmax));
+        vec.push_back(CalcExpnorm(v, slope, vmax));
     }
 
-    float Encoder::CalcExpnorm(const int v, const int vmax) {
-        return std::log(static_cast<float>(v+1)) / std::log(static_cast<float>(vmax));
+    // Visualise on https://www.desmos.com/calculator:
+    // ln(1 + (x/M) * (exp(S)-1))/S
+    // Add slider "S" (slope) and "M" (vmax).
+    // Play with the sliders to see the nonlinearity (use M=1 for best view)
+    // XXX: slope cannot be 0
+    float Encoder::CalcExpnorm(const int v, const int vmax, const double slope) {
+        double ratio = static_cast<double>(v) / vmax;
+        return std::log1p(ratio * (std::exp(slope) - 1.0)) / (slope + 1e-6);
     }
 
     //

@@ -81,17 +81,17 @@ namespace MMAI::BAI::V12 {
         static void EncodeAccumulatingLinbinStrictNull(const int v, const int n, const int vmax, double slope, BS &vec);
         static void EncodeAccumulatingLinbinZeroNull(const int v, const int n, const int vmax, double slope, BS &vec);
 
-        static void EncodeExpnormExplicitNull(const int v, const int vmax, BS &vec);
-        static void EncodeExpnormMaskingNull(const int v, const int vmax, BS &vec);
-        static void EncodeExpnormStrictNull(const int v, const int vmax, BS &vec);
-        static void EncodeExpnormZeroNull(const int v, const int vmax, BS &vec);
+        static void EncodeExpnormExplicitNull(const int v, const int vmax, double slope, BS &vec);
+        static void EncodeExpnormMaskingNull(const int v, const int vmax, double slope, BS &vec);
+        static void EncodeExpnormStrictNull(const int v, const int vmax, double slope, BS &vec);
+        static void EncodeExpnormZeroNull(const int v, const int vmax, double slope, BS &vec);
 
         static void EncodeLinnormExplicitNull(const int v, const int vmax, BS &vec);
         static void EncodeLinnormMaskingNull(const int v, const int vmax, BS &vec);
         static void EncodeLinnormStrictNull(const int v, const int vmax, BS &vec);
         static void EncodeLinnormZeroNull(const int v, const int vmax, BS &vec);
 
-        static float CalcExpnorm(const int v, const int vmax);
+        static float CalcExpnorm(const int v, const int vmax, double slope);
         static float CalcLinnorm(const int v, const int vmax);
     private:
         static void EncodeAccumulating(const int v, const int n, BS &vec);
@@ -101,7 +101,7 @@ namespace MMAI::BAI::V12 {
         static void EncodeAccumulatingExpbin(const int v, const int n, const int vmax, const double slope, BS &vec);
         static void EncodeLinbin(const int v, const int n, const int vmax, const double slope, BS &vec);
         static void EncodeAccumulatingLinbin(const int v, const int n, const int vmax, const double slope, BS &vec);
-        static void EncodeExpnorm(const int v, const int vmax, BS &vec);
+        static void EncodeExpnorm(const int v, const int vmax, double slope, BS &vec);
         static void EncodeLinnorm(const int v, const int vmax, BS &vec);
     };
 }

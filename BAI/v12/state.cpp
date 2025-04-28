@@ -36,6 +36,7 @@ namespace MMAI::BAI::V12 {
     // Prevent human errors caused by the Stack / Hex attr overlap
     //
     static_assert(EI(HA::STACK_SIDE)                    == EI(SA::SIDE) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_SLOT)                    == EI(SA::SLOT) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_QUANTITY)                == EI(SA::QUANTITY) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_ATTACK)                  == EI(SA::ATTACK) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_DEFENSE)                 == EI(SA::DEFENSE) + STACK_ATTR_OFFSET);
@@ -43,7 +44,7 @@ namespace MMAI::BAI::V12 {
     static_assert(EI(HA::STACK_DMG_MIN)                 == EI(SA::DMG_MIN) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_DMG_MAX)                 == EI(SA::DMG_MAX) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_HP)                      == EI(SA::HP) + STACK_ATTR_OFFSET);
-    static_assert(EI(HA::STACK_HP_LEFT_REL)             == EI(SA::HP_LEFT_REL) + STACK_ATTR_OFFSET);
+    static_assert(EI(HA::STACK_HP_LEFT)                 == EI(SA::HP_LEFT) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_SPEED)                   == EI(SA::SPEED) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_QUEUE)                   == EI(SA::QUEUE) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_VALUE_ONE)               == EI(SA::VALUE_ONE) + STACK_ATTR_OFFSET);
@@ -59,6 +60,7 @@ namespace MMAI::BAI::V12 {
     static_assert(EI(HA::STACK_DMG_DEALT_ACC_REL0)      == EI(SA::DMG_DEALT_ACC_REL0) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_DMG_RECEIVED_REL)        == EI(SA::DMG_RECEIVED_REL) + STACK_ATTR_OFFSET);
     static_assert(EI(HA::STACK_DMG_RECEIVED_ACC_REL0)   == EI(SA::DMG_RECEIVED_ACC_REL0) + STACK_ATTR_OFFSET);
+    static_assert(EI(StackAttribute::_count) == 25, "whistleblower in case attributes change");
 
     // static
     std::vector<float> State::InitNullStack() {
