@@ -525,7 +525,7 @@ print([math.ceil(b) for b in bins])
             return;
         }
 
-        vec.push_back(CalcExpnorm(v, slope, vmax));
+        vec.push_back(CalcExpnorm(v, vmax, slope));
     }
 
     // Visualise on https://www.desmos.com/calculator:
