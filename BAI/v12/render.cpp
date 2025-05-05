@@ -168,6 +168,7 @@ namespace MMAI::BAI::V12 {
                 return;
             auto want = wantfunc();
             if (want > vmax) want = vmax;
+            if (have > vmax) have = vmax;  // this is usually done by the encoder
             ensureValueMatch(have, want, attrname);
         };
 

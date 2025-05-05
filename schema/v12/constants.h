@@ -290,13 +290,12 @@ namespace MMAI::Schema::V12 {
     constexpr auto STACK_VALUE_NBINS = 20;
     constexpr auto STACK_VALUE_SLOPE = 6.5;
 
-
     constexpr HexEncoding HEX_ENCODING {
         E5(HA::Y_COORD,                 CS, 10),
         E5(HA::X_COORD,                 CS, 14),
         E5(HA::STATE_MASK,              BS, (1<<EI(HexState::_count))-1),
         E5(HA::ACTION_MASK,             BZ, (1<<EI(HexAction::_count))-1),
-        E5(HA::IS_REAR,                 CE, 1),        // 1=this is the rear hex of a stack
+        E5(HA::IS_REAR,                 CZ, 1),        // 1=this is the rear hex of a stack
         E5(HA::STACK_SIDE,              CE, 1),        // 0=attacker, 1=defender
         E5(HA::STACK_SLOT,              CE, STACK_SLOT_MAX),
         E5(HA::STACK_QUANTITY,          EZ, STACK_QTY_MAX, STACK_QTY_SLOPE),
