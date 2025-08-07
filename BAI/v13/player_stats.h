@@ -13,22 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
-
 #pragma once
 
-/*
- * THIS FILE LIVES IN:
- *
- * vcmi/AI/MMAI/export/export.h
- *
- */
+#include "battle/BattleSide.h"
+#include "schema/v13/types.h"
+#include "BAI/v13/global_stats.h"
 
-#include "schema/base.h"
+namespace MMAI::BAI::V13 {
+    using namespace Schema::V13;
 
-#include "schema/v3/schema.h"
-#include "schema/v8/schema.h"
-#include "schema/v9/schema.h"
-#include "schema/v10/schema.h"
-#include "schema/v11/schema.h"
-#include "schema/v12/schema.h"
-#include "schema/v13/schema.h"
+    class PlayerStats : public IPlayerStats {
+    public:
+        PlayerStats(BattleSide side, int value, int hp);
+
+        int getAttr(PlayerAttribute a) const override;
+        int attr(PlayerAttribute a) const;
+        void setattr(PlayerAttribute a, int value);
+        void addattr(PlayerAttribute a, int value);
+        void update(const GlobalStats* gstats, int value, int hp, int dmgDealt, int dmgReceived, int valueKilled, int valueLost);
+        PlayerAttrs attrs = {};
+    };
+}

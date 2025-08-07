@@ -13,22 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
-
 #pragma once
 
-/*
- * THIS FILE LIVES IN:
- *
- * vcmi/AI/MMAI/export/export.h
- *
- */
+#include "battle/BattleSide.h"
+#include "schema/v13/types.h"
 
-#include "schema/base.h"
+namespace MMAI::BAI::V13 {
+    using namespace Schema::V13;
+    using GlobalActionMask = std::bitset<EI(GlobalAction::_count)>;
 
-#include "schema/v3/schema.h"
-#include "schema/v8/schema.h"
-#include "schema/v9/schema.h"
-#include "schema/v10/schema.h"
-#include "schema/v11/schema.h"
-#include "schema/v12/schema.h"
-#include "schema/v13/schema.h"
+    class GlobalStats : public IGlobalStats {
+    public:
+        GlobalStats(BattleSide side, int value, int hp);
+
+        int getAttr(GlobalAttribute a) const override;
+        int attr(GlobalAttribute a) const;
+        void update(BattleSide side, CombatResult res, int value, int hp, bool canWait);
+        void setattr(GlobalAttribute a, int value);
+        GlobalAttrs attrs = {};
+
+    private:
+        GlobalActionMask actmask = 0;   // for active stack only
+    };
+}
