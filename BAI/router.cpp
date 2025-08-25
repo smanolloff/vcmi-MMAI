@@ -74,8 +74,7 @@ namespace MMAI::BAI {
                 ASSERT(fullpath.has_value(), "could not obtain path for resource " + rpath.getName());
                 auto fullpathstr = fullpath.value().string();
 
-                logAi->info("Loading %s model from %s", key, fullpathstr);
-
+                logAi->info("Loading Torch %s model from %s", key, fullpathstr);
                 it = models.emplace(key, std::make_unique<TorchModel>(fullpathstr)).first;
             } else {
                 logAi->debug("Using previously loaded %s", key);

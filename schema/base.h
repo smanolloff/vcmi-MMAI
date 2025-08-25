@@ -77,7 +77,7 @@ namespace MMAI::Schema {
 
     enum class ModelType : int {
         SCRIPTED,       // e.g. BattleAI, StupidAI
-        TORCH,          // pre-trained Torch JIT models stored in a file
+        TORCH,          // pre-trained Torch models stored in a file
         _count
     };
 

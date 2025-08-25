@@ -39,7 +39,6 @@ namespace MMAI::BAI::V10 {
                 state->supdata->type = Schema::V10::ISupplementaryData::Type::ANSI_RENDER;
             }
 
-            // info("getNonRenderAciton (loop) called with result type: " + std::to_string(res.type));
             action = model->getAction(state.get());
         }
         state->supdata->ansiRender.clear();

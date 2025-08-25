@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <bitset>
 #include "schema/base.h"
 
 namespace MMAI::Schema::V12 {

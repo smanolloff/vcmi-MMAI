@@ -445,7 +445,9 @@ namespace MMAI::BAI::V9 {
         int cid = cstack->creatureId().num;
         if (cid > Schema::V9::CREATURE_ID_MAX) {
             logAi->error("MMAI error: unknown creature with: %d (%s)", cid, cstack->getDescription());
-            ML(throw std::runtime_error("unknown creature id: " + std::to_string(cid)));
+            #ifdef ENABLE_ML
+                throw std::runtime_error("unknown creature id: " + std::to_string(cid));
+            #endif
             cid = 122; // this is a "NOT USED (1)" creature
         }
 
