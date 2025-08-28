@@ -281,7 +281,8 @@ if(MMAI_EXECUTORCH_PATH)
   set(EXECUTORCH_BUILD_EXTENSION_TENSOR       ON CACHE BOOL "" FORCE)
   set(EXECUTORCH_BUILD_XNNPACK                ON CACHE BOOL "" FORCE)
 
-  # XNN log levels: 4=DEBUG, 0=OFF (in non-Release builds, it's overwritten to deubg?)
+  # XNN log levels: 4=DEBUG, 0=OFF
+  # FIXME: it seems to have no effect?
   set(XNN_LOG_LEVEL 2 CACHE STRING "" FORCE)
 
   set(PYTHON_EXECUTABLE "${EXECUTORCH_ROOT}/.venv/bin/python" CACHE FILEPATH "" FORCE)
