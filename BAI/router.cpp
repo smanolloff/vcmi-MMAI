@@ -251,6 +251,6 @@ namespace MMAI::BAI {
     void Router::debug(const std::string &text) const { log(ELogLevel::DEBUG, text); }
     void Router::trace(const std::string &text) const { log(ELogLevel::TRACE, text); }
     void Router::log(ELogLevel::ELogLevel level, const std::string &text) const {
-        if (logAi->getLevel() <= level) logAi->debug("Router-%s [%s] %s", addrstr, colorname, text);
+        if (logAi->getEffectiveLevel() <= level) logAi->debug("Router-%s [%s] %s", addrstr, colorname, text);
     }
 }

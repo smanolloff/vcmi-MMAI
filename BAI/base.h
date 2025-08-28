@@ -108,7 +108,7 @@ namespace MMAI::BAI {
         template<typename ... Args> void debug(const std::string &format, Args ... args) const { log(ELogLevel::DEBUG, format, args...); }
         template<typename ... Args> void trace(const std::string &format, Args ... args) const { log(ELogLevel::DEBUG, format, args...); }
         template<typename ... Args> void log(ELogLevel::ELogLevel level, const std::string &format, Args ... args) const {
-            if (logAi->getLevel() <= level) _log(level, format, args...);
+            if (logAi->getEffectiveLevel() <= level) _log(level, format, args...);
         }
 
 
@@ -118,7 +118,7 @@ namespace MMAI::BAI {
         void debug(const std::string &text) const { log(ELogLevel::DEBUG, text); }
         void trace(const std::string &text) const { log(ELogLevel::TRACE, text); }
         void log(ELogLevel::ELogLevel level, const std::string &text) const {
-            if (logAi->getLevel() <= level) _log(level, "%s", text);
+            if (logAi->getEffectiveLevel() <= level) _log(level, "%s", text);
         }
 
         void error(const std::function<std::string()> &cb) const { log(ELogLevel::ERROR, cb); }
@@ -127,7 +127,7 @@ namespace MMAI::BAI {
         void debug(const std::function<std::string()> &cb) const { log(ELogLevel::DEBUG, cb); }
         void trace(const std::function<std::string()> &cb) const { log(ELogLevel::TRACE, cb); }
         void log(ELogLevel::ELogLevel level, const std::function<std::string()> &cb) const {
-            if (logAi->getLevel() <= level) _log(level, "%s", cb());
+            if (logAi->getEffectiveLevel() <= level) _log(level, "%s", cb());
         }
     };
 }
