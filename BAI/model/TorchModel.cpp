@@ -26,7 +26,7 @@ namespace MMAI::BAI {
         int numel,
         aten::ScalarType st
     ) {
-        auto res = model.execute(method_name, input);
+        auto res = mc->model.execute(method_name, input);
 
         std::string common = "TorchModel: " + method_name;
         std::string want = "";
@@ -57,7 +57,7 @@ namespace MMAI::BAI {
 
     TorchModel::TorchModel(std::string path)
     : path(path)
-    , model(extension::Module(path))
+    , mc(std::make_unique<ModelContainer>(path))
     {
         version = 12;
         auto t = call("get_version", 1, aten::ScalarType::Long);

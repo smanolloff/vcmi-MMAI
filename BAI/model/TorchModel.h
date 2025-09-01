@@ -18,13 +18,18 @@
 
 #include <mutex>
 
+#ifdef USING_EXECUTORCH
 #include <executorch/extension/module/module.h>
 #include <executorch/extension/tensor/tensor.h>
+#endif
 
 #include "schema/base.h"
 
 namespace MMAI::BAI {
+
+#ifdef USING_EXECUTORCH
     using namespace executorch;
+#endif
 
     class TorchModel : public MMAI::Schema::IModel {
     public:
@@ -39,8 +44,15 @@ namespace MMAI::BAI {
         std::string path;
         std::string name;
         int version;
-        extension::Module model;
 
+#ifdef USING_EXECUTORCH
+        class ModelContainer {
+        public:
+            ModelContainer(std::string path) : model(extension::Module(path)) {}
+            extension::Module model;
+        };
+
+        std::unique_ptr<ModelContainer> mc;
         aten::Tensor prepareInput(const MMAI::Schema::IState * s);
 
         aten::Tensor call(
@@ -57,5 +69,6 @@ namespace MMAI::BAI {
         inline aten::Tensor call(const std::string method_name, int numel, aten::ScalarType st) {
             return call(method_name, std::vector<runtime::EValue>{}, numel, st);
         }
+#endif
     };
 }

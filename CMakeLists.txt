@@ -6,7 +6,8 @@ set(MMAI_FILES
   BAI/model/ScriptedModel.h
   BAI/model/ScriptedModel.cpp
   BAI/model/TorchModel.h
-  BAI/model/TorchModel.cpp
+  # BAI/model/TorchModel.cpp       # optionally added later
+  # BAI/model/TorchModelDummy.cpp  # optionally added later
 
   BAI/v3/BAI.cpp
   BAI/v3/BAI.h
@@ -289,6 +290,8 @@ if(MMAI_EXECUTORCH_PATH)
 
   add_subdirectory("${EXECUTORCH_ROOT}" "${CMAKE_CURRENT_BINARY_DIR}/executorch")
 
+  list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
+
   list(APPEND MMAI_LIBS
     executorch
     extension_module_static
@@ -299,7 +302,11 @@ if(MMAI_EXECUTORCH_PATH)
     portable_ops_lib  # kernel-ops library that registers all ops.
   )
 else()
-  message(FATAL_ERROR "MMAI_EXECUTORCH_PATH is required.")
+  if(NOT ENABLE_ML)
+    message(FATAL_ERROR "MMAI_EXECUTORCH_PATH is required unless ENABLE_ML is set")
+  endif()
+
+  list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
 endif()
 
 if(NOT ENABLE_STATIC_LIBS)
