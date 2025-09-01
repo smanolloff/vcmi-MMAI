@@ -61,7 +61,6 @@ namespace MMAI::BAI::V13 {
         void encodeGlobal(CombatResult result);
         void encodePlayer(const PlayerStats* pstats);
         void encodeHex(const Hex* hex);
-        void encodeLink(const std::shared_ptr<Link> link);
         void verify();
 
         const int version_;

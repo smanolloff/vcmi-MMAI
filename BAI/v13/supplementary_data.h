@@ -65,7 +65,7 @@ namespace MMAI::BAI::V13 {
 
         const Schema::V13::Stacks getStacks() const override;
         const Schema::V13::Hexes getHexes() const override;
-        const Schema::V13::Links getLinks() const override;
+        const Schema::V13::AllLinks getAllLinks() const override;
         const Schema::V13::AttackLogs getAttackLogs() const override;
         const Schema::V13::StateTransitions getStateTransitions() const override;
         const Schema::V13::IGlobalStats* getGlobalStats() const override { return gstats; }

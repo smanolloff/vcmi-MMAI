@@ -150,17 +150,20 @@ namespace MMAI::BAI::V13 {
     }
 
     // static
-    BitQueue Stack::QBits(const CStack* cstack, const Queue& vec) {
-        BitQueue result;
+    std::pair<BitQueue, int> Stack::QBits(const CStack* cstack, const Queue& vec) {
+        BitQueue q;
+        int pos = -1;
         if (vec.size() != STACK_QUEUE_SIZE)
             throw std::runtime_error("Unexpected queue size: " + std::to_string(vec.size()));
 
         for (auto i = 0; i < vec.size(); ++i) {
-            if (vec[i] == cstack->unitId())
-                result.set(i);
+            if (vec[i] == cstack->unitId()) {
+                q.set(i);
+                if (pos < 0) pos = i;
+            }
         }
 
-        return result;
+        return {q, pos};
     }
 
 
@@ -195,8 +198,10 @@ namespace MMAI::BAI::V13 {
             slot = STACK_SLOT_SPECIAL;
         }
 
-        // queue pos needs to be set first to determine if stack is active
-        auto qbits = QBits(cstack, q);
+        // queue needs to be set first to determine if stack is active
+        auto [qbits, pos] = QBits(cstack, q);
+        qposFirst = pos; // for comparing two positions
+
         auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
 
         // XXX: config/creatures/<faction>.json is misleading
@@ -489,6 +494,10 @@ namespace MMAI::BAI::V13 {
         if (cstack->occupiedHex().isAvailable())
             setflag(F1::IS_WIDE);
 
+        // std::bitset's public semantics are architecture-independent.
+        // operator<< prints bits from MSB to LSB,
+        // e.g. std::bitset<8>(1) prints 00000001
+        // b[i] indexes from the least-significant bit: b[0] == 1, b[1..7] == 0
         if (qbits.test(0))
             setflag(F1::IS_ACTIVE);
 

@@ -19,14 +19,14 @@
 #include "battle/CPlayerBattleCallback.h"
 
 #include "BAI/v13/hex.h"
-#include "BAI/v13/link.h"
+#include "BAI/v13/links.h"
 #include "BAI/v13/stack.h"
 #include "common.h"
 
 namespace MMAI::BAI::V13 {
     using Stacks = std::vector<std::shared_ptr<Stack>>;
     using Hexes = std::array<std::array<std::unique_ptr<Hex>, BF_XMAX>, BF_YMAX>;
-    using Links = std::array<std::array<std::unique_ptr<Link>, 165>, 165>;
+    using AllLinks = std::map<LinkType, std::shared_ptr<Links>>;
 
     using XY = std::pair<int, int>;
 
@@ -44,13 +44,13 @@ namespace MMAI::BAI::V13 {
         Battlefield(
             const std::shared_ptr<Hexes> hexes,
             const Stacks stacks,
-            const std::shared_ptr<Links> links,
+            const AllLinks allLinks,
             const Stack* astack
         );
 
         const std::shared_ptr<Hexes> hexes;
         const Stacks stacks;
-        const std::shared_ptr<Links> links;
+        const AllLinks allLinks;
         const Stack* const astack;     // XXX: nullptr on battle start/end, or if army stacks > MAX_STACKS_PER_SIDE
     private:
         static std::tuple<Stacks, Queue> InitStacks(
@@ -68,14 +68,15 @@ namespace MMAI::BAI::V13 {
             const Stacks stacks
         );
 
-        static std::shared_ptr<Links> InitLinks(
+        static AllLinks InitAllLinks(
             const CPlayerBattleCallback* battle,
             const Stacks stacks,
             const Queue &queue,
             const std::shared_ptr<Hexes>
         );
 
-        static std::unique_ptr<Link> LinkTwoHexes(
+        static void LinkTwoHexes(
+            AllLinks &allLinks,
             const CPlayerBattleCallback* battle,
             const Stacks &stacks,
             const Queue &queue,

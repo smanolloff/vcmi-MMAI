@@ -533,8 +533,8 @@ namespace MMAI::Schema::V13 {
         MELEE_DMG_REL,      // v=frac. of DST stack HP
         RETAL_DMG_REL,      // v=frac. of SRC stack HP after hypothetical attack
         RANGED_DMG_REL,     // v=frac. of DST stack HP
-        BLOCKED_BY,
-        REAR_HEX,           // DST=rear hex of wide unit
+        // BLOCKED_BY,
+        // REAR_HEX,           // DST=rear hex of wide unit
         _count
     };
 
@@ -592,19 +592,6 @@ namespace MMAI::Schema::V13 {
         virtual ~IHex() = default;
     };
 
-    class ILink {
-    public:
-        virtual const IHex* getSrc() const = 0;
-        virtual const IHex* getDst() const = 0;
-        virtual bool isNeighbour() const = 0;
-        virtual bool isReachable() const = 0;
-        virtual float getRangedMod() const = 0;      // v=0 / 0.25 / 0.5 / 1
-        virtual float getRangedDmgFrac() const = 0;
-        virtual float getMeleeDmgFrac() const = 0;
-        virtual float getRetalDmgFrac() const = 0;
-        virtual ~ILink() = default;
-    };
-
     class IAttackLog {
     public:
         // NOTE: each of those can be nullptr if cstack was just resurrected/summoned
@@ -619,10 +606,18 @@ namespace MMAI::Schema::V13 {
         virtual ~IAttackLog() = default;
     };
 
+    class ILinks {
+    public:
+        virtual const std::vector<int64_t> getSrcIndex() const = 0;
+        virtual const std::vector<int64_t> getDstIndex() const = 0;
+        virtual const std::vector<float> getAttributes() const = 0;
+        virtual ~ILinks() = default;
+    };
+
     using AttackLogs = std::vector<IAttackLog*>;
     using Stacks = std::vector<IStack*>;
     using Hexes = std::array<std::array<IHex*, 15>, 11>;
-    using Links = std::array<std::array<ILink*, 165>, 165>;
+    using AllLinks = std::map<LinkType, ILinks*>;
 
     enum class Side : int {LEFT, RIGHT}; // corresponds to BattleSide::Type
 
@@ -646,7 +641,7 @@ namespace MMAI::Schema::V13 {
         virtual const IPlayerStats* getRightPlayerStats() const = 0;
         virtual const Stacks getStacks() const = 0;
         virtual const Hexes getHexes() const = 0;
-        virtual const Links getLinks() const = 0;
+        virtual const AllLinks getAllLinks() const = 0;
         virtual const AttackLogs getAttackLogs() const = 0;
         virtual const std::string getAnsiRender() const = 0;
         virtual const StateTransitions getStateTransitions() const = 0;

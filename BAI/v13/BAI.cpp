@@ -509,7 +509,9 @@ namespace MMAI::BAI::V13 {
 
     void BAI::actionStarted(const BattleID &bid, const BattleAction &action) {
         Base::actionStarted(bid, action);
-        state->onActionStarted(action);
+        // XXX: disable transitions (for performance)
+        // TODO: if re-enabling, also re-enable "persistentAttackLogs.insert(...)" in State::onActiveStack
+        // state->onActionStarted(action);
     };
 
     void BAI::actionFinished(const BattleID &bid, const BattleAction &action) {

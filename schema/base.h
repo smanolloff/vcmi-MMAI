@@ -18,6 +18,7 @@
 
 #include <any>
 #include <vector>
+#include <map>
 #include <string>
 
 // Import + Export macro declarations

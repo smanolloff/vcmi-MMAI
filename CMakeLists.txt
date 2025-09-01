@@ -181,7 +181,7 @@ set(MMAI_FILES
   BAI/v13/hex.h
   BAI/v13/hexaction.h
   BAI/v13/hexactmask.h
-  BAI/v13/link.h
+  BAI/v13/links.h
   BAI/v13/player_stats.cpp
   BAI/v13/player_stats.h
   BAI/v13/render.cpp

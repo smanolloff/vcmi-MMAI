@@ -44,13 +44,13 @@ namespace MMAI::BAI::V13 {
         return res;
     }
 
-    const Schema::V13::Links SupplementaryData::getLinks() const {
-        ASSERT(battlefield, "getLinks() called when battlefield is null");
-        auto res = Schema::V13::Links{};
+    const Schema::V13::AllLinks SupplementaryData::getAllLinks() const {
+        ASSERT(battlefield, "getAllLinks() called when battlefield is null");
+        auto res = Schema::V13::AllLinks{};
 
-        for (int src=0; src < 165; ++src)
-            for (int dst=0; dst < 165; ++dst)
-                res.at(src).at(dst) = battlefield->links->at(src).at(dst).get();
+        for (const auto &[type, links] : battlefield->allLinks) {
+            res[type] = links.get();
+        }
 
         return res;
     }

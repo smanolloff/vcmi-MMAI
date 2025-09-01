@@ -40,7 +40,7 @@ namespace MMAI::BAI::V13 {
         static int CalcValue(const CCreature* creature);
 
         // not the quantum version :)
-        static BitQueue QBits(const CStack*, const Queue&);
+        static std::pair<BitQueue, int> QBits(const CStack*, const Queue&);
 
         struct Stats {
             int dmgDealtNow = 0;
@@ -83,6 +83,7 @@ namespace MMAI::BAI::V13 {
         bool flag(StackFlag1 f) const;
         bool flag(StackFlag2 f) const;
         int shots;
+        int qposFirst;
     private:
         void setflag(StackFlag1 f);
         void setflag(StackFlag2 f);

@@ -175,7 +175,8 @@ namespace MMAI::BAI::V13 {
             transitions.clear();
             persistentAttackLogs.clear();
         } else {
-            persistentAttackLogs.insert(persistentAttackLogs.end(), attackLogs.begin(), attackLogs.end());
+            // XXX: uncomment when enabling transitions (1/2)
+            // persistentAttackLogs.insert(persistentAttackLogs.end(), attackLogs.begin(), attackLogs.end());
             battlefield = Battlefield::Create(battle, astack, &ogstats, gstats.get(), sstats, isMorale);
             bfstate.clear();
             actmask.clear();
@@ -215,7 +216,8 @@ namespace MMAI::BAI::V13 {
             lpstats.get(),
             rpstats.get(),
             battlefield.get(),
-            persistentAttackLogs, // store the logs since OUR last turn
+            // XXX: replace with persistentAttackLogs when enabling transitions (2/2)
+            attackLogs, // store the logs since OUR last turn
             transitions, // store the states since last turn
             result
         );
@@ -451,6 +453,8 @@ namespace MMAI::BAI::V13 {
      * !!!!!! IMPORTANT: `battlefield` must not be used here (old state) !!!!!!
      * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      */
+    // XXX: this is never called (transitions are disabled for performance)
+    //      See BAI::actionStarted
     void State::onActionStarted(const BattleAction &action) {
         _onActionStarted(action);
         actingStack = nullptr;

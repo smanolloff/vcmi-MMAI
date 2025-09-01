@@ -28,6 +28,7 @@
 namespace MMAI::BAI::V13 {
     using HA = HexAttribute;
     using SA = StackAttribute;
+    using LT = LinkType;
 
     // A custom hash function must be provided for the adjmap
     struct PairHash {
@@ -58,11 +59,11 @@ namespace MMAI::BAI::V13 {
     Battlefield::Battlefield(
         const std::shared_ptr<Hexes> hexes_,
         const Stacks stacks_,
-        const std::shared_ptr<Links> links_,
+        const AllLinks allLinks_,
         const Stack* astack_
     ) : hexes(hexes_)
       , stacks(stacks_)
-      , links(links_)
+      , allLinks(allLinks_)
       , astack(astack_) {};
 
     // static
@@ -76,7 +77,7 @@ namespace MMAI::BAI::V13 {
     ) {
         auto [stacks, queue] = InitStacks(battle, acstack, ogstats, gstats, stacksStats, isMorale);
         auto [hexes, astack] = InitHexes(battle, acstack, stacks);
-        auto links = InitLinks(battle, stacks, queue, hexes);
+        auto links = InitAllLinks(battle, stacks, queue, hexes);
 
         return std::make_shared<const Battlefield>(hexes, stacks, links, astack);
     }
@@ -272,49 +273,50 @@ namespace MMAI::BAI::V13 {
     }
 
     // static
-    std::shared_ptr<Links> Battlefield::InitLinks(
+    AllLinks Battlefield::InitAllLinks(
         const CPlayerBattleCallback* battle,
         const Stacks stacks,
         const Queue &queue,
         const std::shared_ptr<Hexes> hexes
     ) {
-        auto links = std::make_shared<Links>();
+        auto allLinks = AllLinks();
+
+        for (auto i=0; i<EI(LT::_count); ++i)
+            allLinks[LT(i)] = std::make_shared<Links>();
 
         for (auto &srcrow : *hexes) {
             for (auto &srchex : srcrow) {
                 for (auto &dstrow : *hexes) {
                     for (auto &dsthex : dstrow) {
-                        links->at(srchex->getID()).at(dsthex->getID()) = LinkTwoHexes(
-                            battle,
-                            stacks,
-                            queue,
-                            srchex.get(),
-                            dsthex.get()
-                        );
+                        LinkTwoHexes(allLinks, battle, stacks, queue, srchex.get(), dsthex.get());
                     }
                 }
             }
         }
 
-        return links;
+        return allLinks;
     }
 
-    std::unique_ptr<Link> Battlefield::LinkTwoHexes(
+    void Battlefield::LinkTwoHexes(
+        AllLinks &allLinks,
         const CPlayerBattleCallback* battle,
         const Stacks &stacks,
         const Queue &queue,
         const Hex* src,
         const Hex* dst
     ) {
-        bool reachable = src->stack && src->stack->rinfo.distances.at(dst->bhex.toInt()) <= src->stack->attr(SA::SPEED);
         bool neighbour = ADJMAP.count({src->bhex.toInt(), dst->bhex.toInt()}) > 0;
 
+        bool reachable = false;
         float rangemod = 0;
         float rangedDmgFrac = 0;
         float meleeDmgFrac = 0;
         float retalDmgFrac = 0;
+        int actsBefore = 0;
 
-        if (src->stack && !src->stack->flag(StackFlag1::SLEEPING)) {
+        if (src->stack && !src->getAttr(HA::IS_REAR) && !src->stack->flag(StackFlag1::SLEEPING)) {
+            reachable = src->stack->rinfo.distances.at(dst->bhex.toInt()) <= src->stack->attr(SA::SPEED);
+
             // rangemod is set even if dst is free
             if (src->stack->cstack->canShoot() && !src->stack->cstack->coversPos(dst->bhex) && !src->stack->flag(StackFlag1::BLOCKED) && !neighbour) {
                 rangemod = 1;
@@ -347,15 +349,38 @@ namespace MMAI::BAI::V13 {
             }
         }
 
-        return std::make_unique<Link>(
-            src,
-            dst,
-            neighbour,
-            reachable,
-            std::min<float>(2, rangemod),
-            std::min<float>(2, rangedDmgFrac),
-            std::min<float>(2, meleeDmgFrac),
-            std::min<float>(2, retalDmgFrac)
-        );
+        if (src->stack && dst->stack && src->id != dst->id) {
+            auto srcpos = src->stack->qposFirst;
+            auto dstpos = dst->stack->qposFirst;
+            if (srcpos < dstpos) {
+                ASSERT(dstpos <= queue.size(), "dstpos exceeds queue size");
+                actsBefore = true;
+            }
+        }
+
+        //
+        // Build links
+        //
+
+        if (neighbour)
+            allLinks[LT::ADJACENT]->add(src->id, dst->id, 1);
+
+        if (reachable)
+            allLinks[LT::REACH]->add(src->id, dst->id, 1);
+
+        if (actsBefore)
+            allLinks[LT::ACTS_BEFORE]->add(src->id, dst->id, std::min<int>(2, actsBefore));
+
+        if (rangemod)
+            allLinks[LT::RANGED_MOD]->add(src->id, dst->id, std::min<float>(2, rangemod));
+
+        if (rangedDmgFrac)
+            allLinks[LT::RANGED_DMG_REL]->add(src->id, dst->id, std::min<float>(2, rangedDmgFrac));
+
+        if (meleeDmgFrac)
+            allLinks[LT::MELEE_DMG_REL]->add(src->id, dst->id, std::min<float>(2, meleeDmgFrac));
+
+        if (retalDmgFrac)
+            allLinks[LT::RETAL_DMG_REL]->add(src->id, dst->id, std::min<float>(2, retalDmgFrac));
     }
 }
