@@ -92,4 +92,19 @@ namespace MMAI::Schema {
 
         virtual ~IModel() = default;
     };
+
+    // Convenience formatter for std::any cast errors
+    inline std::string AnyCastError(const std::any any, const std::type_info &t) {
+        if (!any.has_value()) {
+            return "no value";
+        } else if (any.type() != t) {
+            return boost::str(
+                boost::format("type mismatch: want: %s/%u, have: %s/%u") \
+                % boost::core::demangle(t.name()) % t.hash_code() \
+                % boost::core::demangle(any.type().name()) % any.type().hash_code()
+            );
+        } else {
+            return "";
+        }
+    }
 }
