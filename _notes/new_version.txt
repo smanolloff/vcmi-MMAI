@@ -15,7 +15,6 @@ version X -> Y
   ^ in AI/MMAI/schema/vY/
 
 5. Edit AI/MMAI/BAI/base.cpp and add #include + case stmt for version Y
-   Edit AI/MMAI/BAI/model/TorchModel.cpp and add case stmt for version Y (2 places)
    Edit AI/MMAI/schema/schema.h add #include for version Y
 
 6. cp ML/user_agents/agent-v{X,Y}.cpp

@@ -53,7 +53,8 @@ namespace MMAI::BAI {
         };
 
         std::unique_ptr<ModelContainer> mc;
-        aten::Tensor prepareInput(const MMAI::Schema::IState * s);
+
+        std::vector<runtime::EValue> prepareInputs(const MMAI::Schema::IState * s);
 
         aten::Tensor call(
             const std::string& method_name,
