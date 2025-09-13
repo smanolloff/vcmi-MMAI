@@ -215,10 +215,15 @@ namespace MMAI::BAI::V13 {
 
                 if (ba) {
                     debug("Action is VALID: " + state->action->name());
+                    errcounter = 0;
                     cb->battleMakeUnitAction(bid, *ba);
                     break;
                 } else {
                     std::cout << Render(state.get(), state->action.get()) << "\n";
+                    ++errcounter;
+                    if (errcounter > 10) {
+                        throw std::runtime_error("Received 10 consecutive invalid actions");
+                    }
                     error("Action is INVALID: " + state->action->name());
                 }
             } catch (const std::exception& e) {

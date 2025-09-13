@@ -54,6 +54,9 @@ namespace MMAI::BAI::V13 {
         virtual std::unique_ptr<State> initState(const CPlayerBattleCallback* battle);
         std::unique_ptr<State> state = nullptr;
 
+        // consecutive invalid actions counter
+        int errcounter = 0;
+
         bool resetting = false;
         std::vector<Schema::Action> allactions = {}; // DEBUG ONLY
         std::shared_ptr<CPlayerBattleCallback> battle = nullptr;

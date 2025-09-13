@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <mutex>
 
 #ifdef USING_EXECUTORCH
 #include <executorch/extension/module/module.h>
 #include <executorch/extension/tensor/tensor.h>
+#include "schema/v13/types.h"
 #endif
 
 #include "schema/base.h"
@@ -52,9 +52,14 @@ namespace MMAI::BAI {
             extension::Module model;
         };
 
-        std::unique_ptr<ModelContainer> mc;
+        int e_max;
+        int k_max;
 
-        std::vector<runtime::EValue> prepareInputs(const MMAI::Schema::IState * s);
+        std::unique_ptr<ModelContainer> mc;
+        std::vector<extension::TensorPtr> prepareInputsV13(
+            const MMAI::Schema::IState * state,
+            const MMAI::Schema::V13::ISupplementaryData* sup
+        );
 
         aten::Tensor call(
             const std::string& method_name,
