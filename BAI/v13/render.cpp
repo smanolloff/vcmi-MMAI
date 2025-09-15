@@ -296,12 +296,21 @@ namespace MMAI::BAI::V13 {
             static_assert(EI(Side::RIGHT) == EI(BattleSide::DEFENDER));
 
             auto fin = battle->battleIsFinished();
-            ASSERT(fin.has_value(), "ended, but battleIsFinished returns no value?");
 
-            // NONE means draw (no units on battlefield) -- our value will be null in this case
-            (fin == BattleSide::NONE)
-                ? ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), NULL_VALUE_UNENCODED, "GA.BATTLE_WINNER (draw)")
-                : ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), EI(fin.value()), "GA.BATTLE_WINNER");
+            // XXX: The logic in battleIsFinished is flawed and returns no value
+            //      (i.e. "not finished") if both sides have units, which can
+            //      happen if the OPPONENT (not us) retreats.
+            // ASSERT(fin.has_value(), "ended, but battleIsFinished returns no value?");
+
+            if (fin.has_value()) {
+                // NONE means draw (no units on battlefield) -- our value will be null in this case
+                (fin == BattleSide::NONE)
+                    ? ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), NULL_VALUE_UNENCODED, "GA.BATTLE_WINNER (draw)")
+                    : ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), EI(fin.value()), "GA.BATTLE_WINNER");
+            } else {
+                // the opponent retreated -- we must be the winner
+                ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), gstats->getAttr(GA::BATTLE_SIDE), "GA.BATTLE_WINNER (enemy retreat)");
+            }
 
             ensureValueMatch(gstats->getAttr(GA::BATTLE_SIDE_ACTIVE_PLAYER), NULL_VALUE_UNENCODED, "GA.BATTLE_SIDE_ACTIVE_PLAYER");
             ensureValueMatch(gmask.test(EI(GlobalAction::WAIT)), false, "GA.ACTION_MASK[WAIT]");
