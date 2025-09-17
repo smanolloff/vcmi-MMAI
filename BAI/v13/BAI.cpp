@@ -64,6 +64,8 @@ namespace MMAI::BAI::V13 {
         Base::battleEnd(bid, br, queryID);
         state->onBattleEnd(br);
 
+        info("MMAI %s this battle.", (br->winner == battle->battleGetMySide() ? "won" : "lost"));
+
         // Check if battle ended normally or was forced via a RETREAT action
         if (state->action == nullptr) {
             // no previous action means battle ended without giving us a turn (OK)
