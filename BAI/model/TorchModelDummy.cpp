@@ -37,6 +37,7 @@ namespace MMAI::BAI {
     Schema::ModelType TorchModel::getType() { return MMAI::Schema::ModelType::TORCH; };
     std::string TorchModel::getName() { return ""; };
     int TorchModel::getVersion() { return 0; }
+    Schema::Side TorchModel::getSide() { return Schema::Side(0); }
     int TorchModel::getAction(const MMAI::Schema::IState * s) { return 0; }
     double TorchModel::getValue(const MMAI::Schema::IState * s) { return 0; }
 }

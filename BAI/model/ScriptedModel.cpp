@@ -34,11 +34,15 @@ namespace MMAI::BAI {
 
     std::string ScriptedModel::getName() {
         return keyword;
-    };
+    }
 
     Schema::ModelType ScriptedModel::getType() {
         return Schema::ModelType::SCRIPTED;
-    };
+    }
+
+    Schema::Side ScriptedModel::getSide() {
+        return Schema::Side::BOTH;
+    }
 
     // The below methods should never be called on this object:
     // SCRIPTED models are dummy models which should not be used for anything

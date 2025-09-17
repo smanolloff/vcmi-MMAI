@@ -18,6 +18,7 @@
 #include "BAI/v12/global_stats.h"
 
 namespace MMAI::BAI::V12 {
+    using Side = Schema::Side;
     using A = Schema::V12::GlobalAttribute;
 
     static_assert(EI(Side::LEFT) == EI(BattleSide::LEFT_SIDE));

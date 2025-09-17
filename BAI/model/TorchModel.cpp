@@ -289,6 +289,9 @@ namespace MMAI::BAI {
 
         auto t_k_max = call("get_k_max", 1, aten::ScalarType::Long);
         k_max = static_cast<int>(t_k_max.const_data_ptr<int64_t>()[0]);
+
+        auto t_side = call("get_side", 1, aten::ScalarType::Long);
+        side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int64_t>()[0]));
     }
 
 
@@ -302,6 +305,10 @@ namespace MMAI::BAI {
 
     int TorchModel::getVersion() {
         return version;
+    };
+
+    Schema::Side TorchModel::getSide() {
+        return side;
     };
 
     int TorchModel::getAction(const MMAI::Schema::IState * s) {

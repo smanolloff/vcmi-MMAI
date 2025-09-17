@@ -199,9 +199,15 @@ namespace MMAI::BAI {
     void Router::battleStart(const BattleID &bid, const CCreatureSet *army1, const CCreatureSet *army2, int3 tile, const CGHeroInstance *hero1, const CGHeroInstance *hero2, BattleSide side, bool replayAllowed) {
         Schema::IModel * model;
         InitModelConfigFromSettings();
-        model = GetModel(side == BattleSide::ATTACKER ? "attacker" : "defender");
+        auto modelkey = side == BattleSide::ATTACKER ? "attacker" : "defender";
+        model = GetModel(modelkey);
 
-        ASSERT(model, "failed to build model");
+        auto modelside = model->getSide();
+        auto realside = Schema::Side(EI(side));
+
+        if (modelside != realside && modelside != Schema::Side::BOTH) {
+            THROW_FORMAT("The loaded '%s' model can not play as %s", modelkey % modelkey);
+        }
 
         // printf("(side=%d) hero0: %s, hero1: %s\n", EI(side), hero1->nameCustomTextId.c_str(), hero2->nameCustomTextId.c_str());
 

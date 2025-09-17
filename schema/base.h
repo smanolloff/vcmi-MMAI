@@ -82,6 +82,12 @@ namespace MMAI::Schema {
         _count
     };
 
+    enum class Side : int {
+        LEFT,       // BattleSide::LEFT
+        RIGHT,      // BattleSide::RIGHT
+        BOTH        // for models knowing able to play as either or right
+    };
+
     class IModel {
     public:
         virtual ModelType getType() = 0;
@@ -89,6 +95,7 @@ namespace MMAI::Schema {
         virtual int getVersion() = 0;
         virtual int getAction(const IState*) = 0;
         virtual double getValue(const IState*) = 0;
+        virtual Side getSide() = 0;
 
         virtual ~IModel() = default;
     };

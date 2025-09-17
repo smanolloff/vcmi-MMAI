@@ -619,8 +619,6 @@ namespace MMAI::Schema::V13 {
     using Hexes = std::array<std::array<IHex*, 15>, 11>;
     using AllLinks = std::map<LinkType, ILinks*>;
 
-    enum class Side : int {LEFT, RIGHT}; // corresponds to BattleSide::Type
-
     using StateTransition = std::tuple<Action, ActionMask*, BattlefieldState*>;
     using StateTransitions = std::vector<StateTransition>;
 

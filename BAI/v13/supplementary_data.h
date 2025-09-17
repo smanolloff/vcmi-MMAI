@@ -23,6 +23,8 @@
 #include "schema/v13/types.h"
 
 namespace MMAI::BAI::V13 {
+    using Side = Schema::Side;
+
     // match sides for convenience when determining winner (see `victory`)
     static_assert(EI(CombatResult::LEFT_WINS) == EI(Side::LEFT));
     static_assert(EI(CombatResult::RIGHT_WINS) == EI(Side::RIGHT));

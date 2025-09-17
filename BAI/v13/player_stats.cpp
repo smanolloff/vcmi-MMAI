@@ -19,6 +19,7 @@
 #include "BAI/v13/player_stats.h"
 
 namespace MMAI::BAI::V13 {
+    using Side = Schema::Side;
     using GA = Schema::V13::GlobalAttribute;
     using A = Schema::V13::PlayerAttribute;
 

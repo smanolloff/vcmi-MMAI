@@ -14,15 +14,11 @@
 // limitations under the License.
 // =============================================================================
 
+#include "CCallback.h"
 #include "networkPacks/PacksForClientBattle.h"
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
 
-#include "BAI/v3/BAI.h"
-#include "BAI/v8/BAI.h"
-#include "BAI/v9/BAI.h"
-#include "BAI/v10/BAI.h"
-#include "BAI/v11/BAI.h"
 #include "BAI/v12/BAI.h"
 #include "BAI/v13/BAI.h"
 #include "base.h"
@@ -38,16 +34,6 @@ namespace MMAI::BAI {
         auto version = model->getVersion();
 
         switch (version) {
-        break; case 3:
-            res = std::make_shared<V3::BAI>(model, version, env, cb);
-        break; case 8:
-            res = std::make_shared<V8::BAI>(model, version, env, cb);
-        break; case 9:
-            res = std::make_shared<V9::BAI>(model, version, env, cb);
-        break; case 10:
-            res = std::make_shared<V10::BAI>(model, version, env, cb);
-        break; case 11:
-            res = std::make_shared<V11::BAI>(model, version, env, cb);
         break; case 12:
             res = std::make_shared<V12::BAI>(model, version, env, cb);
         break; case 13:

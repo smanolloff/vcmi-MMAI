@@ -38,12 +38,14 @@ namespace MMAI::BAI {
         Schema::ModelType getType() override;
         std::string getName() override;
         int getVersion() override;
+        Schema::Side getSide() override;
         int getAction(const MMAI::Schema::IState * s) override;
         double getValue(const MMAI::Schema::IState * s) override;
     private:
         std::string path;
         std::string name;
         int version;
+        Schema::Side side;
 
 #ifdef USING_EXECUTORCH
         class ModelContainer {
