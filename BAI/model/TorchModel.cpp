@@ -128,51 +128,159 @@ namespace MMAI::BAI {
 
     constexpr int LT_COUNT = EI(MMAI::Schema::V13::LinkType::_count);
 
-    std::vector<int64_t> buildNBR(const std::vector<int64_t> &dst, int k_max) {
-        auto nbr = std::vector<int64_t>{};  // zero-initialized
-        nbr.reserve(165 * k_max);
-        nbr.insert(nbr.begin(), nbr.capacity(), -1);
-
-        // per-node fill position
-        auto fill = std::array<int64_t, 165>{};
-
-        for (std::size_t e = 0; e < dst.size(); ++e) {
-            auto v = dst.at(e);
-
+    std::array<std::vector<int64_t>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
+        // Pass 1: validate and count degrees per node
+        std::array<int, 165> deg{};
+        for (size_t e = 0; e < dst.size(); ++e) {
+            int v = static_cast<int>(dst[e]);
             if (v < 0 || v >= 165)
                 THROW_FORMAT("dst contains node id out of range: ", v);
+            ++deg[v];
+        }
 
-            auto p = fill.at(v);
-
-            // TODO: ignore instead of throw
-            // (requires tracking of indexes to drop from edge_src and edge_attr)
-            if (p >= k_max)
-                THROW_FORMAT("node %d exceeds K_max=%d", v % k_max);
-
-            nbr.at(v*k_max + p) = e;
-            fill.at(v) = p + 1;
+        std::array<std::vector<int64_t>, 165> nbr{};
+        for (int v = 0; v < 165; ++v) nbr[v].reserve(deg[v]);
+        for (size_t e = 0; e < dst.size(); ++e) {
+            int v = static_cast<int>(dst[e]);
+            nbr[v].push_back(static_cast<int64_t>(e));
         }
 
         return nbr;
     }
 
-    executorch::extension::TensorPtr make_edge_index(const std::vector<int64_t>& src_index, const std::vector<int64_t>& dst_index) {
-        const int64_t E = static_cast<int64_t>(src_index.size());
+    struct IndexContainer {
+        std::array<std::vector<int64_t>, 2> ei;
+        std::vector<float> ea;
+        std::array<std::vector<int64_t>, 165> nbrs;
+    };
 
-        if (dst_index.size() != static_cast<size_t>(E)) {
-            throw std::runtime_error("src_index and dst_index must have the same length");
+    struct BuildOutputs {
+        int size_index = -1;                                // chosen index in all_sizes
+        std::array<int64_t, LT_COUNT> emax{};               // chosen emax per link type
+        std::array<int64_t, LT_COUNT> kmax{};               // chosen kmax per link type
+
+        std::array<std::vector<int64_t>, 2> ei_flat;        // each length sum(emax)
+        std::vector<float> ea_flat;                         // length sum(emax)
+        std::array<std::vector<int64_t>, 165> nbrs_flat;    // each length sum(kmax)
+    };
+
+    // all_sizes: S x LT_COUNT x 2, where [s][l] = {emax, kmax}
+    BuildOutputs build_flattened(
+        const std::array<IndexContainer, LT_COUNT>& containers,
+        const std::vector<std::vector<std::vector<int64_t>>>& all_sizes)
+    {
+        BuildOutputs out{};
+
+        // Required per-linktype capacities from data
+        std::array<size_t, LT_COUNT> e_req{};
+        std::array<size_t, LT_COUNT> k_req{};
+        for (int l = 0; l < LT_COUNT; ++l) {
+            e_req[l] = containers[l].ea.size();
+            size_t km = 0;
+            for (int v = 0; v < 165; ++v)
+                km = std::max(km, containers[l].nbrs[v].size());
+            k_req[l] = km;
         }
 
-        // Row-major layout: first row = src[0:E], second row = dst[0:E]
-        std::vector<int64_t> data;
-        data.reserve(2 * static_cast<size_t>(E));
-        data.insert(data.end(), src_index.begin(), src_index.end());
-        data.insert(data.end(), dst_index.begin(), dst_index.end());
+        // 1) Find smallest valid size index
+        int chosen = -1;
+        std::array<int64_t, LT_COUNT> emax{}, kmax{};
+        for (int s = 0; s < static_cast<int>(all_sizes.size()); ++s) {
+            const auto& sz = all_sizes[s];
+            if (sz.size() != LT_COUNT) continue;  // skip malformed
+            bool ok = true;
+            for (int l = 0; l < LT_COUNT && ok; ++l) {
+                if (sz[l].size() != 2) { ok = false; break; }
+                int64_t emax_l = sz[l][0];
+                int64_t kmax_l = sz[l][1];
+                if (emax_l < static_cast<int64_t>(e_req[l]) ||
+                    kmax_l < static_cast<int64_t>(k_req[l])) {
+                    ok = false;
+                }
+            }
+            if (ok) {
+                chosen = s;
+                for (int l = 0; l < LT_COUNT; ++l) {
+                    emax[l] = sz[l][0];
+                    kmax[l] = sz[l][1];
+                }
+                break;
+            }
+        }
 
-        return executorch::extension::from_blob(data.data(), {2, static_cast<int>(E)});
+        // TODO: emit a warning and truncate edges instead (not straightforward)
+        if (chosen < 0) {
+            throw std::runtime_error("No size option in all_sizes satisfies the data requirements.");
+        }
+
+        printf("Sizes:\n");
+        for (int i=0; i<LT_COUNT; ++i)
+            printf("  %d: [%ld, %ld] -> [%lld, %lld]\n", i, e_req[i], k_req[i], all_sizes[chosen][i][0], all_sizes[chosen][i][1]);
+
+
+        out.size_index = chosen;
+        out.emax = emax;
+        out.kmax = kmax;
+
+        // Precompute sums
+        const size_t sum_emax = std::accumulate(emax.begin(), emax.end(), 0);
+        const size_t sum_kmax = std::accumulate(kmax.begin(), kmax.end(), 0);
+
+        // 2) Build ei_flat and ea_flat (concat each layer's ei/ea, zero-padded to emax[l])
+        out.ei_flat.at(0).clear();
+        out.ei_flat.at(1).clear();
+        out.ea_flat.clear();
+
+        out.ei_flat.at(0).reserve(sum_emax);
+        out.ei_flat.at(1).reserve(sum_emax);
+        out.ea_flat.reserve(sum_emax);
+        for (int l = 0; l < LT_COUNT; ++l) {
+            const auto& ei = containers[l].ei;
+            const auto& ea = containers[l].ea;
+
+            out.ei_flat.at(0).insert(out.ei_flat.at(0).end(), ei.at(0).begin(), ei.at(0).end());
+            out.ei_flat.at(1).insert(out.ei_flat.at(1).end(), ei.at(1).begin(), ei.at(1).end());
+            out.ea_flat.insert(out.ea_flat.end(), ea.begin(), ea.end());
+
+            size_t need = static_cast<size_t>(emax[l]) - ei.at(0).size();
+            if (need > 0) out.ei_flat.at(0).insert(out.ei_flat.at(0).end(), need, 0);
+
+            need = static_cast<size_t>(emax[l]) - ei.at(1).size();
+            if (need > 0) out.ei_flat.at(1).insert(out.ei_flat.at(1).end(), need, 0);
+
+            need = static_cast<size_t>(emax[l]) - ea.size();
+            if (need > 0) out.ea_flat.insert(out.ea_flat.end(), need, 0.0f);
+        }
+        // Sanity
+        if (out.ei_flat.at(0).size() != sum_emax)
+            THROW_FORMAT("TorchModel: ei_flat.at(0) size mismatch: want: %d, have: %d", sum_emax % out.ei_flat.at(0).size());
+        if (out.ei_flat.at(1).size() != sum_emax)
+            THROW_FORMAT("TorchModel: ei_flat.at(1) size mismatch: want: %d, have: %d", sum_emax % out.ei_flat.at(1).size());
+        if (out.ea_flat.size() != sum_emax)
+            THROW_FORMAT("TorchModel: ea_flat size mismatch: want: %d, have: %d", sum_emax % out.ea_flat.size());
+
+        // 3) Build nbrs_flat per node: concat layer l, pad to kmax[l] with -1
+        for (int v = 0; v < 165; ++v) {
+            auto& dst = out.nbrs_flat[v];
+            dst.clear();
+            dst.reserve(sum_kmax);
+            for (int l = 0; l < LT_COUNT; ++l) {
+                const auto& src = containers[l].nbrs[v];
+                dst.insert(dst.end(), src.begin(), src.end());
+                const size_t need = static_cast<size_t>(kmax[l]) - src.size();
+                if (need > 0) dst.insert(dst.end(), need, static_cast<int64_t>(-1));
+            }
+            // Optional sanity:
+            if (dst.size() != sum_kmax) {
+                throw std::runtime_error("nbrs_flat row size mismatch.");
+            }
+        }
+
+        return out;
     }
 
-    std::vector<extension::TensorPtr> TorchModel::prepareInputsV13(
+
+    std::pair<std::vector<extension::TensorPtr>, int> TorchModel::prepareInputsV13(
         const MMAI::Schema::IState * s,
         const MMAI::Schema::V13::ISupplementaryData* sup
     ) {
@@ -180,13 +288,7 @@ namespace MMAI::BAI {
         if (version != 13)
             THROW_FORMAT("TorchModel: unsupported version: want: 13, have: %d", version);
 
-        auto einds = std::vector<int64_t> {};
-        auto eattrs = std::vector<float> {};
-        auto enbrs = std::vector<int64_t> {};
-
-        einds.reserve(LT_COUNT * 2 * e_max);   // [7, 2, 3300]
-        eattrs.reserve(LT_COUNT * e_max);      // [7, 3300, 1]
-        enbrs.reserve(LT_COUNT * 165 * k_max); // [7, 165, 20]
+        auto containers = std::array<IndexContainer, LT_COUNT> {};
 
         int count = 0;
 
@@ -195,56 +297,89 @@ namespace MMAI::BAI {
             if (EI(type) != count)
                 THROW_FORMAT("TorchModel: unexpected link type: want: %d, have: %d", count % EI(type));
 
+            auto &c = containers.at(count);
+
             const auto srcinds = links->getSrcIndex();
             const auto dstinds = links->getDstIndex();
             const auto attrs = links->getAttributes();
-            const auto nbr = buildNBR(dstinds, k_max);
 
-            count += 1;
+            auto nlinks = srcinds.size();
 
-            if (srcinds.size() > e_max)
-                THROW_FORMAT("TorchModel: srcinds for LinkType(%d) exceeds e_max (%d): %d", EI(type) % e_max % srcinds.size());
-            if (dstinds.size() > e_max)
-                THROW_FORMAT("TorchModel: dstinds for LinkType(%d) exceeds e_max (%d): %d", EI(type) % e_max % dstinds.size());
-            if (attrs.size() > e_max)
-                THROW_FORMAT("TorchModel: attrs for LinkType(%d) exceeds e_max (%d): %d", EI(type) % e_max % attrs.size());
+            if (dstinds.size() != nlinks)
+                THROW_FORMAT("TorchModel: unexpected: unexpected dstinds.size() for LinkType(%d): want: %d, have: %d", nlinks % dstinds.size());
 
-            einds.insert(einds.end(), srcinds.begin(), srcinds.end());
-            einds.insert(einds.end(), e_max - srcinds.size(), 0);
-            einds.insert(einds.end(), dstinds.begin(), dstinds.end());
-            einds.insert(einds.end(), e_max - dstinds.size(), 0);
+            if (attrs.size() != nlinks)
+                THROW_FORMAT("TorchModel: unexpected: unexpected attrs.size() for LinkType(%d): want: %d, have: %d", nlinks % attrs.size());
 
-            eattrs.insert(eattrs.end(), attrs.begin(), attrs.end());
-            eattrs.insert(eattrs.end(), e_max - attrs.size(), 0);
+            // c.e_max = nlinks;
+            // c.k_max = k_max;
 
-            enbrs.insert(enbrs.end(), nbr.begin(), nbr.end());
+            c.ei.at(0).reserve(nlinks);
+            c.ei.at(1).reserve(nlinks);
+            c.ei.at(0).insert(c.ei.at(0).end(), srcinds.begin(), srcinds.end());
+            c.ei.at(1).insert(c.ei.at(1).end(), dstinds.begin(), dstinds.end());
+
+            c.ea.reserve(nlinks);
+            c.ea.insert(c.ea.end(), attrs.begin(), attrs.end());
+
+            c.nbrs = buildNBR_unpadded(dstinds);
+
+            ++count;
         }
 
         if (count != LT_COUNT)
             THROW_FORMAT("TorchModel: unexpected links count: want: %d, have: %d", LT_COUNT % count);
 
+        auto build = build_flattened(containers, all_sizes);
+
         auto state = s->getBattlefieldState();
         auto estate = std::vector<float>(state->size());
         std::copy(state->begin(), state->end(), estate.begin());
 
-        auto t_state = executorch::extension::from_blob(estate.data(), {int(estate.size())}, aten::ScalarType::Float);
-        auto t_einds = executorch::extension::from_blob(einds.data(), {LT_COUNT, 2, e_max}, aten::ScalarType::Long);
-        auto t_eattrs = executorch::extension::from_blob(eattrs.data(), {LT_COUNT, e_max, 1}, aten::ScalarType::Float);
-        auto t_enbrs = executorch::extension::from_blob(enbrs.data(), {LT_COUNT, 165, k_max}, aten::ScalarType::Long);
+        int sum_e = build.ei_flat.at(0).size();
+        int sum_k = build.nbrs_flat.at(0).size();
 
-        // Must clone to copy the underlying data (originally owned by the std::vectors)
-        return std::vector<extension::TensorPtr> {
+        if (build.ei_flat.at(0).size() != sum_e)
+            THROW_FORMAT("TorchModel: unexpected build.ei_flat.at(0).size(): want: %d, have: %d", sum_e % build.ei_flat.at(0).size());
+        if (build.ei_flat.at(1).size() != sum_e)
+            THROW_FORMAT("TorchModel: unexpected build.ei_flat.at(1).size(): want: %d, have: %d", sum_e % build.ei_flat.at(1).size());
+        if (build.ea_flat.size() != sum_e)
+            THROW_FORMAT("TorchModel: unexpected build.ea_flat.size(): want: %d, have: %d", sum_e % build.ea_flat.size());
+        for (int i=0; i<165; ++i) {
+            if (build.nbrs_flat.at(i).size() != sum_k) {
+                THROW_FORMAT("TorchModel: unexpected build.nbrs_flat.at(%d).size(): want: %d, have: %d", i % sum_k % build.nbrs_flat.at(i).size());
+            }
+        }
+
+        auto einds = std::vector<int64_t> {};
+        einds.reserve(2*sum_e);
+        for (auto &eind : build.ei_flat)
+            einds.insert(einds.end(), eind.begin(), eind.end());
+
+        auto nbrs = std::vector<int64_t> {};
+        nbrs.reserve(165*sum_k);
+        for (auto &nbr : build.nbrs_flat)
+            nbrs.insert(nbrs.end(), nbr.begin(), nbr.end());
+
+        auto t_state = executorch::extension::from_blob(estate.data(), {int(estate.size())}, aten::ScalarType::Float);
+        auto t_ei_flat = executorch::extension::from_blob(einds.data(), {2, sum_e}, aten::ScalarType::Long);
+        auto t_ea_flat = executorch::extension::from_blob(build.ea_flat.data(), {sum_e, 1}, aten::ScalarType::Float);
+        auto t_nbrs_flat = executorch::extension::from_blob(nbrs.data(), {165, sum_k}, aten::ScalarType::Long);
+
+        auto tensors = std::vector<extension::TensorPtr> {
             extension::clone_tensor_ptr(t_state),
-            extension::clone_tensor_ptr(t_einds),
-            extension::clone_tensor_ptr(t_eattrs),
-            extension::clone_tensor_ptr(t_enbrs)
+            extension::clone_tensor_ptr(t_ei_flat),
+            extension::clone_tensor_ptr(t_ea_flat),
+            extension::clone_tensor_ptr(t_nbrs_flat)
         };
+
+        return {tensors, build.size_index};
     }
 
     aten::Tensor TorchModel::call(
         const std::string& method_name,
         const std::vector<runtime::EValue>& input,
-        int numel,
+        int resNumel,
         aten::ScalarType st
     ) {
         auto timer = ScopedTimer(method_name.c_str());
@@ -254,25 +389,21 @@ namespace MMAI::BAI {
         std::string want = "";
         std::string have = "";
 
-        if (!res.ok()) {
+        if (!res.ok())
             THROW_FORMAT("TorchModel: %s: error code %d", method_name % EI(res.error()));
-        }
 
         auto out = res->at(0);
 
-        if (!out.isTensor()) {
+        if (!out.isTensor())
             THROW_FORMAT("TorchModel: %s: not a tensor", method_name % EI(res.error()));
-        }
 
         auto t = out.toTensor();  // Most exports return scalars as 0-D tensors with dtype int64
 
-        if (t.numel() != numel) {
-            THROW_FORMAT("TorchModel: %s: bad numel: want: %d, have: %d", method_name % numel % EI(t.numel()));
-        }
+        if (resNumel && t.numel() != resNumel)
+            THROW_FORMAT("TorchModel: %s: bad resNumel: want: %d, have: %d", method_name % resNumel % EI(t.numel()));
 
-        if (t.dtype() != st) {
+        if (t.dtype() != st)
             THROW_FORMAT("TorchModel: %s: bad dtype: want: %d, have: %d", method_name % EI(st) % EI(t.dtype()));
-        }
 
         return t;
     }
@@ -284,16 +415,38 @@ namespace MMAI::BAI {
         auto t_version = call("get_version", 1, aten::ScalarType::Long);
         version = static_cast<int>(t_version.const_data_ptr<int64_t>()[0]);
 
-        auto t_e_max = call("get_e_max", 1, aten::ScalarType::Long);
-        e_max = static_cast<int>(t_e_max.const_data_ptr<int64_t>()[0]);
-
-        auto t_k_max = call("get_k_max", 1, aten::ScalarType::Long);
-        k_max = static_cast<int>(t_k_max.const_data_ptr<int64_t>()[0]);
-
         auto t_side = call("get_side", 1, aten::ScalarType::Long);
         side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int64_t>()[0]));
-    }
 
+        auto t_all_sizes = call("get_all_sizes", 0, aten::ScalarType::Long);
+
+        // Convert 3-D tensor to vector<vector<int64>>
+        int ndim = t_all_sizes.dim();
+        if (ndim != 3)
+            THROW_FORMAT("TorchModel: t_all_sizes: bad ndim: want: %d, have: %d", 3 % EI(t_all_sizes.dim()));
+
+        auto sz = t_all_sizes.sizes();
+        int d0 = sz[0];
+        int d1 = sz[1];
+        int d2 = sz[2];
+
+        if (d1 != LT_COUNT)
+            THROW_FORMAT("TorchModel: t_all_sizes: bad size(1): want: %d, have: %d", LT_COUNT % d1);
+
+        if (d2 != 2)
+            THROW_FORMAT("TorchModel: t_all_sizes: bad size(2): want: %d, have: %d", 2 % d2);
+
+        int64_t* ptr = t_all_sizes.data_ptr<int64_t>(); // or equivalent getter
+        all_sizes.resize(d0);
+        for (int i0=0; i0<d0; ++i0) {
+            all_sizes.at(i0).resize(d1);
+            for (int i1=0; i1<d1; ++i1) {
+                all_sizes.at(i0).at(i1).resize(d2);
+                std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int64_t) * d2);
+                ptr += d2;
+            }
+        }
+    }
 
     Schema::ModelType TorchModel::getType() {
         return Schema::ModelType::TORCH;
@@ -330,10 +483,16 @@ namespace MMAI::BAI {
         if (sup->getIsBattleEnded())
             return MMAI::Schema::ACTION_RESET;
 
-        auto inputs = prepareInputsV13(s, sup);
+        auto [inputs, size_idx] = prepareInputsV13(s, sup);
+
         auto values = std::vector<runtime::EValue>{};
-        for (auto &t : inputs)
+
+        // int i=0;
+        for (auto &t : inputs) {
             values.push_back(t);
+            // printf("Input %d\n", i++);
+            // print_tensor_like_torch(t);
+        }
 
         // printf("--------------- 0:\n");
         // print_tensor_like_torch(inputs.at(0), 10, 6); // show up to 4 per dim, 6 decimals
@@ -344,7 +503,7 @@ namespace MMAI::BAI {
         // printf("--------------- 3:\n");
         // print_tensor_like_torch(inputs.at(3), 10, 6); // show up to 4 per dim, 6 decimals
 
-        auto output = call("predict", values, 1, aten::ScalarType::Long);
+        auto output = call("predict" + std::to_string(size_idx), values, 1, aten::ScalarType::Long);
 
         int action = output.const_data_ptr<int64_t>()[0];
         std::cout << "Predicted action: " << action << "\n";
@@ -372,12 +531,12 @@ namespace MMAI::BAI {
         if (sup->getIsBattleEnded())
             return 0.0;
 
-        auto inputs = prepareInputsV13(s, sup);
+        auto [inputs, size_idx] = prepareInputsV13(s, sup);
         auto values = std::vector<runtime::EValue>{};
         for (auto &t : inputs)
             values.push_back(t);
 
-        auto output = call("predict", values, 1, aten::ScalarType::Float);
+        auto output = call("predict" + std::to_string(size_idx), values, 1, aten::ScalarType::Float);
         auto value = output.const_data_ptr<float>()[0];
         std::cout << "Predicted value: " << value << "\n";
 

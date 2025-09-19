@@ -54,11 +54,11 @@ namespace MMAI::BAI {
             extension::Module model;
         };
 
-        int e_max;
-        int k_max;
+        // 3D tensor as a vector
+        std::vector<std::vector<std::vector<int64_t>>> all_sizes;
 
         std::unique_ptr<ModelContainer> mc;
-        std::vector<extension::TensorPtr> prepareInputsV13(
+        std::pair<std::vector<extension::TensorPtr>, int> prepareInputsV13(
             const MMAI::Schema::IState * state,
             const MMAI::Schema::V13::ISupplementaryData* sup
         );
