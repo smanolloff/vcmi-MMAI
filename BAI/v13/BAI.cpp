@@ -55,6 +55,8 @@ namespace MMAI::BAI::V13 {
         Base::battleStart(bid, army1, army2, tile, hero1, hero2, side, replayAllowed);
         battle = cb->getBattle(bid);
         state = initState(battle.get());
+        getActionTotalMs = 0;
+        getActionTotalCalls = 0;
     }
 
     // XXX: battleEnd() is NOT called by CPlayerInterface (i.e. GUI)
@@ -71,14 +73,14 @@ namespace MMAI::BAI::V13 {
             // no previous action means battle ended without giving us a turn (OK)
             // Happens if the enemy immediately retreats (we won)
             // or if the enemy one-shots us (we lost)
-            debug("Battle ended without giving us a turn: nothing to do");
+            info("Battle ended without giving us a turn: nothing to do");
         } else if (state->action->action == Schema::ACTION_RETREAT) {
             if (resetting) {
                 // this is an intended restart (i.e. converted ACTION_RESTART)
-                debug("Battle ended due to ACTION_RESET: nothing to do");
+                info("Battle ended due to ACTION_RESET: nothing to do");
             } else {
                 // this is real retreat
-                debug("Battle ended due to ACTION_RETREAT: reporting terminal state, expecting ACTION_RESET");
+                info("Battle ended due to ACTION_RETREAT: reporting terminal state, expecting ACTION_RESET");
                 auto a = getNonRenderAction();
                 ASSERT(a == Schema::ACTION_RESET, "expected ACTION_RESET, got: " + std::to_string(EI(a)));
             }
@@ -87,6 +89,8 @@ namespace MMAI::BAI::V13 {
             auto a = getNonRenderAction();
             ASSERT(a == Schema::ACTION_RESET, "expected ACTION_RESET, got: " + std::to_string(EI(a)));
         }
+
+        info("MMAI stats after battle end: %d predictions, %d ms per prediction", getActionTotalCalls, getActionTotalMs / getActionTotalCalls);
 
         // BAI is destroyed after this call
         debug("Leaving battleEnd, embracing death");
@@ -199,18 +203,23 @@ namespace MMAI::BAI::V13 {
                 logAi->debug("PRE-GET_ACTION[%d]: m.size=" + std::to_string(m->size()) + ", s.size()=" + std::to_string(s->size()));
             }
 
+            auto t0 = std::chrono::steady_clock::now();
             auto a = getNonRenderAction();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
+            getActionTotalMs += dt;
+            getActionTotalCalls += 1;
+
             allactions.push_back(a);
 
             if (a == Schema::ACTION_RESET) {
                 // XXX: retreat is always allowed for ML, limited by action mask only
-                info("Received ACTION_RESET, converting to ACTION_RETREAT in order to reset battle");
+                debug("Received ACTION_RESET, converting to ACTION_RETREAT in order to reset battle");
                 a = Schema::ACTION_RETREAT;
                 resetting = true;
             }
 
             state->action = std::make_unique<Action>(a, state->battlefield.get(), colorname);
-            info("Got action: %d (%s)", a, state->action->name());
+            debug("(%lld ms) Got action: %d: %s ", dt, a, state->action->name());
 
             try {
                 auto ba = buildBattleAction();

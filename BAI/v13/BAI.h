@@ -57,6 +57,9 @@ namespace MMAI::BAI::V13 {
         // consecutive invalid actions counter
         int errcounter = 0;
 
+        int getActionTotalMs;
+        int getActionTotalCalls;
+
         bool resetting = false;
         std::vector<Schema::Action> allactions = {}; // DEBUG ONLY
         std::shared_ptr<CPlayerBattleCallback> battle = nullptr;

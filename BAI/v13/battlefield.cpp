@@ -109,7 +109,7 @@ namespace MMAI::BAI::V13 {
         //      (where a non-active stack is first)
         //      The active stack *must* be first-in-queue
         if (isMorale && astack && res.at(0) != astack->unitId()) {
-            logAi->warn("Morale triggered -- will rearrange stack queue");
+            // logAi->debug("Morale triggered -- will rearrange stack queue");
             std::rotate(res.rbegin(), res.rbegin() + 1, res.rend());
             res.at(0) = astack->unitId();
         } else {

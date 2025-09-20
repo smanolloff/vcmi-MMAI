@@ -97,31 +97,41 @@ namespace MMAI::BAI::V13 {
             stack = aMoveTargetHex->stack;
         }
 
+        // colored output does not look good (scrambles default VCMI log coloring)
+        // Additionally, hardcoded red/blue colors are relevant during training only
+        // => replace with attacker/defender colorless strings instead
+        // if (stack) {
+        //     std::string targetcolor = "\033[31m";  // red
+        //     if (color == "red") targetcolor = "\033[34m"; // blue
+        //     stackstr = targetcolor + "#" + std::string(1, stack->getAlias()) + "\033[0m";
+        // } else {
+        //     std::string targetcolor = "\033[7m";  // white
+        //     stackstr = targetcolor + "#?" + "\033[0m";
+        // }
+
         if (stack) {
-            std::string targetcolor = "\033[31m";  // red
-            if (color == "red") targetcolor = "\033[34m"; // blue
-            stackstr = targetcolor + "#" + std::string(1, stack->getAlias()) + "\033[0m";
+            std::string targetside = (color == "red") ? "L" : "R";
+            stackstr = targetside + "-" + std::string(1, stack->getAlias());
         } else {
-            std::string targetcolor = "\033[7m";  // white
-            stackstr = targetcolor + "#?" + "\033[0m";
+            stackstr = "?";
         }
 
         switch (HexAction(ha)) {
         break; case HexAction::MOVE:
-            res = (stack && hex->bhex == stack->cstack->getPosition() ? "Defend on " : "Move to ") + hex->name();
-        break; case HexAction::AMOVE_TL:  res = "Attack " + stackstr + " from " + hex->name() + " /top-left/";
-        break; case HexAction::AMOVE_TR:  res = "Attack " + stackstr + " from " + hex->name() + " /top-right/";
-        break; case HexAction::AMOVE_R:   res = "Attack " + stackstr + " from " + hex->name() + " /right/";
-        break; case HexAction::AMOVE_BR:  res = "Attack " + stackstr + " from " + hex->name() + " /bottom-right/";
-        break; case HexAction::AMOVE_BL:  res = "Attack " + stackstr + " from " + hex->name() + " /bottom-left/";
-        break; case HexAction::AMOVE_L:   res = "Attack " + stackstr + " from " + hex->name() + " /left/";
-        break; case HexAction::AMOVE_2BL: res = "Attack " + stackstr + " from " + hex->name() + " /bottom-left-2/";
-        break; case HexAction::AMOVE_2L:  res = "Attack " + stackstr + " from " + hex->name() + " /left-2/";
-        break; case HexAction::AMOVE_2TL: res = "Attack " + stackstr + " from " + hex->name() + " /top-left-2/";
-        break; case HexAction::AMOVE_2TR: res = "Attack " + stackstr + " from " + hex->name() + " /top-right-2/";
-        break; case HexAction::AMOVE_2R:  res = "Attack " + stackstr + " from " + hex->name() + " /right-2/";
-        break; case HexAction::AMOVE_2BR: res = "Attack " + stackstr + " from " + hex->name() + " /bottom-right-2/";
-        break; case HexAction::SHOOT:     res = "Attack " + stackstr + " " + hex->name() + " (ranged)";
+            res = (stack && hex->bhex == stack->cstack->getPosition() ? "Defend on hex(" : "Move to (") + hex->name() + ")";
+        break; case HexAction::AMOVE_TL:  res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /top-left/";
+        break; case HexAction::AMOVE_TR:  res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /top-right/";
+        break; case HexAction::AMOVE_R:   res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /right/";
+        break; case HexAction::AMOVE_BR:  res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /bottom-right/";
+        break; case HexAction::AMOVE_BL:  res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /bottom-left/";
+        break; case HexAction::AMOVE_L:   res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /left/";
+        break; case HexAction::AMOVE_2BL: res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /bottom-left-2/";
+        break; case HexAction::AMOVE_2L:  res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /left-2/";
+        break; case HexAction::AMOVE_2TL: res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /top-left-2/";
+        break; case HexAction::AMOVE_2TR: res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /top-right-2/";
+        break; case HexAction::AMOVE_2R:  res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /right-2/";
+        break; case HexAction::AMOVE_2BR: res = "Attack stack(" + stackstr + ") from hex(" + hex->name() + ") /bottom-right-2/";
+        break; case HexAction::SHOOT:     res = "Attack stack(" + stackstr + ") " + hex->name() + " (ranged)";
         break; default:
             THROW_FORMAT("Unexpected hexaction: %d", EI(ha));
         }
