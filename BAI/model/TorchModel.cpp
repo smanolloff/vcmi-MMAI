@@ -511,7 +511,7 @@ namespace MMAI::BAI {
         auto output = call("predict" + std::to_string(size_idx), values, 1, aten::ScalarType::Long);
 
         int action = output.const_data_ptr<int64_t>()[0];
-        std::cout << "Predicted action: " << action << "\n";
+        // std::cout << "Predicted action: " << action << "\n";
 
         // throw std::runtime_error("forced exit");
         return MMAI::Schema::Action(action);

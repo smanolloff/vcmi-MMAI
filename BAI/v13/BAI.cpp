@@ -64,26 +64,26 @@ namespace MMAI::BAI::V13 {
         Base::battleEnd(bid, br, queryID);
         state->onBattleEnd(br);
 
-        info("MMAI %s this battle.", (br->winner == battle->battleGetMySide() ? "won" : "lost"));
+        debug("MMAI %s this battle.", (br->winner == battle->battleGetMySide() ? "won" : "lost"));
 
         // Check if battle ended normally or was forced via a RETREAT action
         if (state->action == nullptr) {
             // no previous action means battle ended without giving us a turn (OK)
             // Happens if the enemy immediately retreats (we won)
             // or if the enemy one-shots us (we lost)
-            info("Battle ended without giving us a turn: nothing to do");
+            debug("Battle ended without giving us a turn: nothing to do");
         } else if (state->action->action == Schema::ACTION_RETREAT) {
             if (resetting) {
                 // this is an intended restart (i.e. converted ACTION_RESTART)
-                info("Battle ended due to ACTION_RESET: nothing to do");
+                debug("Battle ended due to ACTION_RESET: nothing to do");
             } else {
                 // this is real retreat
-                info("Battle ended due to ACTION_RETREAT: reporting terminal state, expecting ACTION_RESET");
+                debug("Battle ended due to ACTION_RETREAT: reporting terminal state, expecting ACTION_RESET");
                 auto a = getNonRenderAction();
                 ASSERT(a == Schema::ACTION_RESET, "expected ACTION_RESET, got: " + std::to_string(EI(a)));
             }
         } else {
-            info("Battle ended normally: reporting terminal state, expecting ACTION_RESET");
+            debug("Battle ended normally: reporting terminal state, expecting ACTION_RESET");
             auto a = getNonRenderAction();
             ASSERT(a == Schema::ACTION_RESET, "expected ACTION_RESET, got: " + std::to_string(EI(a)));
         }

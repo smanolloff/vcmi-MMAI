@@ -208,7 +208,7 @@ namespace MMAI::BAI::V12 {
             }
 
             state->action = std::make_unique<Action>(a, state->battlefield.get(), colorname);
-            info("Got action: %d (%s)", a, state->action->name());
+            debug("Got action: %d (%s)", a, state->action->name());
 
             try {
                 auto ba = buildBattleAction();
