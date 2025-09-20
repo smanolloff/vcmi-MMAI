@@ -20,8 +20,9 @@
 #include "TorchModel.h"
 #include "schema/v13/types.h"
 
-
 #include <executorch/extension/tensor/tensor.h>
+#include <executorch/extension/threadpool/threadpool.h>
+
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
@@ -41,7 +42,7 @@ namespace MMAI::BAI {
         ~ScopedTimer() {
             using namespace std::chrono;
             auto dt = duration_cast<milliseconds>(steady_clock::now() - t0).count();
-            std::fprintf(stderr, "%s: %lld ms\n", name, dt);
+            logAi->debug("%s: %lld ms\n", name, dt);
         }
     };
 
@@ -213,9 +214,9 @@ namespace MMAI::BAI {
             throw std::runtime_error("No size option in all_sizes satisfies the data requirements.");
         }
 
-        printf("Sizes:\n");
+        logAi->debug("Size: %d\n", chosen);
         for (int i=0; i<LT_COUNT; ++i)
-            printf("  %d: [%ld, %ld] -> [%lld, %lld]\n", i, e_req[i], k_req[i], all_sizes[chosen][i][0], all_sizes[chosen][i][1]);
+            logAi->debug("  %d: [%ld, %ld] -> [%lld, %lld]\n", i, e_req[i], k_req[i], all_sizes[chosen][i][0], all_sizes[chosen][i][1]);
 
 
         out.size_index = chosen;
@@ -382,7 +383,6 @@ namespace MMAI::BAI {
         int resNumel,
         aten::ScalarType st
     ) {
-        auto timer = ScopedTimer(method_name.c_str());
         auto res = mc->model.execute(method_name, input);
 
         std::string common = "TorchModel: " + method_name;
@@ -409,9 +409,13 @@ namespace MMAI::BAI {
     }
 
     TorchModel::TorchModel(std::string path)
-    : path(path)
-    , mc(std::make_unique<ModelContainer>(path))
-    {
+    : path(path) {
+        // XXX: On Mac M1, 4 threads is actually ~5% faster than 10 threads.
+        if (::executorch::extension::threadpool::get_threadpool()->get_thread_count() != 4)
+            ::executorch::extension::threadpool::get_threadpool()->_unsafe_reset_threadpool(4);
+
+        mc = std::make_unique<ModelContainer>(path);
+
         auto t_version = call("get_version", 1, aten::ScalarType::Long);
         version = static_cast<int>(t_version.const_data_ptr<int64_t>()[0]);
 
@@ -465,6 +469,7 @@ namespace MMAI::BAI {
     };
 
     int TorchModel::getAction(const MMAI::Schema::IState * s) {
+        auto timer = ScopedTimer("getAction");
         auto any = s->getSupplementaryData();
 
         if (version != 13)

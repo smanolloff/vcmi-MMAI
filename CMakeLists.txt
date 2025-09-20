@@ -131,12 +131,14 @@ if(MMAI_EXECUTORCH_PATH)
   set(EXECUTORCH_ROOT "/Users/simo/Projects/executorch")
   set(EXECUTORCH_BUILD "${EXECUTORCH_ROOT}/build")
 
-  set(EXECUTORCH_OPTIMIZE_SIZE                ON CACHE BOOL "" FORCE)
   set(EXECUTORCH_BUILD_EXTENSION_FLAT_TENSOR  ON CACHE BOOL "" FORCE)
   set(EXECUTORCH_BUILD_EXTENSION_DATA_LOADER  ON CACHE BOOL "" FORCE)
   set(EXECUTORCH_BUILD_EXTENSION_MODULE       ON CACHE BOOL "" FORCE)
   set(EXECUTORCH_BUILD_EXTENSION_TENSOR       ON CACHE BOOL "" FORCE)
   set(EXECUTORCH_BUILD_XNNPACK                ON CACHE BOOL "" FORCE)
+
+  # keep this OFF (improves performance)
+  set(EXECUTORCH_OPTIMIZE_SIZE                OFF CACHE BOOL "" FORCE)
 
   # XXX: This does not work (overwritten by XNNPACK based on CMAKE_BUILD_TYPE)
   set(XNN_LOG_LEVEL 2 CACHE STRING "" FORCE)
@@ -146,16 +148,21 @@ if(MMAI_EXECUTORCH_PATH)
 
   add_subdirectory("${EXECUTORCH_ROOT}" "${CMAKE_CURRENT_BINARY_DIR}/executorch")
 
+message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+message(STATUS "CMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
+message(STATUS "CMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}")
+
+
   list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
 
   list(APPEND MMAI_LIBS
     executorch
+    xnnpack_backend
+    portable_ops_lib  # kernel-ops library that registers all ops.
     extension_module_static
     extension_flat_tensor
     extension_tensor
     # optimized_native_cpu_ops_lib
-    xnnpack_backend
-    portable_ops_lib  # kernel-ops library that registers all ops.
   )
 else()
   if(NOT ENABLE_ML)

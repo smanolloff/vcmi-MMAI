@@ -206,7 +206,7 @@ namespace MMAI::BAI {
         auto realside = Schema::Side(EI(side));
 
         if (modelside != realside && modelside != Schema::Side::BOTH) {
-            THROW_FORMAT("The loaded '%s' model can not play as %s", modelkey % modelkey);
+            logAi->warn("The loaded '%s' model was not trained to play as %s", modelkey, modelkey);
         }
 
         // printf("(side=%d) hero0: %s, hero1: %s\n", EI(side), hero1->nameCustomTextId.c_str(), hero2->nameCustomTextId.c_str());

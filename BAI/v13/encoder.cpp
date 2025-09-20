@@ -74,7 +74,8 @@ namespace MMAI::BAI::V13 {
             // auto warned_at_ctime = clock::to_time_t(warned_at);
             // std::cout << "Warned at: " << std::ctime(&warned_at_ctime) << "\n";
             if (std::chrono::duration_cast<std::chrono::seconds>(now - warned_at) > std::chrono::seconds(600)) {
-                printf("WARNING: v=%d (vmax=%d, a=%d, e=%d, n=%d, attrname=%s)\n", v, vmax, EI(a), EI(e), n, attrname);
+                // This is not critical; the value will be capped to vmax (should not occur often)
+                logAi->debug("Attribute value out of bounds: v=%d (vmax=%d, a=%d, e=%d, n=%d, attrname=%s)\n", v, vmax, EI(a), EI(e), n, attrname);
                 warns[attrname][EI(a)] = now;
             }
             v = vmax;
