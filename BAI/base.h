@@ -15,8 +15,9 @@
 // =============================================================================
 #pragma once
 
-#include "CGameInterface.h"
 #include "battle/CPlayerBattleCallback.h"
+#include "callback/CBattleGameInterface.h"
+#include "callback/CBattleCallback.h"
 
 #include "schema/base.h"
 

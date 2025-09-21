@@ -15,6 +15,8 @@
 // =============================================================================
 
 #include "StdInc.h"
+#include "callback/CBattleCallback.h"
+#include "callback/CDynLibHandler.h"
 #include "filesystem/Filesystem.h"
 #include "json/JsonUtils.h"
 #include "VCMIDirs.h"

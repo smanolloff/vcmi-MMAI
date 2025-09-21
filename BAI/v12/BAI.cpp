@@ -14,10 +14,10 @@
 // limitations under the License.
 // =============================================================================
 
-#include "CCallback.h"
 #include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"
 
+#include "BAI/base.h"
 #include "BAI/v12/BAI.h"
 #include "BAI/v12/action.h"
 #include "BAI/v12/hexaction.h"

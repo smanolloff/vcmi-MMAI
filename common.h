@@ -25,6 +25,7 @@ namespace MMAI {
     // https://en.cppreference.com/w/cpp/utility/to_underlying
     #define EI(enum_value) static_cast<int>(enum_value)
     #define ASSERT(cond, msg) if(!(cond)) throw std::runtime_error(std::string("Assertion failed in ") + boost::filesystem::path(__FILE__).filename().string() + ": " + msg)
+    #define THROW_FORMAT(message, formatting_elems) throw std::runtime_error(boost::str(boost::format(message) % formatting_elems))
 
     #define BF_XMAX 15    // GameConstants::BFIELD_WIDTH - 2 (ignore "side" cols)
     #define BF_YMAX 11    // GameConstants::BFIELD_HEIGHT

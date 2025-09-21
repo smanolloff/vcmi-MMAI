@@ -107,7 +107,7 @@ Example setup:
   $ git clone --recurse-submodules -b release/0.7 https://github.com/pytorch/executorch.git
   $ cd executorch
   $ python3 -m venv .venv
-  $ . ./venv/bin/activate.sh
+  $ . ./venv/bin/activate
   $ ./install_requirements.sh
 
 Now you can build VCMI with MMAI_EXECUTORCH_PATH=/some/path/executorch.

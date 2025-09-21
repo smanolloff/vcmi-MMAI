@@ -14,10 +14,11 @@
 // limitations under the License.
 // =============================================================================
 
-#include "CCallback.h"
+#include "callback/CBattleCallback.h"
 #include "networkPacks/PacksForClientBattle.h"
 #include "networkPacks/SetStackEffect.h"
 #include "spells/CSpellHandler.h"
+#include "vcmi/Environment.h"
 
 #include "BAI/v12/BAI.h"
 #include "BAI/v13/BAI.h"
@@ -182,7 +183,7 @@ namespace MMAI::BAI {
             fmt += "\n\t* teleport=%d";
 
             auto bh0 = dest.at(dest.size() - 1);
-            auto hexid0 = bh0.getX()-1 + bh0.getY()*BF_XMAX;
+            auto hexid0 = bh0.getX()-1 + (bh0.getY()*BF_XMAX);
             auto x0 = bh0.getX() - 1;
             auto y0 = bh0.getY();
 
@@ -208,26 +209,26 @@ namespace MMAI::BAI {
 
             std::string res = "Effects set:";
 
-            for (auto &[unitid, bonuses] : sse.toAdd) {
+            for (const auto &[unitid, bonuses] : sse.toAdd) {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
-                for (auto &bonus : bonuses) {
+                for (const auto &bonus : bonuses) {
                     res += "\n\t  > add bonus=" + bonus.description.toString();
                 }
             }
 
-            for (auto &[unitid, bonuses] : sse.toRemove) {
+            for (const auto &[unitid, bonuses] : sse.toRemove) {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
-                for (auto &bonus : bonuses) {
+                for (const auto &bonus : bonuses) {
                     res += "\n\t  > remove bonus=" + bonus.description.toString();
                 }
             }
 
-            for (auto &[unitid, bonuses] : sse.toUpdate) {
+            for (const auto &[unitid, bonuses] : sse.toUpdate) {
                 auto cstack = battle->battleGetStackByID(unitid);
                 res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
-                for (auto &bonus : bonuses) {
+                for (const auto &bonus : bonuses) {
                     res += "\n\t  > update bonus=" + bonus.description.toString();
                 }
             }
@@ -248,7 +249,7 @@ namespace MMAI::BAI {
             auto battle = cb->getBattle(bid);
             auto cstack = battle->battleGetStackByID(bte.stackID);
             std::string res = "Effect triggered:";
-            res += "\n\t* bonus id=" + std::to_string(bte.effect);
+            res += "\n\t* bonus id=" + std::to_string(EI(bte.effect));
             res += "\n\t* bonus value=" + std::to_string(bte.val);
             res += "\n\t* stack=" + (cstack ? cstack->getDescription() : "");
             std::cout << "MMAI_VERBOSE: " << res << "\n";

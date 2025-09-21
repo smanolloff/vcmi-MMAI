@@ -52,7 +52,7 @@ namespace MMAI::BAI::V13 {
         auto hp = cr->getBaseHitPoints();
         auto spd = cr->getBaseSpeed();
         auto shooter = cr->hasBonusOfType(BonusType::SHOOTER);
-        auto bonuses = cr->getAllBonuses(Selector::all, nullptr);
+        auto bonuses = cr->getAllBonuses(Selector::all);
 
         auto a = 3*dmg * (1 + std::min(4.0, 0.05*att));
         auto b = hp / (1 - std::min(0.7, 0.025*def));
@@ -202,7 +202,7 @@ namespace MMAI::BAI::V13 {
         auto [qbits, pos] = QBits(cstack, q);
         qposFirst = pos; // for comparing two positions
 
-        auto bonuses = cstack->getAllBonuses(Selector::all, nullptr);
+        auto bonuses = cstack->getAllBonuses(Selector::all);
 
         // XXX: config/creatures/<faction>.json is misleading
         //      (for example, no creature has NO_MELEE_PENALTY bonus there)

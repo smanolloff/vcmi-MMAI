@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "lib/AI_Base.h"
-
 #include "BAI/base.h"
 #include "BAI/v13/action.h"
 #include "BAI/v13/attack_log.h"

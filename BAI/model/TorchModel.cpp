@@ -14,9 +14,6 @@
 // limitations under the License.
 // =============================================================================
 
-#include "Global.h"
-#include "StdInc.h"
-
 #include "TorchModel.h"
 #include "schema/v13/types.h"
 
@@ -32,6 +29,13 @@
 
 namespace MMAI::BAI {
 
+    template<class... Args>
+    [[noreturn]] inline void throwf(const std::string& fmt, Args&&... args) {
+        boost::format f("TorchModel: " + fmt);
+        (void)std::initializer_list<int>{ ( (f % std::forward<Args>(args)), 0 )... };
+        throw std::runtime_error(f.str());
+    }
+
     using executorch::aten::ScalarType;
     using executorch::extension::TensorPtr;
 
@@ -42,7 +46,7 @@ namespace MMAI::BAI {
         ~ScopedTimer() {
             using namespace std::chrono;
             auto dt = duration_cast<milliseconds>(steady_clock::now() - t0).count();
-            logAi->debug("%s: %lld ms\n", name, dt);
+            logAi->debug("%s: %lld ms", name, dt);
         }
     };
 
@@ -135,7 +139,7 @@ namespace MMAI::BAI {
         for (size_t e = 0; e < dst.size(); ++e) {
             int v = static_cast<int>(dst[e]);
             if (v < 0 || v >= 165)
-                THROW_FORMAT("dst contains node id out of range: ", v);
+                throwf("dst contains node id out of range: ", v);
             ++deg[v];
         }
 
@@ -214,9 +218,9 @@ namespace MMAI::BAI {
             throw std::runtime_error("No size option in all_sizes satisfies the data requirements.");
         }
 
-        logAi->debug("Size: %d\n", chosen);
+        logAi->debug("Size: %d", chosen);
         for (int i=0; i<LT_COUNT; ++i)
-            logAi->debug("  %d: [%ld, %ld] -> [%lld, %lld]\n", i, e_req[i], k_req[i], all_sizes[chosen][i][0], all_sizes[chosen][i][1]);
+            logAi->debug("  %d: [%ld, %ld] -> [%lld, %lld]", i, e_req[i], k_req[i], all_sizes[chosen][i][0], all_sizes[chosen][i][1]);
 
 
         out.size_index = chosen;
@@ -254,11 +258,11 @@ namespace MMAI::BAI {
         }
         // Sanity
         if (out.ei_flat.at(0).size() != sum_emax)
-            THROW_FORMAT("TorchModel: ei_flat.at(0) size mismatch: want: %d, have: %d", sum_emax % out.ei_flat.at(0).size());
+            throwf("ei_flat.at(0) size mismatch: want: %d, have: %d", sum_emax, out.ei_flat.at(0).size());
         if (out.ei_flat.at(1).size() != sum_emax)
-            THROW_FORMAT("TorchModel: ei_flat.at(1) size mismatch: want: %d, have: %d", sum_emax % out.ei_flat.at(1).size());
+            throwf("ei_flat.at(1) size mismatch: want: %d, have: %d", sum_emax, out.ei_flat.at(1).size());
         if (out.ea_flat.size() != sum_emax)
-            THROW_FORMAT("TorchModel: ea_flat size mismatch: want: %d, have: %d", sum_emax % out.ea_flat.size());
+            throwf("ea_flat size mismatch: want: %d, have: %d", sum_emax, out.ea_flat.size());
 
         // 3) Build nbrs_flat per node: concat layer l, pad to kmax[l] with -1
         for (int v = 0; v < 165; ++v) {
@@ -287,7 +291,7 @@ namespace MMAI::BAI {
     ) {
         // XXX: if needed, support for other versions may be added via conditionals
         if (version != 13)
-            THROW_FORMAT("TorchModel: unsupported version: want: 13, have: %d", version);
+            throwf("unsupported version: want: 13, have: %d", version);
 
         auto containers = std::array<IndexContainer, LT_COUNT> {};
 
@@ -296,7 +300,7 @@ namespace MMAI::BAI {
         for (const auto &[type, links] : sup->getAllLinks()) {
             // assert order
             if (EI(type) != count)
-                THROW_FORMAT("TorchModel: unexpected link type: want: %d, have: %d", count % EI(type));
+                throwf("unexpected link type: want: %d, have: %d", count, EI(type));
 
             auto &c = containers.at(count);
 
@@ -307,10 +311,10 @@ namespace MMAI::BAI {
             auto nlinks = srcinds.size();
 
             if (dstinds.size() != nlinks)
-                THROW_FORMAT("TorchModel: unexpected: unexpected dstinds.size() for LinkType(%d): want: %d, have: %d", nlinks % dstinds.size());
+                throwf("unexpected dstinds.size() for LinkType(%d): want: %d, have: %d", nlinks, dstinds.size());
 
             if (attrs.size() != nlinks)
-                THROW_FORMAT("TorchModel: unexpected: unexpected attrs.size() for LinkType(%d): want: %d, have: %d", nlinks % attrs.size());
+                throwf("unexpected attrs.size() for LinkType(%d): want: %d, have: %d", nlinks, attrs.size());
 
             // c.e_max = nlinks;
             // c.k_max = k_max;
@@ -329,7 +333,7 @@ namespace MMAI::BAI {
         }
 
         if (count != LT_COUNT)
-            THROW_FORMAT("TorchModel: unexpected links count: want: %d, have: %d", LT_COUNT % count);
+            throwf("unexpected links count: want: %d, have: %d", LT_COUNT % count);
 
         auto build = build_flattened(containers, all_sizes);
 
@@ -341,14 +345,14 @@ namespace MMAI::BAI {
         int sum_k = build.nbrs_flat.at(0).size();
 
         if (build.ei_flat.at(0).size() != sum_e)
-            THROW_FORMAT("TorchModel: unexpected build.ei_flat.at(0).size(): want: %d, have: %d", sum_e % build.ei_flat.at(0).size());
+            throwf("unexpected build.ei_flat.at(0).size(): want: %d, have: %d", sum_e % build.ei_flat.at(0).size());
         if (build.ei_flat.at(1).size() != sum_e)
-            THROW_FORMAT("TorchModel: unexpected build.ei_flat.at(1).size(): want: %d, have: %d", sum_e % build.ei_flat.at(1).size());
+            throwf("unexpected build.ei_flat.at(1).size(): want: %d, have: %d", sum_e % build.ei_flat.at(1).size());
         if (build.ea_flat.size() != sum_e)
-            THROW_FORMAT("TorchModel: unexpected build.ea_flat.size(): want: %d, have: %d", sum_e % build.ea_flat.size());
+            throwf("unexpected build.ea_flat.size(): want: %d, have: %d", sum_e % build.ea_flat.size());
         for (int i=0; i<165; ++i) {
             if (build.nbrs_flat.at(i).size() != sum_k) {
-                THROW_FORMAT("TorchModel: unexpected build.nbrs_flat.at(%d).size(): want: %d, have: %d", i % sum_k % build.nbrs_flat.at(i).size());
+                throwf("unexpected build.nbrs_flat.at(%d).size(): want: %d, have: %d", i % sum_k % build.nbrs_flat.at(i).size());
             }
         }
 
@@ -385,25 +389,24 @@ namespace MMAI::BAI {
     ) {
         auto res = mc->model.execute(method_name, input);
 
-        std::string common = "TorchModel: " + method_name;
         std::string want = "";
         std::string have = "";
 
         if (!res.ok())
-            THROW_FORMAT("TorchModel: %s: error code %d", method_name % EI(res.error()));
+            throwf("call: %s: error code %d", method_name, EI(res.error()));
 
         auto out = res->at(0);
 
         if (!out.isTensor())
-            THROW_FORMAT("TorchModel: %s: not a tensor", method_name % EI(res.error()));
+            throwf("call: %s: not a tensor", method_name, EI(res.error()));
 
         auto t = out.toTensor();  // Most exports return scalars as 0-D tensors with dtype int64
 
         if (resNumel && t.numel() != resNumel)
-            THROW_FORMAT("TorchModel: %s: bad resNumel: want: %d, have: %d", method_name % resNumel % EI(t.numel()));
+            throwf("call: %s: bad resNumel: want: %d, have: %d", method_name, resNumel, EI(t.numel()));
 
         if (t.dtype() != st)
-            THROW_FORMAT("TorchModel: %s: bad dtype: want: %d, have: %d", method_name % EI(st) % EI(t.dtype()));
+            throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.dtype()));
 
         return t;
     }
@@ -427,7 +430,7 @@ namespace MMAI::BAI {
         // Convert 3-D tensor to vector<vector<int64>>
         int ndim = t_all_sizes.dim();
         if (ndim != 3)
-            THROW_FORMAT("TorchModel: t_all_sizes: bad ndim: want: %d, have: %d", 3 % EI(t_all_sizes.dim()));
+            throwf("TorchModel: t_all_sizes: bad ndim: want: %d, have: %d", 3, EI(t_all_sizes.dim()));
 
         auto sz = t_all_sizes.sizes();
         int d0 = sz[0];
@@ -435,10 +438,10 @@ namespace MMAI::BAI {
         int d2 = sz[2];
 
         if (d1 != LT_COUNT)
-            THROW_FORMAT("TorchModel: t_all_sizes: bad size(1): want: %d, have: %d", LT_COUNT % d1);
+            throwf("TorchModel: t_all_sizes: bad size(1): want: %d, have: %d", LT_COUNT, d1);
 
         if (d2 != 2)
-            THROW_FORMAT("TorchModel: t_all_sizes: bad size(2): want: %d, have: %d", 2 % d2);
+            throwf("TorchModel: t_all_sizes: bad size(2): want: %d, have: %d", 2, d2);
 
         int64_t* ptr = t_all_sizes.data_ptr<int64_t>(); // or equivalent getter
         all_sizes.resize(d0);
@@ -473,15 +476,15 @@ namespace MMAI::BAI {
         auto any = s->getSupplementaryData();
 
         if (version != 13)
-            THROW_FORMAT("TorchModel: unsupported model version: want: 13, have: %d", version);
+            throwf("unsupported model version: want: 13, have: %d", version);
 
         if (s->version() != 13)
-            THROW_FORMAT("TorchModel: unsupported IState version: want: 13, have: %d", s->version());
+            throwf("unsupported IState version: want: 13, have: %d", s->version());
 
         if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
         auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
         if(!err.empty())
-            THROW_FORMAT("TorchModel: anycast failed: %s", err);
+            throwf("anycast failed: %s", err);
 
         auto sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
 
@@ -521,15 +524,15 @@ namespace MMAI::BAI {
         auto any = s->getSupplementaryData();
 
         if (version != 13)
-            THROW_FORMAT("TorchModel: unsupported model version: want: 13, have: %d", version);
+            throwf("unsupported model version: want: 13, have: %d", version);
 
         if (s->version() != 13)
-            THROW_FORMAT("TorchModel: unsupported IState version: want: 13, have: %d", s->version());
+            throwf("unsupported IState version: want: 13, have: %d", s->version());
 
         if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
         auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
         if(!err.empty())
-            THROW_FORMAT("TorchModel: anycast failed: %s", err);
+            throwf("anycast failed: %s", err);
 
         auto sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
 

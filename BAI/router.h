@@ -17,7 +17,6 @@
 #pragma once
 
 #include "battle/CPlayerBattleCallback.h"
-#include "lib/AI_Base.h"
 
 #include "BAI/base.h"
 
