@@ -187,7 +187,7 @@ if(MMAI_EXECUTORCH_PATH)
   set(CMAKE_SKIP_INSTALL_RULES ON)
   add_subdirectory("${MMAI_EXECUTORCH_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/executorch")
   unset(CMAKE_SKIP_INSTALL_RULES)
-  file(WRITE "${CMAKE_BINARY_DIR}/executorch/cmake_install.cmake" "")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/executorch/cmake_install.cmake" "\n")
 
   list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
   list(APPEND MMAI_LIBS
@@ -216,7 +216,7 @@ if(ENABLE_STATIC_LIBS)
   add_library(MMAI STATIC ${MMAI_FILES})
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
-  install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR} COMPONENT app)
+  install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
 target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
