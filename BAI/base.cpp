@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
 #include "callback/CBattleCallback.h"
 #include "networkPacks/PacksForClientBattle.h"
 #include "networkPacks/SetStackEffect.h"

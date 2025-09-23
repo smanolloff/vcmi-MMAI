@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
 #include "CCreatureHandler.h"
 #include "battle/IBattleInfoCallback.h"
 #include "bonuses/BonusEnum.h"

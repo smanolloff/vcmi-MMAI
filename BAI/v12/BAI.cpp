@@ -14,7 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
-#include "Global.h"
+#include "StdInc.h"
 
 #include "battle/BattleAction.h"
 #include "battle/CBattleInfoEssentials.h"

@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
 #include "battle/BattleHex.h"
 #include "battle/IBattleInfoCallback.h"
 #include "battle/ReachabilityInfo.h"

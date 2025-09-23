@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "BAI/v12/global_stats.h"
 #include "schema/v12/constants.h"
 #include "BAI/v12/player_stats.h"

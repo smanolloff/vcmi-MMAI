@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
 
 #include "schema/v12/constants.h"
 #include "schema/v12/types.h"

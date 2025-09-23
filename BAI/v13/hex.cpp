@@ -14,6 +14,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
 #include "vcmi/spells/Service.h"
 #include "vcmi/spells/Spell.h"
 

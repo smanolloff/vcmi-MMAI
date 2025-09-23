@@ -15,6 +15,7 @@
 // =============================================================================
 
 
+#include "StdInc.h"
 #include "schema/v13/constants.h"
 #include "schema/v13/types.h"
 

@@ -14,7 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
-#include "Global.h"
+#include "StdInc.h"
+
 #include "battle/CPlayerBattleCallback.h"
 #include "networkPacks/PacksForClientBattle.h"
 

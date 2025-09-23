@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "BAI/v12/supplementary_data.h"
 #include "common.h"
 

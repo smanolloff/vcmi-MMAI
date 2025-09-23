@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "battle/AccessibilityInfo.h"
 #include "battle/BattleAttackInfo.h"
 #include "battle/CObstacleInstance.h"
