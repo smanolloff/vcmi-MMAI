@@ -182,7 +182,12 @@ if(MMAI_EXECUTORCH_PATH)
   set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
   set(CMAKE_COMMAND "${MMAI_EXECUTORCH_PATH}/.venv/bin/cmake" CACHE FILEPATH "cmake v3" FORCE)
 
+  # Hack to prevent executorch from installing files in the VCMI build tree.
+  # The empty cmake_install file is needed to prevent "file not found" errors.
+  set(CMAKE_SKIP_INSTALL_RULES ON)
   add_subdirectory("${MMAI_EXECUTORCH_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/executorch")
+  unset(CMAKE_SKIP_INSTALL_RULES)
+  file(WRITE "${CMAKE_BINARY_DIR}/executorch/cmake_install.cmake" "")
 
   list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
   list(APPEND MMAI_LIBS
@@ -211,7 +216,7 @@ if(ENABLE_STATIC_LIBS)
   add_library(MMAI STATIC ${MMAI_FILES})
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
-  install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
+  install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR} COMPONENT app)
 endif()
 
 target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
