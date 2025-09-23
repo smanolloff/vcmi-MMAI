@@ -14,6 +14,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "StdInc.h"
+
 #include "TorchModel.h"
 #include "schema/v13/types.h"
 
@@ -22,6 +24,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 #include <stdexcept>
 #include <vector>
 #include <string>
@@ -41,6 +44,7 @@ namespace MMAI::BAI {
 
     struct ScopedTimer {
         const char* name;
+
         std::chrono::steady_clock::time_point t0;
         explicit ScopedTimer(const char* n) : name(n), t0(std::chrono::steady_clock::now()) {}
         ~ScopedTimer() {
