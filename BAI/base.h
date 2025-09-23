@@ -15,6 +15,9 @@
 // =============================================================================
 #pragma once
 
+// CI build fails without this
+#include "Global.h"
+
 #include "battle/CPlayerBattleCallback.h"
 #include "callback/CBattleGameInterface.h"
 #include "callback/CBattleCallback.h"
