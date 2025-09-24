@@ -17,6 +17,7 @@
 #include "StdInc.h"
 
 #include "TorchModel.h"
+#include "executorch/extension/tensor/tensor_ptr.h"
 #include "schema/v13/types.h"
 
 #include <executorch/extension/tensor/tensor.h>
@@ -54,6 +55,7 @@ namespace MMAI::BAI {
         }
     };
 
+    /* XXX: these debug functions which raise a lot of warnings, uncomment them only when
     static inline const char* dtype_name(ScalarType dt) {
         switch (dt) {
             case ScalarType::Float:  return "float32";
@@ -131,6 +133,7 @@ namespace MMAI::BAI {
             default: throw std::runtime_error("print_tensor_like_torch: unsupported dtype");
         }
     }
+    */
 
     // XXX: for improved performance a per-linktype kmax implementation will be needed
     // (e.g. for ADJACENT kmax=6).
@@ -434,27 +437,48 @@ namespace MMAI::BAI {
         // Convert 3-D tensor to vector<vector<int64>>
         int ndim = t_all_sizes.dim();
         if (ndim != 3)
-            throwf("TorchModel: t_all_sizes: bad ndim: want: %d, have: %d", 3, EI(t_all_sizes.dim()));
+            throwf("t_all_sizes: bad ndim: want: %d, have: %d", 3, EI(t_all_sizes.dim()));
 
         auto sz = t_all_sizes.sizes();
         int d0 = sz[0];
         int d1 = sz[1];
         int d2 = sz[2];
 
+        auto st = t_all_sizes.strides();
+        int s0 = st[0];
+        int s1 = st[1];
+        int s2 = st[2];
+
+        // last time strides=1 means vector is contiguous (which is what we want)
+        // XXX: turns out this is not contiguous
+        // if (s2 != 1)
+        //     throwf("t_all_sizes: bad strides on last dim: want: 1, have: %d", s2);
+
         if (d1 != LT_COUNT)
-            throwf("TorchModel: t_all_sizes: bad size(1): want: %d, have: %d", LT_COUNT, d1);
+            throwf("t_all_sizes: bad size(1): want: %d, have: %d", LT_COUNT, d1);
 
         if (d2 != 2)
-            throwf("TorchModel: t_all_sizes: bad size(2): want: %d, have: %d", 2, d2);
+            throwf("t_all_sizes: bad size(2): want: %d, have: %d", 2, d2);
 
-        int64_t* ptr = t_all_sizes.data_ptr<int64_t>(); // or equivalent getter
+        print_tensor_like_torch(std::make_shared<executorch::runtime::etensor::Tensor>(t_all_sizes));
+
+        const int64_t* baseptr = t_all_sizes.const_data_ptr<int64_t>(); // or equivalent getter
         all_sizes.resize(d0);
         for (int i0=0; i0<d0; ++i0) {
             all_sizes.at(i0).resize(d1);
             for (int i1=0; i1<d1; ++i1) {
                 all_sizes.at(i0).at(i1).resize(d2);
-                std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int64_t) * d2);
-                ptr += d2;
+                const int64_t* ptr = baseptr + i0 * s0 + i1 * s1;
+
+                if (s2 == 1) {
+                    // Fast path: last dimension contiguous
+                    std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int64_t) * static_cast<size_t>(d2));
+                } else {
+                    // Generic path: strided copy along last dimension
+                    for (int64_t k = 0; k < d2; ++k) {
+                        all_sizes.at(i0).at(i1).at(k) = ptr[k * s2];
+                    }
+                }
             }
         }
     }

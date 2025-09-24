@@ -50,7 +50,7 @@ namespace MMAI::BAI {
 #ifdef USING_EXECUTORCH
         class ModelContainer {
         public:
-            ModelContainer(std::string path) : model(extension::Module(path)) {}
+            ModelContainer(std::string path) : model(extension::module::Module(path)) {}
             extension::Module model;
         };
 

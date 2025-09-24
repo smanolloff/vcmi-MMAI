@@ -1,0 +1,95 @@
+{
+    "version": 10,
+    "$comment": [
+        "Use this cmake preset for compiling executorch for VCMI by copying",
+        "this file into the executorch root dir as CMakeUserPresets.json.",
+    ],
+    "configurePresets": [
+        {
+            "name": "vcmi-executorch-common",
+            "hidden": true,
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0",
+                "EXECUTORCH_ENABLE_PROGRAM_VERIFICATION": "OFF",
+                "EXECUTORCH_BUILD_SIZE_TEST": "OFF",
+                "EXECUTORCH_OPTIMIZE_SIZE": "OFF",
+                "EXECUTORCH_BUILD_COREML": "OFF",
+                "EXECUTORCH_BUILD_ARM_BAREMETAL": "OFF",
+                "EXECUTORCH_BUILD_KERNELS_CUSTOM": "OFF",
+                "EXECUTORCH_BUILD_KERNELS_CUSTOM_AOT": "OFF",
+                "EXECUTORCH_BUILD_KERNELS_QUANTIZED_AOT": "OFF",
+                "EXECUTORCH_BUILD_EXTENSION_DATA_LOADER": "ON",
+                "EXECUTORCH_BUILD_EXTENSION_FLAT_TENSOR": "ON",
+                "EXECUTORCH_BUILD_EXTENSION_LLM": "OFF",
+                "EXECUTORCH_BUILD_EXTENSION_MODULE": "ON",
+                "EXECUTORCH_BUILD_EXTENSION_RUNNER_UTIL": "ON",
+                "EXECUTORCH_BUILD_EXTENSION_TENSOR": "ON",
+                "EXECUTORCH_BUILD_EXTENSION_TRAINING": "OFF",
+                "EXECUTORCH_BUILD_EXTENSION_APPLE": "OFF",
+                "EXECUTORCH_BUILD_MPS": "OFF",
+                "EXECUTORCH_BUILD_NEURON": "OFF",
+                "EXECUTORCH_BUILD_OPENVINO": "OFF",
+                "EXECUTORCH_BUILD_PYBIND": "OFF",
+                "EXECUTORCH_BUILD_QNN": "OFF",
+                "EXECUTORCH_BUILD_KERNELS_OPTIMIZED": "ON",
+                "EXECUTORCH_BUILD_KERNELS_QUANTIZED": "ON",
+                "EXECUTORCH_BUILD_TESTS": "OFF",
+                "EXECUTORCH_NNLIB_OPT": "OFF",
+                "EXECUTORCH_CADENCE_CPU_RUNNER": "OFF",
+                "EXECUTORCH_BUILD_XNNPACK": "ON",
+                "EXECUTORCH_BUILD_VULKAN": "OFF",
+                "EXECUTORCH_BUILD_PORTABLE_OPS": "ON",
+                "EXECUTORCH_USE_DL": "OFF",
+                "EXECUTORCH_BUILD_CADENCE": "OFF",
+                "EXECUTORCH_BUILD_CORTEX_M": "OFF",
+                "EXECUTORCH_COREML_BUILD_EXECUTOR_RUNNER": "OFF",
+                "EXECUTORCH_BUILD_PTHREADPOOL": "ON",
+                "EXECUTORCH_BUILD_CPUINFO": "ON",
+                "EXECUTORCH_BUILD_EXECUTOR_RUNNER": "ON",
+                "EXECUTORCH_XNNPACK_SHARED_WORKSPACE": "OFF",
+                "EXECUTORCH_XNNPACK_ENABLE_KLEIDI": "OFF",
+                "EXECUTORCH_XNNPACK_ENABLE_WEIGHT_CACHE": "OFF",
+                "EXECUTORCH_USE_CPP_CODE_COVERAGE": "OFF"
+            }
+        },
+        {
+            "name": "vcmi-executorch-debug",
+            "inherits": "vcmi-executorch-common",
+            "binaryDir": "${sourceDir}/build-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install-debug",
+                "EXECUTORCH_BUILD_DEVTOOLS": "ON",
+                "EXECUTORCH_ENABLE_EVENT_TRACER": "ON",
+                "EXECUTORCH_ENABLE_LOGGING": "ON",
+                "EXECUTORCH_LOG_LEVEL": "Debug"
+            }
+        },
+        {
+            "name": "vcmi-executorch-release",
+            "inherits": "vcmi-executorch-common",
+            "binaryDir": "${sourceDir}/build-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install-release",
+                "EXECUTORCH_BUILD_DEVTOOLS": "OFF",
+                "EXECUTORCH_ENABLE_EVENT_TRACER": "OFF",
+                "EXECUTORCH_ENABLE_LOGGING": "OFF",
+                "EXECUTORCH_LOG_LEVEL": "Info"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "vcmi-executorch-debug",
+            "configurePreset": "vcmi-executorch-debug",
+            "targets": ["install"]
+        },
+        {
+            "name": "vcmi-executorch-release",
+            "configurePreset": "vcmi-executorch-release",
+            "targets": ["install"]
+        }
+    ]
+}

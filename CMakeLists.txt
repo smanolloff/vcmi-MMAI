@@ -88,18 +88,18 @@ set(MMAI_FILES
 
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
 option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
-set(MMAI_EXECUTORCH_PATH "" CACHE PATH "Path to executorch v0.7.0 source directory")
+set(MMAI_EXECUTORCH_SOURCE_DIR "" CACHE PATH "Path to executorch v0.7.0 source directory")
+set(MMAI_EXECUTORCH_INSTALL_DIR "" CACHE PATH "Path to executorch v0.7.0 install directory")
 
 #[[
-About the MMAI_EXECUTORCH_PATH flag:
+About the MMAI_EXECUTORCH_SOURCE_DIR and MMAI_EXECUTORCH_INSTALL_DIR flag:
 
 `executorch` is the library which handles loading pre-trained ML models during
-gameplay. It is compiled as part of VCMI, its source code is external to VCMI.
-The executorch repo is intentionally not added as a git submodule of MMAI
-since it is huge and actually makes every git op within the VCMI repo slower.
-
-MMAI_EXECUTORCH_PATH is required unless the ENABLE_ML build flag is set
-(if ENABLE_ML is set, models loading is handled by the vcmi-gym project).
+gameplay. It must be compiled externally so it can be linked here.
+MMAI_EXECUTORCH_INSTALL_DIR contains header files and  build artifacts
+(static libs) to link VCMI against.
+MMAI_EXECUTORCH_SOURCE_DIR is required because executorch does not install
+many of its headers that are actually needed.
 
 Example setup:
 
@@ -108,99 +108,47 @@ Example setup:
   $ cd executorch
   $ python3 -m venv .venv
   $ . ./venv/bin/activate
-  $ ./install_requirements.sh
 
-Now you can build VCMI with MMAI_EXECUTORCH_PATH=/some/path/executorch.
+  # Copy presets from MMAI dir
+  $ {vcmi_dir}/cmake-presets-executorch.json CMakeUserPresets.json
 
+  $ cmake --preset vcmi-executorch-release
+  $ cmake --build --preset vcmi-executorch-release -j10
+
+Now you can build VCMI with:
+  MMAI_EXECUTORCH_SOURCE_DIR=/some/path/excutorch
+  MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/build-release
+
+NOTE: for debug builds, use preset `vcmi-executorch-debug` use
+MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/build-debug instead.
 ]]
 
 set(MMAI_LIBS vcmi)
-set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/schema/gcem)
+set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+set(MMAI_PRIVATE_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/schema/gcem)
 
-if(MMAI_EXECUTORCH_PATH)
+if(MMAI_EXECUTORCH_INSTALL_DIR)
   add_definitions(-DUSING_EXECUTORCH=1)
 
   if (ENABLE_MMAI_STRICT_LOAD)
     add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
   endif()
 
+  list(APPEND CMAKE_PREFIX_PATH "${MMAI_EXECUTORCH_INSTALL_DIR}")
 
-  if(NOT EXISTS "${MMAI_EXECUTORCH_PATH}/CMakeLists.txt")
-    message(FATAL_ERROR "No CMakeLists.txt found under MMAI_EXECUTORCH_PATH: ${MMAI_EXECUTORCH_PATH}")
-  endif()
+  find_package(executorch CONFIG REQUIRED)
 
-  set(EXECUTORCH_BUILD_XNNPACK                ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_PTHREADPOOL            ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_CPUINFO                ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXTENSION_TENSOR       ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXTENSION_FLAT_TENSOR  ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXTENSION_DATA_LOADER  ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_PORTABLE_OPS           ON CACHE BOOL "" FORCE)  # for non-delegated ops like view/reshape
-  set(EXECUTORCH_BUILD_KERNELS_OPTIMIZED      ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_KERNELS_QUANTIZED      ON CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXTENSION_MODULE       ON CACHE BOOL "" FORCE)
+  message(STATUS "EXECUTORCH_FOUND: ${EXECUTORCH_FOUND}")
+  message(STATUS "EXECUTORCH_INCLUDE_DIRS: ${EXECUTORCH_INCLUDE_DIRS}")
+  message(STATUS "EXECUTORCH_LIBRARIES: ${EXECUTORCH_LIBRARIES}")
 
-  # ??
-
-  # TODO: test if this could speed stuff up when enabled (not for Apple Silicon though)
-  set(EXECUTORCH_XNNPACK_ENABLE_KLEIDI        OFF CACHE BOOL "" FORCE)
-
-  set(EXECUTORCH_BUILD_COREML                 OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_DEVTOOLS               OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXECUTOR_RUNNER        OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXTENSION_APPLE        OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXTENSION_LLM          OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_EXTENSION_TRAINING     OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_KERNELS_CUSTOM         OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_KERNELS_CUSTOM_AOT     OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_KERNELS_QUANTIZED_AOT  OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_MPS                    OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_NEURON                 OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_OPENVINO               OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_PYBIND                 OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_QNN                    OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_SIZE_TEST              OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_TESTING                OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_TESTS                  OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_BUILD_VULKAN                 OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_COREML_BUILD_EXECUTOR_RUNNER OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_ENABLE_LOGGING               OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_ENABLE_PROGRAM_VERIFICATION  OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_ENABLE_PYBIND                OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_OPTIMIZE_SIZE                OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_USE_DL                       OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_XNNPACK_ENABLE_WEIGHT_CACHE  OFF CACHE BOOL "" FORCE)
-  set(EXECUTORCH_XNNPACK_SHARED_WORKSPACE     OFF CACHE BOOL "" FORCE)
-
-  # XXX: This does not work (overwritten by XNNPACK based on CMAKE_BUILD_TYPE)
-  set(XNN_LOG_LEVEL 2 CACHE STRING "" FORCE)
-
-  set(PYTHON_EXECUTABLE "${MMAI_EXECUTORCH_PATH}/.venv/bin/python" CACHE FILEPATH "" FORCE)
-  message("PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE}")
-
-  # Needed to prevent errors during executorch build with cmake v4
-  set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
-  set(CMAKE_COMMAND "${MMAI_EXECUTORCH_PATH}/.venv/bin/cmake" CACHE FILEPATH "cmake v3" FORCE)
-
-  # Hack to prevent executorch from installing files in the VCMI build tree.
-  # The empty cmake_install file is needed to prevent "file not found" errors.
-  set(CMAKE_SKIP_INSTALL_RULES ON)
-  add_subdirectory("${MMAI_EXECUTORCH_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/executorch")
-  unset(CMAKE_SKIP_INSTALL_RULES)
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/executorch/cmake_install.cmake" "\n")
-
+  list(APPEND MMAI_PRIVATE_INCLUDES ${EXECUTORCH_INCLUDE_DIRS})
+  list(APPEND MMAI_PRIVATE_INCLUDES "${MMAI_EXECUTORCH_SOURCE_DIR}/..")
+  list(APPEND MMAI_LIBS ${EXECUTORCH_LIBRARIES})
   list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
-  list(APPEND MMAI_LIBS
-    executorch
-    xnnpack_backend
-    portable_ops_lib
-    extension_module_static
-    extension_flat_tensor
-    extension_tensor
-  )
 else()
   if(NOT ENABLE_ML)
-    message(FATAL_ERROR "MMAI_EXECUTORCH_PATH is required unless ENABLE_ML is set")
+    message(FATAL_ERROR "MMAI_EXECUTORCH_INSTALL_DIR is required unless ENABLE_ML is set")
   endif()
 
   list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
@@ -219,9 +167,48 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
+
+# Inputs:
+#   TARGET  - your target (e.g., MMAI)
+#   LIBDIR  - absolute path to the directory with the archives
+#   LIBS    - list of bare library base names (no prefix, no extension)
+function(force_link_static TARGET LIBDIR)
+  set(_libs ${ARGN})
+
+  # Prefix/ext differ across toolchains
+  set(_prefix $<$<BOOL:${MSVC}>:>$<$<NOT:$<BOOL:${MSVC}>>:lib>)
+  set(_ext    $<$<BOOL:${MSVC}>:.lib>$<$<NOT:$<BOOL:${MSVC}>>:.a>)
+
+  foreach(lib IN LISTS _libs)
+    set(_path "${LIBDIR}/${_prefix}${lib}${_ext}")
+
+    if(APPLE)
+      target_link_options(${TARGET} PRIVATE "-Wl,-force_load,${_path}")
+    elseif(MSVC)
+      target_link_options(${TARGET} PRIVATE "/WHOLEARCHIVE:${_path}")
+    else()
+      target_link_options(${TARGET} PRIVATE "-Wl,--whole-archive,${_path}" "-Wl,--no-whole-archive")
+    endif()
+
+    # Keep the archive on the link line too
+    target_link_libraries(${TARGET} PRIVATE "${_path}")
+  endforeach()
+endfunction()
+
+force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib"
+  extension_module_static
+  extension_data_loader
+  extension_tensor
+  extension_flat_tensor
+  xnnpack_backend
+  optimized_kernels
+  quantized_kernels
+  portable_ops_lib)
+
 target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})
+target_include_directories(MMAI PRIVATE ${MMAI_PRIVATE_INCLUDES})
 
 if(ENABLE_MMAI_TEST)
   include(GoogleTest)
