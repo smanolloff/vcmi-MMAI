@@ -420,10 +420,6 @@ namespace MMAI::BAI {
 
     TorchModel::TorchModel(std::string path)
     : path(path) {
-        // XXX: On Mac M1, 4 threads is actually ~5% faster than 10 threads.
-        if (::executorch::extension::threadpool::get_threadpool()->get_thread_count() != 4)
-            ::executorch::extension::threadpool::get_threadpool()->_unsafe_reset_threadpool(4);
-
         mc = std::make_unique<ModelContainer>(path);
 
         auto t_version = call("get_version", 1, aten::ScalarType::Long);
@@ -460,7 +456,7 @@ namespace MMAI::BAI {
         if (d2 != 2)
             throwf("t_all_sizes: bad size(2): want: %d, have: %d", 2, d2);
 
-        print_tensor_like_torch(std::make_shared<executorch::runtime::etensor::Tensor>(t_all_sizes));
+        // print_tensor_like_torch(std::make_shared<executorch::runtime::etensor::Tensor>(t_all_sizes));
 
         const int64_t* baseptr = t_all_sizes.const_data_ptr<int64_t>(); // or equivalent getter
         all_sizes.resize(d0);
