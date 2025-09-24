@@ -1,12 +1,13 @@
 {
     "version": 10,
     "$comment": [
-        "Use this cmake preset for compiling executorch for VCMI by copying",
-        "this file into the executorch root dir as CMakeUserPresets.json."
+        "This file is used when compiling executorch from source and",
+        "must be copied into the executorch root dir as CMakeUserPresets.json.",
+        "See MMAI/CMakeLists.txt for more information."
     ],
     "configurePresets": [
         {
-            "name": "vcmi-executorch-common",
+            "name": "mmai-executorch-common",
             "hidden": true,
             "generator": "Unix Makefiles",
             "cacheVariables": {
@@ -54,8 +55,8 @@
             }
         },
         {
-            "name": "vcmi-executorch-debug",
-            "inherits": "vcmi-executorch-common",
+            "name": "mmai-executorch-debug",
+            "inherits": "mmai-executorch-common",
             "binaryDir": "${sourceDir}/build-debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -67,8 +68,8 @@
             }
         },
         {
-            "name": "vcmi-executorch-release",
-            "inherits": "vcmi-executorch-common",
+            "name": "mmai-executorch-release",
+            "inherits": "mmai-executorch-common",
             "binaryDir": "${sourceDir}/build-release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
@@ -82,13 +83,13 @@
     ],
     "buildPresets": [
         {
-            "name": "vcmi-executorch-debug",
-            "configurePreset": "vcmi-executorch-debug",
+            "name": "mmai-executorch-debug",
+            "configurePreset": "mmai-executorch-debug",
             "targets": ["install"]
         },
         {
-            "name": "vcmi-executorch-release",
-            "configurePreset": "vcmi-executorch-release",
+            "name": "mmai-executorch-release",
+            "configurePreset": "mmai-executorch-release",
             "targets": ["install"]
         }
     ]

@@ -88,18 +88,14 @@ set(MMAI_FILES
 
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
 option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
-set(MMAI_EXECUTORCH_SOURCE_DIR "" CACHE PATH "Path to executorch v0.7.0 source directory")
 set(MMAI_EXECUTORCH_INSTALL_DIR "" CACHE PATH "Path to executorch v0.7.0 install directory")
 
 #[[
-About the MMAI_EXECUTORCH_SOURCE_DIR and MMAI_EXECUTORCH_INSTALL_DIR flag:
+About the MMAI_EXECUTORCH_INSTALL_DIR flag:
 
 `executorch` is the library which handles loading pre-trained ML models during
-gameplay. It must be compiled externally so it can be linked here.
-MMAI_EXECUTORCH_INSTALL_DIR contains header files and  build artifacts
-(static libs) to link VCMI against.
-MMAI_EXECUTORCH_SOURCE_DIR is required because executorch does not install
-many of its headers that are actually needed.
+gameplay. It must be compiled externally so VCMI can be linked against it.
+MMAI_EXECUTORCH_INSTALL_DIR contains header files and build artifacts (static libs).
 
 Example setup:
 
@@ -109,18 +105,16 @@ Example setup:
   $ python3 -m venv .venv
   $ . ./venv/bin/activate
 
-  # Copy presets from MMAI dir
-  $ {vcmi_dir}/cmake-presets-executorch.json CMakeUserPresets.json
+  # Copy cmake files from MMAI dir
+  $ {vcmi_dir}/executorch-install.cmake install_headers.cmake
+  $ {vcmi_dir}/executorch-presets.json CMakeUserPresets.json
 
-  $ cmake --preset vcmi-executorch-release
-  $ cmake --build --preset vcmi-executorch-release -j10
+  $ cmake --preset mmai-executorch-release
+  $ cmake --build --preset mmai-executorch-release -j10
+  $ cmake --preset mmai-executorch-release -P install_headers.cmake
 
 Now you can build VCMI with:
-  MMAI_EXECUTORCH_SOURCE_DIR=/some/path/excutorch
-  MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/build-release
-
-NOTE: for debug builds, use preset `vcmi-executorch-debug` use
-MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/build-debug instead.
+  MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/install-release
 ]]
 
 set(MMAI_LIBS vcmi)
@@ -134,8 +128,7 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
     add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
   endif()
 
-  list(APPEND CMAKE_PREFIX_PATH "${MMAI_EXECUTORCH_INSTALL_DIR}")
-
+  set(executorch_ROOT "${MMAI_EXECUTORCH_INSTALL_DIR}")
   find_package(executorch CONFIG REQUIRED)
 
   message(STATUS "EXECUTORCH_FOUND: ${EXECUTORCH_FOUND}")
@@ -143,7 +136,6 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
   message(STATUS "EXECUTORCH_LIBRARIES: ${EXECUTORCH_LIBRARIES}")
 
   list(APPEND MMAI_THIRD_PARTY_INCLUDES ${EXECUTORCH_INCLUDE_DIRS})
-  list(APPEND MMAI_THIRD_PARTY_INCLUDES "${MMAI_EXECUTORCH_SOURCE_DIR}/..")
   list(APPEND MMAI_LIBS ${EXECUTORCH_LIBRARIES})
   list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
 else()
