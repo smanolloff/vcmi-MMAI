@@ -2,7 +2,7 @@
     "version": 10,
     "$comment": [
         "Use this cmake preset for compiling executorch for VCMI by copying",
-        "this file into the executorch root dir as CMakeUserPresets.json.",
+        "this file into the executorch root dir as CMakeUserPresets.json."
     ],
     "configurePresets": [
         {
