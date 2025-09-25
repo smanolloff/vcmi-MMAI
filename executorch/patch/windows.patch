@@ -1,3 +1,15 @@
+diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
+index 7456d749f3..8a97766d20 100644
+--- a/third-party/CMakeLists.txt
++++ b/third-party/CMakeLists.txt
+@@ -30,6 +30,7 @@ ExternalProject_Add(
+   flatbuffers_external_project
+   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers_external_project
+   SOURCE_DIR ${PROJECT_SOURCE_DIR}/third-party/flatbuffers
++  CMAKE_GENERATOR_PLATFORM "x64"
+   CMAKE_ARGS -DFLATBUFFERS_BUILD_FLATC=ON
+              -DFLATBUFFERS_INSTALL=ON
+              -DFLATBUFFERS_BUILD_FLATHASH=OFF
 diff --git a/tools/cmake/Codegen.cmake b/tools/cmake/Codegen.cmake
 index 93331c7ed8..bb3b46759d 100644
 --- a/tools/cmake/Codegen.cmake
