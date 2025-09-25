@@ -1,3 +1,23 @@
+diff --git a/shim_et/BUCK b/shim_et/BUCK
+index a1a9bdaf65..e7f2fa39a2 100644
+--- a/shim_et/BUCK
++++ b/shim_et/BUCK
+@@ -28,6 +28,15 @@ system_python_bootstrap_toolchain(
+     visibility = ["PUBLIC"],
+ )
+ 
++execution_platform(
++    name = "android-arm32",
++    cpu_configuration = "prelude//cpu:arm32",
++    os_configuration = "prelude//os:android",
++    # REVIEW: not sure if this is correct
++    use_windows_path_separators = host_info().os.is_windows,
++    visibility = ["PUBLIC"],
++)
++
+ execution_platform(
+     name = "android-arm64",
+     cpu_configuration = "prelude//cpu:arm64",
 diff --git a/tools/cmake/Utils.cmake b/tools/cmake/Utils.cmake
 index 9fbab17728..6179fd3994 100644
 --- a/tools/cmake/Utils.cmake
@@ -11,3 +31,4 @@ index 9fbab17728..6179fd3994 100644
        elseif("${ANDROID_ABI}" STREQUAL "x86_64")
          set(target_platforms_arg "--target-platforms=shim_et//:android-x86_64")
        else()
+
