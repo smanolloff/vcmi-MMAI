@@ -1,0 +1,14 @@
+diff --git a/tools/cmake/Codegen.cmake b/tools/cmake/Codegen.cmake
+index 93331c7ed8..bb3b46759d 100644
+--- a/tools/cmake/Codegen.cmake
++++ b/tools/cmake/Codegen.cmake
+@@ -122,7 +122,8 @@ function(generate_bindings_for_kernels)
+   execute_process(
+     COMMAND
+       "${PYTHON_EXECUTABLE}" -c
+-      "import torchgen;import os; print(os.path.dirname(torchgen.__file__))"
++      "import importlib.util, os; s=importlib.util.find_spec('torchgen'); \
++         print(s.submodule_search_locations[0] if s and s.submodule_search_locations else os.path.dirname(s.origin))"
+     OUTPUT_VARIABLE torchgen-out
+     ERROR_VARIABLE torchgen-out-error
+     RESULT_VARIABLE torchgen-result
