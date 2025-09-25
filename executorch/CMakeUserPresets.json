@@ -1,9 +1,9 @@
 {
     "version": 10,
     "$comment": [
-        "This file is used when compiling executorch from source and",
-        "must be copied into the executorch root dir as CMakeUserPresets.json.",
-        "See MMAI/CMakeLists.txt for more information."
+        "This file is used for compiling executorch from source and",
+        "must be copied into the executorch root dir.",
+        "See comments in MMAI/CMakeLists.txt for more info."
     ],
     "configurePresets": [
         {

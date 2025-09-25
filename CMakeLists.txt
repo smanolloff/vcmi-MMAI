@@ -106,8 +106,8 @@ Example setup:
   $ . ./venv/bin/activate
 
   # Copy cmake files from MMAI dir
-  $ {vcmi_dir}/executorch-install.cmake install_headers.cmake
-  $ {vcmi_dir}/executorch-presets.json CMakeUserPresets.json
+  $ {vcmi_dir}/executorch/install_headers.cmake ./
+  $ {vcmi_dir}/executorch/CMakeUserPresets.json ./
 
   $ cmake --preset mmai-executorch-release
   $ cmake --build --preset mmai-executorch-release -j10
