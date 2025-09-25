@@ -1,16 +1,18 @@
 diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
-index 7456d749f3..6549a51565 100644
+index 7456d749f3..85f454d3f5 100644
 --- a/third-party/CMakeLists.txt
 +++ b/third-party/CMakeLists.txt
-@@ -30,6 +30,7 @@ ExternalProject_Add(
+@@ -30,6 +30,9 @@ ExternalProject_Add(
    flatbuffers_external_project
    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers_external_project
    SOURCE_DIR ${PROJECT_SOURCE_DIR}/third-party/flatbuffers
++  CMAKE_GENERATOR "Visual Studio 17 2022"
 +  CMAKE_GENERATOR_PLATFORM "x64"
++  CMAKE_GENERATOR_TOOLSET "ClangCL"
    CMAKE_ARGS -DFLATBUFFERS_BUILD_FLATC=ON
               -DFLATBUFFERS_INSTALL=ON
               -DFLATBUFFERS_BUILD_FLATHASH=OFF
-@@ -42,7 +43,7 @@ ExternalProject_Add(
+@@ -42,7 +45,7 @@ ExternalProject_Add(
               # If building for iOS, "unset" these variables to rely on the host (macOS) defaults.
               $<$<AND:$<BOOL:${APPLE}>,$<BOOL:$<FILTER:${PLATFORM},EXCLUDE,^MAC>>>:-DCMAKE_OSX_SYSROOT=>
               -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
@@ -33,3 +35,4 @@ index 93331c7ed8..bb3b46759d 100644
      OUTPUT_VARIABLE torchgen-out
      ERROR_VARIABLE torchgen-out-error
      RESULT_VARIABLE torchgen-result
+
