@@ -1,5 +1,5 @@
 diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
-index 7456d749f3..8a97766d20 100644
+index 7456d749f3..6549a51565 100644
 --- a/third-party/CMakeLists.txt
 +++ b/third-party/CMakeLists.txt
 @@ -30,6 +30,7 @@ ExternalProject_Add(
@@ -10,6 +10,15 @@ index 7456d749f3..8a97766d20 100644
    CMAKE_ARGS -DFLATBUFFERS_BUILD_FLATC=ON
               -DFLATBUFFERS_INSTALL=ON
               -DFLATBUFFERS_BUILD_FLATHASH=OFF
+@@ -42,7 +43,7 @@ ExternalProject_Add(
+              # If building for iOS, "unset" these variables to rely on the host (macOS) defaults.
+              $<$<AND:$<BOOL:${APPLE}>,$<BOOL:$<FILTER:${PLATFORM},EXCLUDE,^MAC>>>:-DCMAKE_OSX_SYSROOT=>
+              -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+-  BUILD_BYPRODUCTS <INSTALL_DIR>/bin/flatc
++  BUILD_BYPRODUCTS <INSTALL_DIR>/bin/flatc$<$<BOOL:WIN32>:.exe>
+   ${_executorch_external_project_additional_args}
+ )
+ ExternalProject_Get_Property(flatbuffers_external_project INSTALL_DIR)
 diff --git a/tools/cmake/Codegen.cmake b/tools/cmake/Codegen.cmake
 index 93331c7ed8..bb3b46759d 100644
 --- a/tools/cmake/Codegen.cmake
