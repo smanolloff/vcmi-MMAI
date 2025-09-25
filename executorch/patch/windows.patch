@@ -1,5 +1,5 @@
 diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
-index 7456d749f3..85f454d3f5 100644
+index 7456d749f3..8da7644aa9 100644
 --- a/third-party/CMakeLists.txt
 +++ b/third-party/CMakeLists.txt
 @@ -30,6 +30,9 @@ ExternalProject_Add(
@@ -12,44 +12,3 @@ index 7456d749f3..85f454d3f5 100644
    CMAKE_ARGS -DFLATBUFFERS_BUILD_FLATC=ON
               -DFLATBUFFERS_INSTALL=ON
               -DFLATBUFFERS_BUILD_FLATHASH=OFF
-@@ -42,7 +45,7 @@ ExternalProject_Add(
-              # If building for iOS, "unset" these variables to rely on the host (macOS) defaults.
-              $<$<AND:$<BOOL:${APPLE}>,$<BOOL:$<FILTER:${PLATFORM},EXCLUDE,^MAC>>>:-DCMAKE_OSX_SYSROOT=>
-              -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
--  BUILD_BYPRODUCTS <INSTALL_DIR>/bin/flatc
-+  BUILD_BYPRODUCTS <INSTALL_DIR>/bin/flatc$<$<BOOL:WIN32>:.exe>
-   ${_executorch_external_project_additional_args}
- )
- ExternalProject_Get_Property(flatbuffers_external_project INSTALL_DIR)
-diff --git a/tools/cmake/Codegen.cmake b/tools/cmake/Codegen.cmake
-index 93331c7ed8..aabe7a4215 100644
---- a/tools/cmake/Codegen.cmake
-+++ b/tools/cmake/Codegen.cmake
-@@ -119,18 +119,26 @@ function(generate_bindings_for_kernels)
- 
-   # Command to codegen C++ wrappers to register custom ops to both PyTorch and
-   # Executorch runtime.
-+  message(STATUS "SIMO: COMMAND: ${PYTHON_EXECUTABLE} -c \"import importlib.util, os; s=importlib.util.find_spec('torchgen'); print(s.submodule_search_locations[0] if s and s.submodule_search_locations else os.path.dirname(s.origin))\"")
-   execute_process(
-     COMMAND
-       "${PYTHON_EXECUTABLE}" -c
--      "import torchgen;import os; print(os.path.dirname(torchgen.__file__))"
-+      "import importlib.util, os; s=importlib.util.find_spec('torchgen'); \
-+         print(s.submodule_search_locations[0] if s and s.submodule_search_locations else os.path.dirname(s.origin))"
-     OUTPUT_VARIABLE torchgen-out
-     ERROR_VARIABLE torchgen-out-error
-     RESULT_VARIABLE torchgen-result
-     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-     OUTPUT_STRIP_TRAILING_WHITESPACE
-   )
-+  message(STATUS "SIMO: torchgen-out='${torchgen-out}'")
-+  message(STATUS "SIMO: torchgen-out-error='${torchgen-out-error}'")
-+  message(STATUS "SIMO: torchgen-result='${torchgen-result}'")
-+
-   file(GLOB_RECURSE _torchgen_srcs "${torchgen-out}/*.py")
-   # Not using module executorch.codegen.gen because it's not installed yet.
-+  message(STATUS "SIMO: gen_commend='${PYTHON_EXECUTABLE} -m codegen.gen --source-path=${EXECUTORCH_ROOT}/codegen --install-dir=${_out_dir} --tags-path=${torchgen-out}/packaged/ATen/native/tags.yaml --aten-yaml-path=${torchgen-out}/packaged/ATen/native/native_functions.yaml --op-selection-yaml-path=${_oplist_yaml}'")
-+
-   set(_gen_command
-       "${PYTHON_EXECUTABLE}" -m codegen.gen
-       --source-path=${EXECUTORCH_ROOT}/codegen --install-dir=${_out_dir}
