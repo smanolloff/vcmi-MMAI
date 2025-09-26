@@ -1,0 +1,10 @@
+diff --git a/requirements-dev.txt b/requirements-dev.txt
+index 1743b142a4..e727df8f39 100644
+--- a/requirements-dev.txt
++++ b/requirements-dev.txt
+@@ -8,5 +8,6 @@ tomli  # Imported by extract_sources.py when using python < 3.11.
+ wheel  # For building the pip package archive.
+ zstd  # Imported by resolve_buck.py.
+ certifi  # Imported by resolve_buck.py.
+-lintrunner==0.12.7
+-lintrunner-adapters==0.12.4
