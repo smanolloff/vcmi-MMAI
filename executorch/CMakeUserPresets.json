@@ -85,12 +85,15 @@
         {
             "name": "mmai-executorch-debug",
             "configurePreset": "mmai-executorch-debug",
-            "targets": ["install"]
+            "targets": ["install"],
+            "cleanFirst": true
+
         },
         {
             "name": "mmai-executorch-release",
             "configurePreset": "mmai-executorch-release",
-            "targets": ["install"]
+            "targets": ["install"],
+            "cleanFirst": true
         }
     ]
 }
