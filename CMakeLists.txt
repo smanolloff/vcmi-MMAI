@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.24)
+
 set(MMAI_FILES
   BAI/base.cpp
   BAI/base.h
@@ -136,7 +138,7 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
   message(STATUS "EXECUTORCH_LIBRARIES: ${EXECUTORCH_LIBRARIES}")
 
   list(APPEND MMAI_THIRD_PARTY_INCLUDES ${EXECUTORCH_INCLUDE_DIRS})
-  list(APPEND MMAI_LIBS ${EXECUTORCH_LIBRARIES})
+  # list(APPEND MMAI_LIBS ${EXECUTORCH_LIBRARIES})
   list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
 else()
   if(NOT ENABLE_ML)
@@ -160,32 +162,42 @@ else()
 endif()
 
 
-# Inputs:
-#   TARGET  - your target (e.g., MMAI)
-#   LIBDIR  - absolute path to the directory with the archives
-#   LIBS    - list of bare library base names (no prefix, no extension)
+# # Inputs:
+# #   TARGET  - your target (e.g., MMAI)
+# #   LIBDIR  - absolute path to the directory with the archives
+# #   LIBS    - list of bare library base names (no prefix, no extension)
+# function(force_link_static TARGET LIBDIR)
+#   set(_libs ${ARGN})
+
+#   # Prefix/ext differ across toolchains
+#   set(_prefix $<$<BOOL:${MSVC}>:>$<$<NOT:$<BOOL:${MSVC}>>:lib>)
+#   set(_ext    $<$<BOOL:${MSVC}>:.lib>$<$<NOT:$<BOOL:${MSVC}>>:.a>)
+
+#   foreach(lib IN LISTS _libs)
+#     message(STATUS "Forcing static link for ${lib}")
+#     set(_path "${LIBDIR}/${_prefix}${lib}${_ext}")
+
+#     if(APPLE)
+#       target_link_options(${TARGET} PRIVATE "-Wl,-force_load,${_path}")
+#     elseif(MSVC)
+#       target_link_options(${TARGET} PRIVATE "/WHOLEARCHIVE:${_path}")
+#     else()
+#       target_link_options(${TARGET} PRIVATE "-Wl,--whole-archive,${_path}" "-Wl,--no-whole-archive")
+#     endif()
+
+#     # Keep the archive on the link line too
+#     target_link_libraries(${TARGET} PRIVATE "${_path}")
+#   endforeach()
+# endfunction()
+
 function(force_link_static TARGET LIBDIR)
-  set(_libs ${ARGN})
-
-  # Prefix/ext differ across toolchains
-  set(_prefix $<$<BOOL:${MSVC}>:>$<$<NOT:$<BOOL:${MSVC}>>:lib>)
-  set(_ext    $<$<BOOL:${MSVC}>:.lib>$<$<NOT:$<BOOL:${MSVC}>>:.a>)
-
-  foreach(lib IN LISTS _libs)
-    set(_path "${LIBDIR}/${_prefix}${lib}${_ext}")
-
-    if(APPLE)
-      target_link_options(${TARGET} PRIVATE "-Wl,-force_load,${_path}")
-    elseif(MSVC)
-      target_link_options(${TARGET} PRIVATE "/WHOLEARCHIVE:${_path}")
-    else()
-      target_link_options(${TARGET} PRIVATE "-Wl,--whole-archive,${_path}" "-Wl,--no-whole-archive")
-    endif()
-
-    # Keep the archive on the link line too
-    target_link_libraries(${TARGET} PRIVATE "${_path}")
+  foreach(lib IN LISTS ARGN)
+    # MSVC uses foo.lib, others use libfoo.a
+    set(_path "${LIBDIR}/$<IF:$<BOOL:${MSVC}>,,lib>${lib}$<IF:$<BOOL:${MSVC}>,.lib,.a>")
+    target_link_libraries(${TARGET} PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,${_path}>)
   endforeach()
 endfunction()
+
 
 force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib"
   extension_module_static
@@ -196,6 +208,28 @@ force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib"
   optimized_kernels
   quantized_kernels
   portable_ops_lib)
+
+# Removing extension_module due to IMPORTED_IMPLIB error on windows builds
+# TODO: use list(REMOVE_ITEM EXECUTORCH_LIBRARIES extension_module)
+# TODO: use list(REMOVE_ITEM ...) to also remove the libs which were forced static above
+target_link_libraries(MMAI PUBLIC
+  XNNPACK
+  cpublas
+  cpuinfo
+  eigen_blas
+  executorch
+  executorch_core
+  # extension_module
+  extension_threadpool
+  optimized_native_cpu_ops_lib
+  optimized_ops_lib
+  optimized_portable_kernels
+  portable_kernels
+  pthreadpool
+  quantized_ops_lib
+  xnnpack-microkernels-prod)
+
+# force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${EXECUTORCH_LIBRARIES})
 
 target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
