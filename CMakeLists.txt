@@ -161,35 +161,6 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-
-# # Inputs:
-# #   TARGET  - your target (e.g., MMAI)
-# #   LIBDIR  - absolute path to the directory with the archives
-# #   LIBS    - list of bare library base names (no prefix, no extension)
-# function(force_link_static TARGET LIBDIR)
-#   set(_libs ${ARGN})
-
-#   # Prefix/ext differ across toolchains
-#   set(_prefix $<$<BOOL:${MSVC}>:>$<$<NOT:$<BOOL:${MSVC}>>:lib>)
-#   set(_ext    $<$<BOOL:${MSVC}>:.lib>$<$<NOT:$<BOOL:${MSVC}>>:.a>)
-
-#   foreach(lib IN LISTS _libs)
-#     message(STATUS "Forcing static link for ${lib}")
-#     set(_path "${LIBDIR}/${_prefix}${lib}${_ext}")
-
-#     if(APPLE)
-#       target_link_options(${TARGET} PRIVATE "-Wl,-force_load,${_path}")
-#     elseif(MSVC)
-#       target_link_options(${TARGET} PRIVATE "/WHOLEARCHIVE:${_path}")
-#     else()
-#       target_link_options(${TARGET} PRIVATE "-Wl,--whole-archive,${_path}" "-Wl,--no-whole-archive")
-#     endif()
-
-#     # Keep the archive on the link line too
-#     target_link_libraries(${TARGET} PRIVATE "${_path}")
-#   endforeach()
-# endfunction()
-
 function(force_link_static TARGET LIBDIR)
   foreach(lib IN LISTS ARGN)
     # MSVC uses foo.lib, others use libfoo.a
@@ -198,9 +169,7 @@ function(force_link_static TARGET LIBDIR)
   endforeach()
 endfunction()
 
-
-force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib"
-  extension_module_static
+set(_force_libs
   extension_data_loader
   extension_tensor
   extension_flat_tensor
@@ -209,28 +178,11 @@ force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib"
   quantized_kernels
   portable_ops_lib)
 
-# Removing extension_module due to IMPORTED_IMPLIB error on windows builds
-# TODO: use list(REMOVE_ITEM EXECUTORCH_LIBRARIES extension_module)
-# TODO: use list(REMOVE_ITEM ...) to also remove the libs which were forced static above
-target_link_libraries(MMAI PUBLIC
-  XNNPACK
-  cpublas
-  cpuinfo
-  eigen_blas
-  executorch
-  executorch_core
-  # extension_module
-  extension_threadpool
-  optimized_native_cpu_ops_lib
-  optimized_ops_lib
-  optimized_portable_kernels
-  portable_kernels
-  pthreadpool
-  quantized_ops_lib
-  xnnpack-microkernels-prod)
+set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
+list(REMOVE_ITEM _nonforce_libs ${_force_libs})
 
-# force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${EXECUTORCH_LIBRARIES})
-
+force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${_force_libs})
+target_link_libraries(MMAI PUBLIC ${_nonforce_libs})
 target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})

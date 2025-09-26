@@ -1,38 +1,17 @@
-// =============================================================================
-// Copyright 2024 Simeon Manolov <s.manolloff@gmail.com>.  All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// =============================================================================
-
-#include "StdInc.h"
+#include <algorithm>
+#include <executorch/extension/tensor/tensor_ptr.h>
+#include <stdexcept>
+#include <executorch/runtime/platform/runtime.h>
 
 #include "TorchModel.h"
-#include "executorch/extension/tensor/tensor_ptr.h"
-#include "schema/v13/types.h"
-
-#include <executorch/extension/tensor/tensor.h>
-#include <executorch/extension/threadpool/threadpool.h>
-
-#include <iomanip>
-#include <iostream>
-#include <numeric>
-#include <stdexcept>
-#include <vector>
-#include <string>
-#include <chrono>
 
 namespace MMAI::BAI {
 
+using TensorPtr = executorch::extension::TensorPtr;
+
+constexpr int LT_COUNT = EI(MMAI::Schema::V13::LinkType::_count);
+
+namespace {
     template<class... Args>
     [[noreturn]] inline void throwf(const std::string& fmt, Args&&... args) {
         boost::format f("TorchModel: " + fmt);
@@ -40,105 +19,15 @@ namespace MMAI::BAI {
         throw std::runtime_error(f.str());
     }
 
-    using executorch::aten::ScalarType;
-    using executorch::extension::TensorPtr;
-
     struct ScopedTimer {
         const char* name;
-
         std::chrono::steady_clock::time_point t0;
         explicit ScopedTimer(const char* n) : name(n), t0(std::chrono::steady_clock::now()) {}
         ~ScopedTimer() {
-            using namespace std::chrono;
-            auto dt = duration_cast<milliseconds>(steady_clock::now() - t0).count();
+            auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
             logAi->debug("%s: %lld ms", name, dt);
         }
     };
-
-    /* XXX: these debug functions which raise a lot of warnings, uncomment them only when
-    static inline const char* dtype_name(ScalarType dt) {
-        switch (dt) {
-            case ScalarType::Float:  return "float32";
-            case ScalarType::Double: return "float64";
-            case ScalarType::Long:   return "int64";
-            case ScalarType::Int:    return "int32";
-            case ScalarType::Short:  return "int16";
-            case ScalarType::Byte:   return "uint8";
-            case ScalarType::Char:   return "int8";
-            default:                 return "unknown";
-        }
-    }
-
-    template <typename T>
-    static void print_like_torch_impl(const TensorPtr& t, int max_per_dim, int float_prec) {
-        const auto& sizes = t->sizes();                 // std::vector<int64_t>
-        const int D = static_cast<int>(sizes.size());
-        std::vector<int64_t> strides(D, 1);
-        for (int i = D - 2; i >= 0; --i) strides[i] = strides[i + 1] * sizes[i + 1];
-
-        const T* data = t->data_ptr<T>();
-
-        auto print_dim = [&](auto&& self, int dim, int64_t offset, int indent) -> void {
-            std::cout << "[";
-            if (dim == D - 1) {
-                int64_t n = sizes[dim];
-                int64_t show = std::min<int64_t>(n, max_per_dim);
-                for (int64_t i = 0; i < show; ++i) {
-                    if (i) std::cout << ", ";
-                    if constexpr (std::is_floating_point<T>::value) {
-                        std::cout << std::fixed << std::setprecision(float_prec) << data[offset + i];
-                    } else {
-                        std::cout << data[offset + i];
-                    }
-                }
-                if (show < n) std::cout << ", ...";
-                std::cout << "]";
-                return;
-            }
-            int64_t n = sizes[dim];
-            int64_t show = std::min<int64_t>(n, max_per_dim);
-            for (int64_t i = 0; i < show; ++i) {
-                if (i) std::cout << ",\n" << std::string(indent + 2, ' ');
-                self(self, dim + 1, offset + i * strides[dim], indent + 2);
-            }
-            if (show < n) std::cout << ",\n" << std::string(indent + 2, ' ') << "...";
-            std::cout << "]";
-        };
-
-        std::cout << "tensor(";
-        if (D == 0) {
-            if constexpr (std::is_floating_point<T>::value)
-                std::cout << std::fixed << std::setprecision(float_prec) << *data;
-            else
-                std::cout << *data;
-        } else {
-            print_dim(print_dim, 0, 0, 0);
-        }
-        std::cout << ", dtype=" << dtype_name(t->scalar_type()) << ", shape=[";
-        for (int i = 0; i < D; ++i) { if (i) std::cout << ","; std::cout << sizes[i]; }
-        std::cout << "])\n";
-    }
-
-    inline void print_tensor_like_torch(const TensorPtr& t,
-                                        int max_per_dim = 8,
-                                        int float_precision = 4) {
-        switch (t->scalar_type()) {
-            case ScalarType::Float:  print_like_torch_impl<float>(t,  max_per_dim, float_precision); break;
-            case ScalarType::Double: print_like_torch_impl<double>(t, max_per_dim, float_precision); break;
-            case ScalarType::Long:   print_like_torch_impl<int64_t>(t, max_per_dim, 0); break;
-            case ScalarType::Int:    print_like_torch_impl<int32_t>(t, max_per_dim, 0); break;
-            case ScalarType::Short:  print_like_torch_impl<int16_t>(t, max_per_dim, 0); break;
-            case ScalarType::Byte:   print_like_torch_impl<uint8_t>(t, max_per_dim, 0); break;
-            case ScalarType::Char:   print_like_torch_impl<int8_t>(t, max_per_dim, 0); break;
-            default: throw std::runtime_error("print_tensor_like_torch: unsupported dtype");
-        }
-    }
-    */
-
-    // XXX: for improved performance a per-linktype kmax implementation will be needed
-    // (e.g. for ADJACENT kmax=6).
-
-    constexpr int LT_COUNT = EI(MMAI::Schema::V13::LinkType::_count);
 
     std::array<std::vector<int64_t>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
         // Pass 1: validate and count degrees per node
@@ -290,288 +179,361 @@ namespace MMAI::BAI {
 
         return out;
     }
+}
 
+TorchModel::TorchModel(std::string &path)
+: path(path) {
+    auto loaderRes = executorch::extension::FileDataLoader::from(path.c_str());
+    if (!loaderRes.ok())
+        throwf("loader error code: %d", static_cast<int>(loaderRes.error()));
 
-    std::pair<std::vector<extension::TensorPtr>, int> TorchModel::prepareInputsV13(
-        const MMAI::Schema::IState * s,
-        const MMAI::Schema::V13::ISupplementaryData* sup
-    ) {
-        // XXX: if needed, support for other versions may be added via conditionals
-        if (version != 13)
-            throwf("unsupported version: want: 13, have: %d", version);
+    loader = std::make_unique<executorch::extension::FileDataLoader>(std::move(*loaderRes));
 
-        auto containers = std::array<IndexContainer, LT_COUNT> {};
+    memory_allocator = std::make_unique<executorch::extension::MallocMemoryAllocator>();
+    temp_allocator = std::make_unique<executorch::extension::MallocMemoryAllocator>();
 
-        int count = 0;
+    executorch::runtime::runtime_init();
 
-        for (const auto &[type, links] : sup->getAllLinks()) {
-            // assert order
-            if (EI(type) != count)
-                throwf("unexpected link type: want: %d, have: %d", count, EI(type));
+    auto programRes = executorch::runtime::Program::load(loader.get());
+    if (!programRes.ok())
+        throwf("program error code: %d", static_cast<int>(programRes.error()));
+    program = std::make_unique<executorch::runtime::Program>(std::move(*programRes));
 
-            auto &c = containers.at(count);
+    auto t_version = call("get_version", 1, ScalarType::Long);
+    version = static_cast<int>(t_version.const_data_ptr<int64_t>()[0]);
 
-            const auto srcinds = links->getSrcIndex();
-            const auto dstinds = links->getDstIndex();
-            const auto attrs = links->getAttributes();
+    auto t_side = call("get_side", 1, ScalarType::Long);
+    side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int64_t>()[0]));
 
-            auto nlinks = srcinds.size();
+    auto t_all_sizes = call("get_all_sizes", 0, ScalarType::Long);
 
-            if (dstinds.size() != nlinks)
-                throwf("unexpected dstinds.size() for LinkType(%d): want: %d, have: %d", nlinks, dstinds.size());
+    // Convert 3-D tensor to vector<vector<int64>>
+    auto ndim = t_all_sizes.dim();
+    if (ndim != 3)
+        throwf("t_all_sizes: bad ndim: want: %d, have: %d", 3, EI(t_all_sizes.dim()));
 
-            if (attrs.size() != nlinks)
-                throwf("unexpected attrs.size() for LinkType(%d): want: %d, have: %d", nlinks, attrs.size());
+    auto sz = t_all_sizes.sizes();
+    int d0 = sz[0];
+    int d1 = sz[1];
+    int d2 = sz[2];
 
-            // c.e_max = nlinks;
-            // c.k_max = k_max;
+    auto st = t_all_sizes.strides();
+    int s0 = st[0];
+    int s1 = st[1];
+    int s2 = st[2];
 
-            c.ei.at(0).reserve(nlinks);
-            c.ei.at(1).reserve(nlinks);
-            c.ei.at(0).insert(c.ei.at(0).end(), srcinds.begin(), srcinds.end());
-            c.ei.at(1).insert(c.ei.at(1).end(), dstinds.begin(), dstinds.end());
+    // last time strides=1 means vector is contiguous (which is what we want)
+    // XXX: turns out this is not contiguous
+    // if (s2 != 1)
+    //     throwf("t_all_sizes: bad strides on last dim: want: 1, have: %d", s2);
 
-            c.ea.reserve(nlinks);
-            c.ea.insert(c.ea.end(), attrs.begin(), attrs.end());
+    if (d1 != LT_COUNT)
+        throwf("t_all_sizes: bad size(1): want: %d, have: %d", LT_COUNT, d1);
 
-            c.nbrs = buildNBR_unpadded(dstinds);
+    if (d2 != 2)
+        throwf("t_all_sizes: bad size(2): want: %d, have: %d", 2, d2);
 
-            ++count;
-        }
+    // print_tensor_like_torch(std::make_shared<executorch::runtime::etensor::Tensor>(t_all_sizes));
 
-        if (count != LT_COUNT)
-            throwf("unexpected links count: want: %d, have: %d", LT_COUNT % count);
+    const int64_t* baseptr = t_all_sizes.const_data_ptr<int64_t>(); // or equivalent getter
+    all_sizes.resize(d0);
+    for (int i0=0; i0<d0; ++i0) {
+        all_sizes.at(i0).resize(d1);
+        for (int i1=0; i1<d1; ++i1) {
+            all_sizes.at(i0).at(i1).resize(d2);
+            const int64_t* ptr = baseptr + i0 * s0 + i1 * s1;
 
-        auto build = build_flattened(containers, all_sizes);
-
-        auto state = s->getBattlefieldState();
-        auto estate = std::vector<float>(state->size());
-        std::copy(state->begin(), state->end(), estate.begin());
-
-        int sum_e = build.ei_flat.at(0).size();
-        int sum_k = build.nbrs_flat.at(0).size();
-
-        if (build.ei_flat.at(0).size() != sum_e)
-            throwf("unexpected build.ei_flat.at(0).size(): want: %d, have: %d", sum_e % build.ei_flat.at(0).size());
-        if (build.ei_flat.at(1).size() != sum_e)
-            throwf("unexpected build.ei_flat.at(1).size(): want: %d, have: %d", sum_e % build.ei_flat.at(1).size());
-        if (build.ea_flat.size() != sum_e)
-            throwf("unexpected build.ea_flat.size(): want: %d, have: %d", sum_e % build.ea_flat.size());
-        for (int i=0; i<165; ++i) {
-            if (build.nbrs_flat.at(i).size() != sum_k) {
-                throwf("unexpected build.nbrs_flat.at(%d).size(): want: %d, have: %d", i % sum_k % build.nbrs_flat.at(i).size());
-            }
-        }
-
-        auto einds = std::vector<int64_t> {};
-        einds.reserve(2*sum_e);
-        for (auto &eind : build.ei_flat)
-            einds.insert(einds.end(), eind.begin(), eind.end());
-
-        auto nbrs = std::vector<int64_t> {};
-        nbrs.reserve(165*sum_k);
-        for (auto &nbr : build.nbrs_flat)
-            nbrs.insert(nbrs.end(), nbr.begin(), nbr.end());
-
-        auto t_state = executorch::extension::from_blob(estate.data(), {int(estate.size())}, aten::ScalarType::Float);
-        auto t_ei_flat = executorch::extension::from_blob(einds.data(), {2, sum_e}, aten::ScalarType::Long);
-        auto t_ea_flat = executorch::extension::from_blob(build.ea_flat.data(), {sum_e, 1}, aten::ScalarType::Float);
-        auto t_nbrs_flat = executorch::extension::from_blob(nbrs.data(), {165, sum_k}, aten::ScalarType::Long);
-
-        auto tensors = std::vector<extension::TensorPtr> {
-            extension::clone_tensor_ptr(t_state),
-            extension::clone_tensor_ptr(t_ei_flat),
-            extension::clone_tensor_ptr(t_ea_flat),
-            extension::clone_tensor_ptr(t_nbrs_flat)
-        };
-
-        return {tensors, build.size_index};
-    }
-
-    aten::Tensor TorchModel::call(
-        const std::string& method_name,
-        const std::vector<runtime::EValue>& input,
-        int resNumel,
-        aten::ScalarType st
-    ) {
-        auto res = mc->model.execute(method_name, input);
-
-        std::string want = "";
-        std::string have = "";
-
-        if (!res.ok())
-            throwf("call: %s: error code %d", method_name, EI(res.error()));
-
-        auto out = res->at(0);
-
-        if (!out.isTensor())
-            throwf("call: %s: not a tensor", method_name, EI(res.error()));
-
-        auto t = out.toTensor();  // Most exports return scalars as 0-D tensors with dtype int64
-
-        if (resNumel && t.numel() != resNumel)
-            throwf("call: %s: bad resNumel: want: %d, have: %d", method_name, resNumel, EI(t.numel()));
-
-        if (t.dtype() != st)
-            throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.dtype()));
-
-        return t;
-    }
-
-    TorchModel::TorchModel(std::string path)
-    : path(path) {
-        mc = std::make_unique<ModelContainer>(path);
-
-        auto t_version = call("get_version", 1, aten::ScalarType::Long);
-        version = static_cast<int>(t_version.const_data_ptr<int64_t>()[0]);
-
-        auto t_side = call("get_side", 1, aten::ScalarType::Long);
-        side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int64_t>()[0]));
-
-        auto t_all_sizes = call("get_all_sizes", 0, aten::ScalarType::Long);
-
-        // Convert 3-D tensor to vector<vector<int64>>
-        int ndim = t_all_sizes.dim();
-        if (ndim != 3)
-            throwf("t_all_sizes: bad ndim: want: %d, have: %d", 3, EI(t_all_sizes.dim()));
-
-        auto sz = t_all_sizes.sizes();
-        int d0 = sz[0];
-        int d1 = sz[1];
-        int d2 = sz[2];
-
-        auto st = t_all_sizes.strides();
-        int s0 = st[0];
-        int s1 = st[1];
-        int s2 = st[2];
-
-        // last time strides=1 means vector is contiguous (which is what we want)
-        // XXX: turns out this is not contiguous
-        // if (s2 != 1)
-        //     throwf("t_all_sizes: bad strides on last dim: want: 1, have: %d", s2);
-
-        if (d1 != LT_COUNT)
-            throwf("t_all_sizes: bad size(1): want: %d, have: %d", LT_COUNT, d1);
-
-        if (d2 != 2)
-            throwf("t_all_sizes: bad size(2): want: %d, have: %d", 2, d2);
-
-        // print_tensor_like_torch(std::make_shared<executorch::runtime::etensor::Tensor>(t_all_sizes));
-
-        const int64_t* baseptr = t_all_sizes.const_data_ptr<int64_t>(); // or equivalent getter
-        all_sizes.resize(d0);
-        for (int i0=0; i0<d0; ++i0) {
-            all_sizes.at(i0).resize(d1);
-            for (int i1=0; i1<d1; ++i1) {
-                all_sizes.at(i0).at(i1).resize(d2);
-                const int64_t* ptr = baseptr + i0 * s0 + i1 * s1;
-
-                if (s2 == 1) {
-                    // Fast path: last dimension contiguous
-                    std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int64_t) * static_cast<size_t>(d2));
-                } else {
-                    // Generic path: strided copy along last dimension
-                    for (int64_t k = 0; k < d2; ++k) {
-                        all_sizes.at(i0).at(i1).at(k) = ptr[k * s2];
-                    }
+            if (s2 == 1) {
+                // Fast path: last dimension contiguous
+                std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int64_t) * static_cast<size_t>(d2));
+            } else {
+                // Generic path: strided copy along last dimension
+                for (int64_t k = 0; k < d2; ++k) {
+                    all_sizes.at(i0).at(i1).at(k) = ptr[k * s2];
                 }
             }
         }
     }
-
-    Schema::ModelType TorchModel::getType() {
-        return Schema::ModelType::TORCH;
-    };
-
-    std::string TorchModel::getName() {
-        return "MMAI_MODEL";
-    };
-
-    int TorchModel::getVersion() {
-        return version;
-    };
-
-    Schema::Side TorchModel::getSide() {
-        return side;
-    };
-
-    int TorchModel::getAction(const MMAI::Schema::IState * s) {
-        auto timer = ScopedTimer("getAction");
-        auto any = s->getSupplementaryData();
-
-        if (version != 13)
-            throwf("unsupported model version: want: 13, have: %d", version);
-
-        if (s->version() != 13)
-            throwf("unsupported IState version: want: 13, have: %d", s->version());
-
-        if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
-        auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
-        if(!err.empty())
-            throwf("anycast failed: %s", err);
-
-        auto sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
-
-        if (sup->getIsBattleEnded())
-            return MMAI::Schema::ACTION_RESET;
-
-        auto [inputs, size_idx] = prepareInputsV13(s, sup);
-
-        auto values = std::vector<runtime::EValue>{};
-
-        // int i=0;
-        for (auto &t : inputs) {
-            values.push_back(t);
-            // printf("Input %d\n", i++);
-            // print_tensor_like_torch(t);
-        }
-
-        // printf("--------------- 0:\n");
-        // print_tensor_like_torch(inputs.at(0), 10, 6); // show up to 4 per dim, 6 decimals
-        // printf("--------------- 1:\n");
-        // print_tensor_like_torch(inputs.at(1), 10, 6); // show up to 4 per dim, 6 decimals
-        // printf("--------------- 2:\n");
-        // print_tensor_like_torch(inputs.at(2), 10, 6); // show up to 4 per dim, 6 decimals
-        // printf("--------------- 3:\n");
-        // print_tensor_like_torch(inputs.at(3), 10, 6); // show up to 4 per dim, 6 decimals
-
-        auto output = call("predict" + std::to_string(size_idx), values, 1, aten::ScalarType::Long);
-
-        int action = output.const_data_ptr<int64_t>()[0];
-        // std::cout << "Predicted action: " << action << "\n";
-
-        // throw std::runtime_error("forced exit");
-        return MMAI::Schema::Action(action);
-    };
-
-    double TorchModel::getValue(const MMAI::Schema::IState * s) {
-        auto any = s->getSupplementaryData();
-
-        if (version != 13)
-            throwf("unsupported model version: want: 13, have: %d", version);
-
-        if (s->version() != 13)
-            throwf("unsupported IState version: want: 13, have: %d", s->version());
-
-        if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
-        auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
-        if(!err.empty())
-            throwf("anycast failed: %s", err);
-
-        auto sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
-
-        if (sup->getIsBattleEnded())
-            return 0.0;
-
-        auto [inputs, size_idx] = prepareInputsV13(s, sup);
-        auto values = std::vector<runtime::EValue>{};
-        for (auto &t : inputs)
-            values.push_back(t);
-
-        auto output = call("predict" + std::to_string(size_idx), values, 1, aten::ScalarType::Float);
-        auto value = output.const_data_ptr<float>()[0];
-        std::cout << "Predicted value: " << value << "\n";
-
-        return value;
-    }
 }
+
+void TorchModel::maybeLoadMethod(const std::string& method_name) {
+    if (methods.count(method_name))
+        return;
+
+    MethodHolder mh;
+
+    auto methodMetaRes = program->method_meta(method_name.c_str());
+    if (!methodMetaRes.ok())
+        throwf("method_meta: error code: %d", static_cast<int>(methodMetaRes.error()));
+
+    auto method_metadata = methodMetaRes.get();
+    const auto planned_buffers_count = method_metadata.num_memory_planned_buffers();
+    mh.planned_buffers.reserve(planned_buffers_count);
+    mh.planned_spans.reserve(planned_buffers_count);
+
+    for (auto index = 0; index < planned_buffers_count; ++index) {
+        const auto buffer_size = method_metadata.memory_planned_buffer_size(index).get();
+        mh.planned_buffers.emplace_back(buffer_size);
+        mh.planned_spans.emplace_back(mh.planned_buffers.back().data(), buffer_size);
+    }
+
+    mh.planned_memory = std::make_unique<executorch::runtime::HierarchicalAllocator>(
+        executorch::runtime::Span(mh.planned_spans.data(), mh.planned_spans.size())
+    );
+
+    mh.memory_manager = std::make_unique<executorch::runtime::MemoryManager>(memory_allocator.get(), mh.planned_memory.get(), temp_allocator.get());
+
+    auto methodRes = program->load_method(method_name.c_str(), mh.memory_manager.get());
+    if (!methodRes.ok())
+        throwf("load_method: error code: %d", static_cast<int>(methodRes.error()));
+
+    mh.method = std::make_unique<executorch::runtime::Method>(std::move(*methodRes));
+    mh.inputs.resize(mh.method->inputs_size());
+    methods.emplace(method_name, std::move(mh));
+}
+
+Tensor TorchModel::call(
+    const std::string& method_name,
+    const std::vector<EValue>& input,
+    int resNumel,
+    ScalarType st
+) {
+    maybeLoadMethod(method_name);
+    auto& method = methods.at(method_name).method;
+    auto& inputs = methods.at(method_name).inputs;
+
+    if (input.size() != inputs.size())
+        throwf("call: %s: input size: %zu does not match method input size: %zu", method_name, input.size(), inputs.size());
+
+    for (auto i = 0; i < input.size(); ++i) {
+        inputs[i] = input[i];
+    }
+
+    auto setRes = method->set_inputs(executorch::aten::ArrayRef<EValue>(inputs.data(), inputs.size()));
+    if (setRes != et_run::Error::Ok)
+        throwf("set_inputs: %s: error code: %d", method_name, static_cast<int>(setRes));
+
+    auto execRes = method->execute();
+    if (setRes != et_run::Error::Ok)
+        throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
+
+    const auto outputs_size = method->outputs_size();
+    auto outputs = std::vector<EValue>(outputs_size);
+
+    // Copy data to outputs
+    auto getoutRes = method->get_outputs(outputs.data(), outputs_size);
+    if (getoutRes != et_run::Error::Ok)
+        throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
+
+    if (outputs.size() != 1)
+        throwf("call: %s: outputs.size(): want: 1, have: %zu", method_name, outputs.size());
+
+    auto out = outputs.at(0);
+
+    if (!out.isTensor())
+        throwf("call: %s: not a tensor", method_name);
+
+    auto t = out.toTensor();
+
+    if (resNumel && t.numel() != resNumel)
+        throwf("call: %s: bad resNumel: want: %d, have: %d", method_name, resNumel, EI(t.numel()));
+
+    if (t.dtype() != st)
+        throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.dtype()));
+
+    return t;
+}
+
+Schema::ModelType TorchModel::getType() {
+    return Schema::ModelType::TORCH;
+};
+
+std::string TorchModel::getName() {
+    return "MMAI_MODEL";
+};
+
+int TorchModel::getVersion() {
+    return version;
+};
+
+Schema::Side TorchModel::getSide() {
+    return side;
+};
+
+std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
+    const MMAI::Schema::IState * s,
+    const MMAI::Schema::V13::ISupplementaryData* sup
+) {
+    // XXX: if needed, support for other versions may be added via conditionals
+    if (version != 13)
+        throwf("unsupported version: want: 13, have: %d", version);
+
+    auto containers = std::array<IndexContainer, LT_COUNT> {};
+
+    int count = 0;
+
+    for (const auto &[type, links] : sup->getAllLinks()) {
+        // assert order
+        if (EI(type) != count)
+            throwf("unexpected link type: want: %d, have: %d", count, EI(type));
+
+        auto &c = containers.at(count);
+
+        const auto srcinds = links->getSrcIndex();
+        const auto dstinds = links->getDstIndex();
+        const auto attrs = links->getAttributes();
+
+        auto nlinks = srcinds.size();
+
+        if (dstinds.size() != nlinks)
+            throwf("unexpected dstinds.size() for LinkType(%d): want: %d, have: %d", nlinks, dstinds.size());
+
+        if (attrs.size() != nlinks)
+            throwf("unexpected attrs.size() for LinkType(%d): want: %d, have: %d", nlinks, attrs.size());
+
+        // c.e_max = nlinks;
+        // c.k_max = k_max;
+
+        c.ei.at(0).reserve(nlinks);
+        c.ei.at(1).reserve(nlinks);
+        c.ei.at(0).insert(c.ei.at(0).end(), srcinds.begin(), srcinds.end());
+        c.ei.at(1).insert(c.ei.at(1).end(), dstinds.begin(), dstinds.end());
+
+        c.ea.reserve(nlinks);
+        c.ea.insert(c.ea.end(), attrs.begin(), attrs.end());
+
+        c.nbrs = buildNBR_unpadded(dstinds);
+
+        ++count;
+    }
+
+    if (count != LT_COUNT)
+        throwf("unexpected links count: want: %d, have: %d", LT_COUNT % count);
+
+    auto build = build_flattened(containers, all_sizes);
+
+    const auto *state = s->getBattlefieldState();
+    auto estate = std::vector<float>(state->size());
+    std::copy(state->begin(), state->end(), estate.begin());
+
+    int sum_e = build.ei_flat.at(0).size();
+    int sum_k = build.nbrs_flat.at(0).size();
+
+    if (build.ei_flat.at(0).size() != sum_e)
+        throwf("unexpected build.ei_flat.at(0).size(): want: %d, have: %d", sum_e % build.ei_flat.at(0).size());
+    if (build.ei_flat.at(1).size() != sum_e)
+        throwf("unexpected build.ei_flat.at(1).size(): want: %d, have: %d", sum_e % build.ei_flat.at(1).size());
+    if (build.ea_flat.size() != sum_e)
+        throwf("unexpected build.ea_flat.size(): want: %d, have: %d", sum_e % build.ea_flat.size());
+    for (int i=0; i<165; ++i) {
+        if (build.nbrs_flat.at(i).size() != sum_k) {
+            throwf("unexpected build.nbrs_flat.at(%d).size(): want: %d, have: %d", i % sum_k % build.nbrs_flat.at(i).size());
+        }
+    }
+
+    auto einds = std::vector<int64_t> {};
+    einds.reserve(2*sum_e);
+    for (auto &eind : build.ei_flat)
+        einds.insert(einds.end(), eind.begin(), eind.end());
+
+    auto nbrs = std::vector<int64_t> {};
+    nbrs.reserve(165*sum_k);
+    for (auto &nbr : build.nbrs_flat)
+        nbrs.insert(nbrs.end(), nbr.begin(), nbr.end());
+
+    auto t_state = et_ext::from_blob(estate.data(), {int(estate.size())}, ScalarType::Float);
+    auto t_ei_flat = et_ext::from_blob(einds.data(), {2, sum_e}, ScalarType::Long);
+    auto t_ea_flat = et_ext::from_blob(build.ea_flat.data(), {sum_e, 1}, ScalarType::Float);
+    auto t_nbrs_flat = et_ext::from_blob(nbrs.data(), {165, sum_k}, ScalarType::Long);
+
+    auto tensors = std::vector<TensorPtr> {
+        et_ext::clone_tensor_ptr(t_state),
+        et_ext::clone_tensor_ptr(t_ei_flat),
+        et_ext::clone_tensor_ptr(t_ea_flat),
+        et_ext::clone_tensor_ptr(t_nbrs_flat)
+    };
+
+    return {tensors, build.size_index};
+}
+
+int TorchModel::getAction(const MMAI::Schema::IState * s) {
+    auto timer = ScopedTimer("getAction");
+    auto any = s->getSupplementaryData();
+
+    if (version != 13)
+        throwf("unsupported model version: want: 13, have: %d", version);
+
+    if (s->version() != 13)
+        throwf("unsupported IState version: want: 13, have: %d", s->version());
+
+    if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
+    auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
+    if(!err.empty())
+        throwf("anycast failed: %s", err);
+
+    const auto *sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
+
+    if (sup->getIsBattleEnded())
+        return MMAI::Schema::ACTION_RESET;
+
+    auto [inputs, size_idx] = prepareInputsV13(s, sup);
+
+    auto values = std::vector<EValue>{};
+
+    // int i=0;
+    for (auto &t : inputs) {
+        values.push_back(t);
+        // printf("Input %d\n", i++);
+        // print_tensor_like_torch(t);
+    }
+
+    // printf("--------------- 0:\n");
+    // print_tensor_like_torch(inputs.at(0), 10, 6); // show up to 4 per dim, 6 decimals
+    // printf("--------------- 1:\n");
+    // print_tensor_like_torch(inputs.at(1), 10, 6); // show up to 4 per dim, 6 decimals
+    // printf("--------------- 2:\n");
+    // print_tensor_like_torch(inputs.at(2), 10, 6); // show up to 4 per dim, 6 decimals
+    // printf("--------------- 3:\n");
+    // print_tensor_like_torch(inputs.at(3), 10, 6); // show up to 4 per dim, 6 decimals
+
+    auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Long);
+
+    int action = output.const_data_ptr<int64_t>()[0];
+    // std::cout << "Predicted action: " << action << "\n";
+
+    // throw std::runtime_error("forced exit");
+    return MMAI::Schema::Action(action);
+};
+
+double TorchModel::getValue(const MMAI::Schema::IState * s) {
+    auto any = s->getSupplementaryData();
+
+    if (version != 13)
+        throwf("unsupported model version: want: 13, have: %d", version);
+
+    if (s->version() != 13)
+        throwf("unsupported IState version: want: 13, have: %d", s->version());
+
+    if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
+    auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
+    if(!err.empty())
+        throwf("anycast failed: %s", err);
+
+    const auto *sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
+
+    if (sup->getIsBattleEnded())
+        return 0.0;
+
+    auto [inputs, size_idx] = prepareInputsV13(s, sup);
+    auto values = std::vector<EValue>{};
+    for (auto &t : inputs)
+        values.push_back(t);
+
+    auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Float);
+    auto value = output.const_data_ptr<float>()[0];
+    std::cout << "Predicted value: " << value << "\n";
+
+    return value;
+}
+
+} // namespace MMAI::BAI
