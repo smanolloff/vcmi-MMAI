@@ -1,17 +1,18 @@
+// Hack preventing MSVC LNK2005 error for multiply defined std::vector::~vector symbols
+// My guess is that CAddInfo causes this by publicly inheriting std::vector
+#pragma message("PRE-CPP - INSTANTIATE_CBonusTypeHandler_HERE?")
+#include "lib/CBonusTypeHandler.h"
+#include "lib/bonuses/Bonus.h"
+#include "StdInc.h"
+#pragma message("POST-CPP - INSTANTIATE_CBonusTypeHandler_HERE?")
+
 #include <algorithm>
 #include <executorch/extension/tensor/tensor_ptr.h>
 #include <numeric>
 #include <stdexcept>
 #include <executorch/runtime/platform/runtime.h>
 
-#include "StdInc.h"
-
 #include "TorchModel.h"
-
-// Hack preventing MSVC LNK2005 error for multiply defined std::vector::~vector symbols
-// My guess is that CAddInfo causes this by publicly inheriting std::vector
-// #include "lib/CBonusTypeHandler.h"
-// #include "lib/bonuses/Bonus.h"
 
 // stringize helpers
 #define ET_STR1(x) #x
