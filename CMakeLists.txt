@@ -91,6 +91,7 @@ set(MMAI_FILES
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
 option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
 set(MMAI_EXECUTORCH_INSTALL_DIR "" CACHE PATH "Path to executorch v0.7.0 install directory")
+set(EXECUTORCH_LIBRARIES "")
 
 #[[
 About the MMAI_EXECUTORCH_INSTALL_DIR flag:
@@ -163,6 +164,13 @@ endif()
 
 function(force_link_static TARGET LIBDIR)
   foreach(lib IN LISTS ARGN)
+    if(NOT lib IN_LIST EXECUTORCH_LIBRARIES)
+      message(STATUS "force_link_static: skip ${lib} (not in EXECUTORCH_LIBRARIES)")
+      continue()
+    endif()
+
+    message(STATUS "force_link_static: ${lib}")
+
     # MSVC uses foo.lib, others use libfoo.a
     set(_path "${LIBDIR}/$<IF:$<BOOL:${MSVC}>,,lib>${lib}$<IF:$<BOOL:${MSVC}>,.lib,.a>")
     target_link_libraries(${TARGET} PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,${_path}>)
@@ -170,13 +178,14 @@ function(force_link_static TARGET LIBDIR)
 endfunction()
 
 set(_force_libs
-  extension_data_loader
-  extension_tensor
-  extension_flat_tensor
+  # extension_data_loader
+  # extension_tensor
+  # extension_flat_tensor
   xnnpack_backend
   optimized_kernels
   quantized_kernels
-  portable_ops_lib)
+  # portable_ops_lib
+)
 
 set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
 list(REMOVE_ITEM _nonforce_libs ${_force_libs})
