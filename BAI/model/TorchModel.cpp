@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <executorch/runtime/platform/runtime.h>
 
-#include <vstd/CLoggerBase.h>
+#include "StdInc.h"
 
 #include "TorchModel.h"
 
