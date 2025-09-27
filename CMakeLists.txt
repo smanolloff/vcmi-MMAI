@@ -192,8 +192,8 @@ message(STATUS "_nonforce_libs: ${_nonforce_libs}")
 message(STATUS "MMAI_LIBS: ${MMAI_LIBS}")
 
 force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${_force_libs})
-target_link_libraries(MMAI PUBLIC ${_nonforce_libs})
-target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
+target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
+target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})
 
