@@ -56,3 +56,49 @@ index 4f9a74ec36..00e5912921 100755
  # Copyright (c) Meta Platforms, Inc. and affiliates.
  # All rights reserved.
  #
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 57afd26544..7279d05c92 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -732,4 +732,6 @@ if(EXECUTORCH_BUILD_VULKAN)
+   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/backends/vulkan)
+ endif()
+ 
++message(STATUS "(LNK2005-DEBUG: executorch) CMP0091=${CMAKE_POLICY_DEFAULT_CMP0091} CMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}")
++
+ include(Test.cmake)
+diff --git a/extension/tensor/CMakeLists.txt b/extension/tensor/CMakeLists.txt
+index 51f955570d..a0cc294587 100644
+--- a/extension/tensor/CMakeLists.txt
++++ b/extension/tensor/CMakeLists.txt
+@@ -16,6 +16,8 @@ if(NOT EXECUTORCH_ROOT)
+   set(EXECUTORCH_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+ endif()
+ 
++message(STATUS "(LNK2005-DEBUG: extension/tensor) CMP0091=${CMAKE_POLICY_DEFAULT_CMP0091} CMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}")
++
+ list(TRANSFORM _extension_tensor__srcs PREPEND "${EXECUTORCH_ROOT}/")
+ add_library(extension_tensor ${_extension_tensor__srcs})
+ target_link_libraries(extension_tensor executorch_core)
+diff --git a/extension/tensor/tensor_ptr.cpp b/extension/tensor/tensor_ptr.cpp
+index 8a35e83a52..fdc7d4b694 100644
+--- a/extension/tensor/tensor_ptr.cpp
++++ b/extension/tensor/tensor_ptr.cpp
+@@ -12,6 +12,16 @@
+ 
+ #include <executorch/runtime/core/exec_aten/util/tensor_util.h>
+ 
++// stringize helpers
++#define ET_STR1(x) #x
++#define ET_STR(x)  ET_STR1(x)
++#pragma message("[LNK2005-DEBUG: executorch-1] _ITERATOR_DEBUG_LEVEL=" ET_STR(_ITERATOR_DEBUG_LEVEL))
++#if defined(_DEBUG)
++  #pragma message("[LNK2005-DEBUG: executorch-2] _DEBUG=1")
++#else
++  #pragma message("[LNK2005-DEBUG: executorch-2] _DEBUG=0")
++#endif
++
+ namespace executorch {
+ namespace extension {
+ namespace {
+

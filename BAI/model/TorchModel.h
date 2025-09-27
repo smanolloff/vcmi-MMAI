@@ -26,8 +26,6 @@
 #include "schema/v13/types.h"
 #include "schema/base.h"
 
-extern template class DLL_IMPORT std::vector<int>;
-
 namespace MMAI::BAI {
 
 namespace et_ext = executorch::extension;

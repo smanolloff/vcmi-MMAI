@@ -10,8 +10,18 @@
 
 // Hack preventing MSVC LNK2005 error for multiply defined std::vector::~vector symbols
 // My guess is that CAddInfo causes this by publicly inheriting std::vector
-#include "lib/CBonusTypeHandler.h"
-#include "lib/bonuses/Bonus.h"
+// #include "lib/CBonusTypeHandler.h"
+// #include "lib/bonuses/Bonus.h"
+
+// stringize helpers
+#define ET_STR1(x) #x
+#define ET_STR(x)  ET_STR1(x)
+#pragma message("[LNK2005-DEBUG: executorch-1] _ITERATOR_DEBUG_LEVEL=" ET_STR(_ITERATOR_DEBUG_LEVEL))
+#if defined(_DEBUG)
+  #pragma message("[LNK2005-DEBUG: executorch-2] _DEBUG=1")
+#else
+  #pragma message("[LNK2005-DEBUG: executorch-2] _DEBUG=0")
+#endif
 
 namespace MMAI::BAI {
 

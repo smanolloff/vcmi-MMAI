@@ -19,17 +19,21 @@ offending code is in lib/CBonusTypeHandler.h:
 
 - tried force_load on as few libs as possible - no effect
 - tried private linking in MMAI CMakeLists - no effect
-- WIP: tried __declspec(dllexport)
-    https://github.com/smanolloff/vcmi/actions/runs/18061976810/job/51399513794
-- WIP: tried CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL
-    
+- tried __declspec(dllexport) aka. DLL_IMPORT - no effect
+- tried CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL - no effect
+- WIP: added cmake message(STATUS ..) and #pragma message() in MMAI and in executorch to see the values of
+    MSVC_RUNTIME_LIBRARY
+    _ITERATOR_DEBUG_LEVEL
+    etc.
+
 
 **** msvs-x86 ****
 executorch/runtime/platform/compat_unistd.h(16,10): fatal  error : 'unistd.h' file not found
 XXX: TEMPORARY disabled applying windows-x86.patch as it conflicts with windows.patch debug statements
 
-- WIP: fix SIZE_T argument error; fix overflow warnings
-    - https://github.com/smanolloff/vcmi/actions/runs/18061976810/job/51399513794
+- fix SIZE_T argument error; fix overflow warnings
+-> OK, but now I reached the LNK2005 error
+...
 
 **** msvc-arm64 ****
 FAILED: bin/AI/MMAI.dll bin/AI/MMAI.lib
