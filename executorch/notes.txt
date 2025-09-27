@@ -18,15 +18,20 @@ offending code is in lib/CBonusTypeHandler.h:
     #endif
 
 - tried force_load on as few libs as possible - no effect
-TODO
+- tried private linking in MMAI CMakeLists - no effect
+- WIP: tried __declspec(dllexport)
+    https://github.com/smanolloff/vcmi/actions/runs/18061976810/job/51399513794
+- WIP: tried CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>DLL
+    
 
 **** msvs-x86 ****
 executorch/runtime/platform/compat_unistd.h(16,10): fatal  error : 'unistd.h' file not found
 XXX: TEMPORARY disabled applying windows-x86.patch as it conflicts with windows.patch debug statements
 
 - WIP: fix SIZE_T argument error; fix overflow warnings
+    - https://github.com/smanolloff/vcmi/actions/runs/18061976810/job/51399513794
 
-**** msvs-arm64 ****
+**** msvc-arm64 ****
 FAILED: bin/AI/MMAI.dll bin/AI/MMAI.lib
 C:\Windows\system32\cmd.exe /C "cd . && "C:\Program Files\CMake\bin\cmake.exe" -E vs_link_dll --msvc-ver=1944 --intdir=AI\MMAI\CMakeFiles\MMAI.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100261~1.0\arm64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100261~1.0\arm64\mt.exe --manifests  -- C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\HOSTAR~1\arm64\link.exe /nologo @CMakeFiles\MMAI.rsp  /out:bin\AI\MMAI.dll /implib:bin\AI\MMAI.lib /pdb:bin\AI\MMAI.pdb /dll /version:0.0 /machine:ARM64 /debug /INCREMENTAL && cd ."
 LINK Pass 1: command "C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\HOSTAR~1\arm64\link.exe /nologo @CMakeFiles\MMAI.rsp /out:bin\AI\MMAI.dll /implib:bin\AI\MMAI.lib /pdb:bin\AI\MMAI.pdb /dll /version:0.0 /machine:ARM64 /debug /INCREMENTAL /MANIFEST /MANIFESTFILE:AI\MMAI\CMakeFiles\MMAI.dir/intermediate.manifest AI\MMAI\CMakeFiles\MMAI.dir/manifest.res" failed (exit code 1104) with the following output:
@@ -39,6 +44,9 @@ LINK : fatal error LNK1104: cannot open file 'sleef.lib'
 - try disabling OPTIMIZED kernels (which seem to require sleef as per docs/source/kernel-library-overview.md)
 -> XNNPACK.lib(gemm-config.obj) : error LNK2019: unresolved external symbol xnn_f16_gemm_minmax_ukernel_1x16__asm_aarch64_neonfp16arith_ld64 referenced in function init_f16_gemm_config
 - WIP: XNNPACK_ENABLE_ASSEMBLY=OFF
+-> OK
+
+
 
 **** android32 ****
 ld: error: undefined symbol: __read_chk
@@ -47,6 +55,7 @@ ld: error: undefined symbol: __read_chk
 - tried 2 different ways to disable FORTIFY for cpuinfo - only this one seems to work:
     +++ b/backends/xnnpack/third-party/cpuinfo/CMakeLists.txt
     target_compile_options(cpuinfo PRIVATE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0)
+-> OK
 
 ====== EXECUTORCH targets & dependencies:
 
