@@ -178,13 +178,10 @@ function(force_link_static TARGET LIBDIR)
 endfunction()
 
 set(_force_libs
-  # extension_data_loader
-  # extension_tensor
-  # extension_flat_tensor
   xnnpack_backend
   optimized_kernels
   quantized_kernels
-  # portable_ops_lib
+  portable_ops_lib
 )
 
 set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
