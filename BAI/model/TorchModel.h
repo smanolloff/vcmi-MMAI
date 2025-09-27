@@ -17,9 +17,9 @@
 #pragma once
 
 #pragma message("PRE-HEADER - INSTANTIATE_CBonusTypeHandler_HERE?")
+#include "StdInc.h"
 #include "lib/CBonusTypeHandler.h"
 #include "lib/bonuses/Bonus.h"
-#include "StdInc.h"
 #pragma message("POST-HEADER - INSTANTIATE_CBonusTypeHandler_HERE?")
 
 #include <executorch/extension/data_loader/file_data_loader.h>

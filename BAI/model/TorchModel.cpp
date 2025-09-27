@@ -1,9 +1,9 @@
 // Hack preventing MSVC LNK2005 error for multiply defined std::vector::~vector symbols
 // My guess is that CAddInfo causes this by publicly inheriting std::vector
 #pragma message("PRE-CPP - INSTANTIATE_CBonusTypeHandler_HERE?")
+#include "StdInc.h"
 #include "lib/CBonusTypeHandler.h"
 #include "lib/bonuses/Bonus.h"
-#include "StdInc.h"
 #pragma message("POST-CPP - INSTANTIATE_CBonusTypeHandler_HERE?")
 
 #include <algorithm>
