@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <executorch/extension/tensor/tensor_ptr.h>
+#include <numeric>
 #include <stdexcept>
 #include <executorch/runtime/platform/runtime.h>
 
