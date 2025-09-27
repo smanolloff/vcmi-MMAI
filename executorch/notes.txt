@@ -1,0 +1,15 @@
+====== EXECUTORCH targets & dependencies:
+
+    ~/Projects/executorch/tools/cmake/cmake_deps.toml
+
+==== threadpool stuff
+kernels_optimized always links against extension_threadpool:
+    ~/Projects/executorch/kernels/optimized/CMakeLists.txt
+Maybe that is the reason for the error in msvc ARM64 builds:
+    FAILED: bin/AI/MMAI.dll bin/AI/MMAI.lib 
+    C:\Windows\system32\cmd.exe /C "cd . && "C:\Program Files\CMake\bin\cmake.exe" -E vs_link_dll --msvc-ver=1944 --intdir=AI\MMAI\CMakeFiles\MMAI.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100261~1.0\arm64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100261~1.0\arm64\mt.exe --manifests  -- C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\HOSTAR~1\arm64\link.exe /nologo @CMakeFiles\MMAI.rsp  /out:bin\AI\MMAI.dll /implib:bin\AI\MMAI.lib /pdb:bin\AI\MMAI.pdb /dll /version:0.0 /machine:ARM64 /debug /INCREMENTAL && cd ."
+    LINK Pass 1: command "C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\HOSTAR~1\arm64\link.exe /nologo @CMakeFiles\MMAI.rsp /out:bin\AI\MMAI.dll /implib:bin\AI\MMAI.lib /pdb:bin\AI\MMAI.pdb /dll /version:0.0 /machine:ARM64 /debug /INCREMENTAL /MANIFEST /MANIFESTFILE:AI\MMAI\CMakeFiles\MMAI.dir/intermediate.manifest AI\MMAI\CMakeFiles\MMAI.dir/manifest.res" failed (exit code 1104) with the following output:
+    LINK : fatal error LNK1104: cannot open file 'extension_threadpool.lib'
+(although I have set -DEXECUTORCH_BUILD_PTHREADPOOL=OFF when building executorch)
+Maybe I should also set -DEXECUTORCH_BUILD_KERNELS_OPTIMIZED=OFF ?
+

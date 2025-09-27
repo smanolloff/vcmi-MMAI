@@ -1,4 +1,4 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
+diff --git a/backends/xnnpack/third-party/XNNPACK/CMakeLists.txt b/backends/xnnpack/third-party/XNNPACK/CMakeLists.txt
 index 94bcad92e3..53f2425cee 100644
 --- a/backends/xnnpack/third-party/XNNPACK/CMakeLists.txt
 +++ b/backends/xnnpack/third-party/XNNPACK/CMakeLists.txt

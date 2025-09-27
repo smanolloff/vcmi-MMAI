@@ -31,4 +31,16 @@ index 9fbab17728..6179fd3994 100644
        elseif("${ANDROID_ABI}" STREQUAL "x86_64")
          set(target_platforms_arg "--target-platforms=shim_et//:android-x86_64")
        else()
-
+diff --git a/backends/xnnpack/third-party/cpuinfo/CMakeLists.txt b/backends/xnnpack/third-party/cpuinfo/CMakeLists.txt
+index aedc983..b211554 100644
+--- a/backends/xnnpack/third-party/cpuinfo/CMakeLists.txt
++++ b/backends/xnnpack/third-party/cpuinfo/CMakeLists.txt
+@@ -317,6 +317,8 @@ ELSE()
+   TARGET_COMPILE_DEFINITIONS(cpuinfo INTERFACE CPUINFO_SUPPORTED_PLATFORM=0)
+ ENDIF()
+ 
++TARGET_COMPILE_DEFINITIONS(cpuinfo PRIVATE _FORTIFY_SOURCE=0 __BIONIC_NO_FORTIFY)
++
+ ADD_LIBRARY(${PROJECT_NAME}::cpuinfo ALIAS cpuinfo)
+ 
+ # support find_package(cpuinfo CONFIG)
