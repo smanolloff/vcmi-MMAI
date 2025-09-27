@@ -1,9 +1,36 @@
 diff --git a/extension/threadpool/threadpool.cpp b/extension/threadpool/threadpool.cpp
-index 5fee732b05..9e659cdac7 100644
+index 5fee732b05..1e3415a40f 100644
 --- a/extension/threadpool/threadpool.cpp
 +++ b/extension/threadpool/threadpool.cpp
-@@ -116,7 +116,7 @@ ThreadPool* get_threadpool() {
+@@ -114,9 +114,34 @@ ThreadPool* get_threadpool() {
+   num_threads = std::min(num_threads, tsan_thread_limit);
+   static auto threadpool = std::make_unique<ThreadPool>(num_threads);
  
++#if defined(WIN32)
++#  pragma message("SIMO: (2) WIN32 is defined")
++#else
++#  pragma message("SIMO: (2) WIN32 is NOT defined")
++#endif
++
++#if defined(_WIN32)
++#  pragma message("SIMO: (2) _WIN32 is defined")
++#else
++#  pragma message("SIMO: (2) _WIN32 is NOT defined")
++#endif
++
++#if defined(WIN64)
++#  pragma message("SIMO: (2) WIN64 is defined")
++#else
++#  pragma message("SIMO: (2) WIN64 is NOT defined")
++#endif
++
++#if defined(_WIN64)
++#  pragma message("SIMO: (2) _WIN64 is defined")
++#else
++#  pragma message("SIMO: (2) _WIN64 is NOT defined")
++#endif
++
++
  // Inheriting from old threadpool to get around segfault issue
  // commented above at child_atfork
 -#if !(defined(WIN32))
@@ -11,8 +38,47 @@ index 5fee732b05..9e659cdac7 100644
    // @lint-ignore CLANGTIDY facebook-hte-std::once_flag
    static std::once_flag flag;
    // @lint-ignore CLANGTIDY facebook-hte-std::call_once
-diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
-index 7456d749f3..8da7644aa9 100644
+diff --git a/runtime/platform/compat_unistd.h b/runtime/platform/compat_unistd.h
+index c8bc486670..2d26816ec5 100644
+--- a/runtime/platform/compat_unistd.h
++++ b/runtime/platform/compat_unistd.h
+@@ -12,12 +12,32 @@
+  */
+ #pragma once
+ 
+-#if defined(_WIN32) && !defined(_WIN64)
+-#error \
+-    "You're trying to build ExecuTorch with a too old version of Windows. We need Windows 64-bit."
++#if defined(WIN32)
++#  pragma message("SIMO: (1) WIN32 is defined")
++#else
++#  pragma message("SIMO: (1) WIN32 is NOT defined")
++#endif
++
++#if defined(_WIN32)
++#  pragma message("SIMO: (1) _WIN32 is defined")
++#else
++#  pragma message("SIMO: (1) _WIN32 is NOT defined")
+ #endif
+ 
+-#if !defined(_WIN64)
++#if defined(WIN64)
++#  pragma message("SIMO: (1) WIN64 is defined")
++#else
++#  pragma message("SIMO: (1) WIN64 is NOT defined")
++#endif
++
++#if defined(_WIN64)
++#  pragma message("SIMO: (1) _WIN64 is defined")
++#else
++#  pragma message("SIMO: (1) _WIN64 is NOT defined")
++#endif
++
++
++#if !defined(_WIN64) && !defined(_WIN32)
+ #include <unistd.h>
+ #else
+ #include <io.h>
 --- a/third-party/CMakeLists.txt
 +++ b/third-party/CMakeLists.txt
 @@ -30,6 +30,9 @@ ExternalProject_Add(
