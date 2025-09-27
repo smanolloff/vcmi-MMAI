@@ -79,6 +79,8 @@ index c8bc486670..2d26816ec5 100644
  #include <unistd.h>
  #else
  #include <io.h>
+diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
+index 7456d749f3..8da7644aa9 100644
 --- a/third-party/CMakeLists.txt
 +++ b/third-party/CMakeLists.txt
 @@ -30,6 +30,9 @@ ExternalProject_Add(
