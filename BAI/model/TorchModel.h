@@ -16,12 +16,6 @@
 
 #pragma once
 
-#pragma message("PRE-HEADER - INSTANTIATE_CBonusTypeHandler_HERE?")
-#include "StdInc.h"
-#include "lib/CBonusTypeHandler.h"
-#include "lib/bonuses/Bonus.h"
-#pragma message("POST-HEADER - INSTANTIATE_CBonusTypeHandler_HERE?")
-
 #include <executorch/extension/data_loader/file_data_loader.h>
 #include <executorch/extension/memory_allocator/malloc_memory_allocator.h>
 #include <executorch/extension/tensor/tensor.h>

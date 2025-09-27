@@ -11,7 +11,6 @@
             "hidden": true,
             "generator": "Unix Makefiles",
             "cacheVariables": {
-                "CMAKE_POLICY_DEFAULT_CMP0091": "NEW",
                 "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0",
                 "EXECUTORCH_ENABLE_PROGRAM_VERIFICATION": "OFF",
                 "EXECUTORCH_BUILD_SIZE_TEST": "OFF",
@@ -62,7 +61,6 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/install-debug",
-                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL",
                 "EXECUTORCH_BUILD_DEVTOOLS": "ON",
                 "EXECUTORCH_ENABLE_EVENT_TRACER": "ON",
                 "EXECUTORCH_ENABLE_LOGGING": "ON",
@@ -76,7 +74,6 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/install-release",
-                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
                 "EXECUTORCH_BUILD_DEVTOOLS": "OFF",
                 "EXECUTORCH_ENABLE_EVENT_TRACER": "OFF",
                 "EXECUTORCH_ENABLE_LOGGING": "OFF",
