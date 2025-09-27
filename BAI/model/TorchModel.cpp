@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <executorch/runtime/platform/runtime.h>
 
+#include <vstd/CLoggerBase.h>
+
 #include "TorchModel.h"
 
 namespace MMAI::BAI {
