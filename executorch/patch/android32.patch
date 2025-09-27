@@ -1,16 +1,3 @@
-diff --git a/extension/threadpool/threadpool.cpp b/extension/threadpool/threadpool.cpp
-index 5fee732b05..9e659cdac7 100644
---- a/extension/threadpool/threadpool.cpp
-+++ b/extension/threadpool/threadpool.cpp
-@@ -116,7 +116,7 @@ ThreadPool* get_threadpool() {
- 
- // Inheriting from old threadpool to get around segfault issue
- // commented above at child_atfork
--#if !(defined(WIN32))
-+#if !(defined(WIN32) || defined(_WIN32))
-   // @lint-ignore CLANGTIDY facebook-hte-std::once_flag
-   static std::once_flag flag;
-   // @lint-ignore CLANGTIDY facebook-hte-std::call_once
 diff --git a/shim_et/BUCK b/shim_et/BUCK
 index a1a9bdaf65..e7f2fa39a2 100644
 --- a/shim_et/BUCK

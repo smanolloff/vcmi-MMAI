@@ -23,3 +23,6 @@ Maybe I should also set -DEXECUTORCH_BUILD_KERNELS_OPTIMIZED=OFF ?
     A/ -DEXECUTORCH_BUILD_KERNELS_OPTIMIZED=OFF
     B/ patch cpuinfo to disable FORTIFY SOURCE
         target_compile_definitions(cpuinfo PRIVATE _FORTIFY_SOURCE=0 __BIONIC_NO_FORTIFY)
+
+...but XNNPACK also needs extension_threadpool
+    backends/xnnpack/runtime/XNNCompiler.cpp:1908
