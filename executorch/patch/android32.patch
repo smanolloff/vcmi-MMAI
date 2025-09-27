@@ -44,3 +44,37 @@ index aedc983..b211554 100644
  ADD_LIBRARY(${PROJECT_NAME}::cpuinfo ALIAS cpuinfo)
  
  # support find_package(cpuinfo CONFIG)
+diff --git a/shim/xplat/executorch/kernels/optimized/lib_defs.bzl b/shim/xplat/executorch/kernels/optimized/lib_defs.bzl
+index af62407..4c7009f 100644
+--- a/shim/xplat/executorch/kernels/optimized/lib_defs.bzl
++++ b/shim/xplat/executorch/kernels/optimized/lib_defs.bzl
+@@ -86,6 +86,12 @@ def define_libs():
+                     "fbsource//third-party/sleef:sleef_arm",
+                 ],
+             ),
++            (
++                "^android-arm.*v7a.*$",
++                [
++                    "fbsource//third-party/sleef:sleef_arm"
++                ],
++            ),
+         ],
+     )
+ 
+diff --git a/xplat/executorch/kernels/optimized/op_registration_util.bzl b/xplat/executorch/kernels/optimized/op_registration_util.bzl
+index c9fe4ec..0a4c272 100644
+--- a/shim/xplat/executorch/kernels/optimized/op_registration_util.bzl
++++ b/shim/xplat/executorch/kernels/optimized/op_registration_util.bzl
+@@ -109,6 +109,12 @@ def define_op_library(name, deps):
+                     "fbsource//third-party/sleef:sleef_arm",
+                 ],
+             ),
++            (
++                "^android-arm.*v7a.*$",
++                [
++                    "fbsource//third-party/sleef:sleef_arm"
++                ],
++            ),
+         ],
+         # link_whole is necessary because the operators register themselves
+         # via static initializers that run at program startup.

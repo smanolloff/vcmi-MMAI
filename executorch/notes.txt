@@ -27,7 +27,7 @@ LINK : fatal error LNK1104: cannot open file 'sleef.lib'
 ld: error: undefined symbol: __read_chk
 >>> referenced by unistd.h:187 (/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/bits/fortify/unistd.h:187)
 
-
+- tried 2 different ways to disable FORTIFY for cpuinfo - no effect
 
 
 ====== EXECUTORCH targets & dependencies:
