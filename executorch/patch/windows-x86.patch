@@ -1,8 +1,8 @@
 diff --git a/runtime/platform/compat_unistd.h b/runtime/platform/compat_unistd.h
-index c8bc486670..1cb1290bd2 100644
+index c8bc486670..bd1c30f19f 100644
 --- a/runtime/platform/compat_unistd.h
 +++ b/runtime/platform/compat_unistd.h
-@@ -12,11 +12,6 @@
+@@ -12,12 +12,7 @@
   */
  #pragma once
  
@@ -11,6 +11,8 @@ index c8bc486670..1cb1290bd2 100644
 -    "You're trying to build ExecuTorch with a too old version of Windows. We need Windows 64-bit."
 -#endif
 -
- #if !defined(_WIN64)
+-#if !defined(_WIN64)
++#if !defined(_WIN64) && !defined(_WIN32)
  #include <unistd.h>
  #else
+ #include <io.h>
