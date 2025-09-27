@@ -847,7 +847,8 @@ namespace MMAI::BAI::V13 {
 
                 if (stack) {
                     auto seen = seenstacks.find(stack) != seenstacks.end();
-                    auto &[_, _e, n, _vmax, _p] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
+                    // MSVC mandates constexpr `n` here
+                    constexpr int n = std::get<2>(HEX_ENCODING[EI(HA::STACK_FLAGS1)]);
                     auto flags = std::bitset<n>(stack->getAttr(SA::FLAGS1));
                     sym = std::string(1, stack->getAlias());
                     col = stack->getAttr(SA::SIDE) ? bluecol : redcol;
@@ -1040,9 +1041,11 @@ namespace MMAI::BAI::V13 {
                     std::string value = "";
 
                     if (stack) {
-                        auto &[_, _e, n, _vmax, _p] = HEX_ENCODING.at(EI(HA::STACK_FLAGS1));
-                        auto flags1 = std::bitset<n>(stack->getAttr(SA::FLAGS1));
-                        auto flags2 = std::bitset<n>(stack->getAttr(SA::FLAGS2));
+                        // MSVC mandates constexpr `n` here
+                        constexpr int n1 = std::get<2>(HEX_ENCODING[EI(HA::STACK_FLAGS1)]);
+                        constexpr int n2 = std::get<2>(HEX_ENCODING[EI(HA::STACK_FLAGS2)]);
+                        auto flags1 = std::bitset<n1>(stack->getAttr(SA::FLAGS1));
+                        auto flags2 = std::bitset<n2>(stack->getAttr(SA::FLAGS2));
 
                         color = stack->getAttr(SA::SIDE) ? bluecol : redcol;
                         // } else if (a == SA::ACTSTATE) {

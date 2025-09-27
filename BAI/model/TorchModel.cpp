@@ -499,7 +499,6 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Long);
 
     int action = output.const_data_ptr<int64_t>()[0];
-    // std::cout << "Predicted action: " << action << "\n";
 
     // throw std::runtime_error("forced exit");
     return MMAI::Schema::Action(action);
@@ -531,7 +530,6 @@ double TorchModel::getValue(const MMAI::Schema::IState * s) {
 
     auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Float);
     auto value = output.const_data_ptr<float>()[0];
-    std::cout << "Predicted value: " << value << "\n";
 
     return value;
 }
