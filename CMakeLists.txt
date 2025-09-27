@@ -181,6 +181,10 @@ set(_force_libs
 set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
 list(REMOVE_ITEM _nonforce_libs ${_force_libs})
 
+message(STATUS "_force_libs: ${_force_libs}")
+message(STATUS "_nonforce_libs: ${_nonforce_libs}")
+message(STATUS "MMAI_LIBS: ${MMAI_LIBS}")
+
 force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${_force_libs})
 target_link_libraries(MMAI PUBLIC ${_nonforce_libs})
 target_link_libraries(MMAI PUBLIC ${MMAI_LIBS})
