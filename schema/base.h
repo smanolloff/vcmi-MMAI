@@ -24,12 +24,10 @@
 #include <boost/core/demangle.hpp>
 
 // Import + Export macro declarations
-
-#if defined(VCMI_WINDOWS)
-#  ifdef VCMI_DLL_STATIC
-#    define MMAI_IMPORT
-#    define MMAI_EXPORT
-#  elif defined(__GNUC__)
+// If MMAI_DLL is defined => this header is imported from VCMI's MMAI lib.
+// Otherwise, it is imported from vcmi-gym.
+#if defined(_WIN32)
+#  if defined(__GNUC__)
 #    define MMAI_IMPORT __attribute__((dllimport))
 #    define MMAI_EXPORT __attribute__((dllexport))
 #  else
@@ -39,7 +37,7 @@
 #  define ELF_VISIBILITY
 #else
 #  ifdef __GNUC__
-#    define MMAI_IMPORT	__attribute__ ((visibility("default")))
+#    define MMAI_IMPORT __attribute__ ((visibility("default")))
 #    define MMAI_EXPORT __attribute__ ((visibility("default")))
 #    define ELF_VISIBILITY __attribute__ ((visibility("default")))
 #  endif
