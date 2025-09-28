@@ -80,8 +80,9 @@ namespace {
     // all_sizes: S x LT_COUNT x 2, where [s][l] = {emax, kmax}
     BuildOutputs build_flattened(
         const std::array<IndexContainer, LT_COUNT>& containers,
-        const std::vector<std::vector<std::vector<int64_t>>>& all_sizes)
-    {
+        const std::vector<std::vector<std::vector<int64_t>>>& all_sizes,
+        int bucket
+    ) {
         BuildOutputs out{};
 
         // Required per-linktype capacities from data
@@ -111,6 +112,7 @@ namespace {
                     ok = false;
                 }
             }
+            ok = ok && (bucket == -1 || s == bucket);
             if (ok) {
                 chosen = s;
                 for (int l = 0; l < LT_COUNT; ++l) {
@@ -191,6 +193,92 @@ namespace {
 
         return out;
     }
+
+
+
+
+    static inline const char* dtype_name(ScalarType dt) {
+        switch (dt) {
+            case ScalarType::Float:  return "float32";
+            case ScalarType::Double: return "float64";
+            case ScalarType::Long:   return "int64";
+            case ScalarType::Int:    return "int32";
+            case ScalarType::Short:  return "int16";
+            case ScalarType::Byte:   return "uint8";
+            case ScalarType::Char:   return "int8";
+            default:                 return "unknown";
+        }
+    }
+
+    template <typename T>
+    static void print_like_torch_impl(const TensorPtr& t, int max_per_dim, int float_prec) {
+        const auto& sizes = t->sizes();                 // std::vector<int64_t>
+        const int D = static_cast<int>(sizes.size());
+        std::vector<int64_t> strides(D, 1);
+        for (int i = D - 2; i >= 0; --i) strides[i] = strides[i + 1] * sizes[i + 1];
+
+        const T* data = t->const_data_ptr<T>();
+
+        auto print_dim = [&](auto&& self, int dim, int64_t offset, int indent) -> void {
+            std::cout << "[";
+            if (dim == D - 1) {
+                int64_t n = sizes[dim];
+                int64_t show = std::min<int64_t>(n, max_per_dim);
+                for (int64_t i = 0; i < show; ++i) {
+                    if (i) std::cout << ", ";
+                    if constexpr (std::is_floating_point<T>::value) {
+                        std::cout << std::fixed << std::setprecision(float_prec) << data[offset + i];
+                    } else {
+                        std::cout << data[offset + i];
+                    }
+                }
+                if (show < n) std::cout << ", ...";
+                std::cout << "]";
+                return;
+            }
+            int64_t n = sizes[dim];
+            int64_t show = std::min<int64_t>(n, max_per_dim);
+            for (int64_t i = 0; i < show; ++i) {
+                if (i) std::cout << ",\n" << std::string(indent + 2, ' ');
+                self(self, dim + 1, offset + i * strides[dim], indent + 2);
+            }
+            if (show < n) std::cout << ",\n" << std::string(indent + 2, ' ') << "...";
+            std::cout << "]";
+        };
+
+        std::cout << "tensor(";
+        if (D == 0) {
+            if constexpr (std::is_floating_point<T>::value)
+                std::cout << std::fixed << std::setprecision(float_prec) << *data;
+            else
+                std::cout << *data;
+        } else {
+            print_dim(print_dim, 0, 0, 0);
+        }
+        std::cout << ", dtype=" << dtype_name(t->scalar_type()) << ", shape=[";
+        for (int i = 0; i < D; ++i) { if (i) std::cout << ","; std::cout << sizes[i]; }
+        std::cout << "])\n";
+    }
+
+    inline void print_tensor_like_torch(const TensorPtr& t,
+                                        int max_per_dim = 8,
+                                        int float_precision = 4) {
+        switch (t->scalar_type()) {
+            case ScalarType::Float:  print_like_torch_impl<float>(t,  max_per_dim, float_precision); break;
+            case ScalarType::Double: print_like_torch_impl<double>(t, max_per_dim, float_precision); break;
+            case ScalarType::Long:   print_like_torch_impl<int64_t>(t, max_per_dim, 0); break;
+            case ScalarType::Int:    print_like_torch_impl<int32_t>(t, max_per_dim, 0); break;
+            case ScalarType::Short:  print_like_torch_impl<int16_t>(t, max_per_dim, 0); break;
+            case ScalarType::Byte:   print_like_torch_impl<uint8_t>(t, max_per_dim, 0); break;
+            case ScalarType::Char:   print_like_torch_impl<int8_t>(t, max_per_dim, 0); break;
+            default: throw std::runtime_error("print_tensor_like_torch: unsupported dtype");
+        }
+    }
+
+
+
+
+
 }
 
 TorchModel::TorchModel(std::string &path)
@@ -337,8 +425,8 @@ Tensor TorchModel::call(
     if (getoutRes != et_run::Error::Ok)
         throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
 
-    if (outputs.size() != 1)
-        throwf("call: %s: outputs.size(): want: 1, have: %zu", method_name, outputs.size());
+    // if (outputs.size() != 1)
+    //     throwf("call: %s: outputs.size(): want: 1, have: %zu", method_name, outputs.size());
 
     auto out = outputs.at(0);
 
@@ -374,7 +462,8 @@ Schema::Side TorchModel::getSide() {
 
 std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
     const MMAI::Schema::IState * s,
-    const MMAI::Schema::V13::ISupplementaryData* sup
+    const MMAI::Schema::V13::ISupplementaryData* sup,
+    int bucket
 ) {
     // XXX: if needed, support for other versions may be added via conditionals
     if (version != 13)
@@ -422,7 +511,7 @@ std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
     if (count != LT_COUNT)
         throwf("unexpected links count: want: %d, have: %d", LT_COUNT % count);
 
-    auto build = build_flattened(containers, all_sizes);
+    auto build = build_flattened(containers, all_sizes, bucket);
 
     const auto *state = s->getBattlefieldState();
     auto estate = std::vector<float>(state->size());
@@ -511,6 +600,94 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Long);
 
     int action = output.const_data_ptr<int64_t>()[0];
+
+
+
+    // XXX: debug call _predict_with_logits3
+    {
+        std::string method_name = "_predict_with_logits3";
+        maybeLoadMethod(method_name);
+        auto [xxx, size_idx] = prepareInputsV13(s, sup, 3);
+        auto values = std::vector<EValue>{};
+
+        // int i=0;
+        for (auto &t : xxx) {
+            values.push_back(t);
+            // printf("Input %d\n", i++);
+            // print_tensor_like_torch(t);
+        }
+
+        auto &input = values;
+        auto& method = methods.at(method_name).method;
+        auto& inputs = methods.at(method_name).inputs;
+
+        if (input.size() != inputs.size())
+            throwf("call: %s: input size: %zu does not match method input size: %zu", method_name, input.size(), inputs.size());
+
+        for (auto i = 0; i < input.size(); ++i) {
+            inputs[i] = input[i];
+        }
+
+        auto setRes = method->set_inputs(executorch::aten::ArrayRef<EValue>(inputs.data(), inputs.size()));
+        if (setRes != et_run::Error::Ok)
+            throwf("set_inputs: %s: error code: %d", method_name, static_cast<int>(setRes));
+
+        auto execRes = method->execute();
+        if (setRes != et_run::Error::Ok)
+            throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
+
+        const auto outputs_size = method->outputs_size();
+        auto outputs = std::vector<EValue>(outputs_size);
+
+        // Copy data to outputs
+        auto getoutRes = method->get_outputs(outputs.data(), outputs_size);
+        if (getoutRes != et_run::Error::Ok)
+            throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
+
+        // if (outputs.size() != 1)
+        //     throwf("call: %s: outputs.size(): want: 1, have: %zu", method_name, outputs.size());
+
+        auto action = outputs.at(0);
+        auto act0_logits = outputs.at(1);
+        auto hex1_logits = outputs.at(2);
+        auto hex2_logits = outputs.at(3);
+        auto action_table = outputs.at(4);
+
+        auto t_action = action.toTensor();
+        auto t_act0_logits = act0_logits.toTensor();
+        auto t_hex1_logits = hex1_logits.toTensor();
+        auto t_hex2_logits = hex2_logits.toTensor();
+        auto t_action_table = action_table.toTensor();
+
+        std::cout << "-------------------- t_action:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_action), 5);
+
+        std::cout << "-------------------- t_act0_logits:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_act0_logits), 5);
+
+        std::cout << "-------------------- t_hex1_logits:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_hex1_logits), 5);
+
+        std::cout << "-------------------- t_hex2_logits:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_hex2_logits), 5);
+
+        std::cout << "-------------------- t_action_table:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_action_table), 5);
+
+        // BREAKPOINT HERE
+
+        auto out = outputs.at(0);
+
+        if (!out.isTensor())
+            throwf("call: %s: not a tensor", method_name);
+
+        auto t = out.toTensor();
+    }
+
+
+
+
+
 
     // throw std::runtime_error("forced exit");
     return MMAI::Schema::Action(action);

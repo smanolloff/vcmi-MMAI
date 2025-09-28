@@ -79,7 +79,8 @@ private:
 
     std::pair<std::vector<executorch::extension::TensorPtr>, int> prepareInputsV13(
         const MMAI::Schema::IState * state,
-        const MMAI::Schema::V13::ISupplementaryData* sup
+        const MMAI::Schema::V13::ISupplementaryData* sup,
+        int bucket = -1
     );
 
     Tensor call(
