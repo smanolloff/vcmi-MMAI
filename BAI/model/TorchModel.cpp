@@ -209,30 +209,38 @@ namespace {
 
     static int64_t read_scalar_i64_from_tensor(const TensorPtr& t) {
         ET_CHECK(t->numel() == 1);
+        printf("read_scalar_i64_from_tensor... 1\n");
         auto dt = t->scalar_type();
         if (dt == ScalarType::Long) {
             // Defensive: if only 4 bytes are actually present, read as int32 and widen.
             const void* p = static_cast<const void*>(t->const_data_ptr<uint8_t>());
             // Prefer a real byte-count API if available; otherwise conservative check:
+            printf("read_scalar_i64_from_tensor... 2\n");
             const bool looks_truncated = (alignof(int64_t) > 4) && ((reinterpret_cast<uintptr_t>(p) & 7) != 0);
             if (looks_truncated) { // heuristic
+                printf("read_scalar_i64_from_tensor... 3a\n");
                 return static_cast<int64_t>(*t->const_data_ptr<int32_t>());
             }
+            printf("read_scalar_i64_from_tensor... 3b\n");
             // Safer: attempt both when compiled on Windows
             #if defined(_MSC_VER)
             {
+                printf("read_scalar_i64_from_tensor... 4\n");
                 const int64_t v64 = *t->const_data_ptr<int64_t>();
                 // If v64 looks like duplicated 32-bit halves, prefer the low 32.
                 const uint64_t u64 = static_cast<uint64_t>(v64);
                 const uint32_t hi = static_cast<uint32_t>(u64 >> 32);
                 const uint32_t lo = static_cast<uint32_t>(u64 & 0xFFFFFFFFu);
                 if (hi == lo) return static_cast<int64_t>(static_cast<int32_t>(lo));
+                printf("read_scalar_i64_from_tensor... 5\n");
                 return v64;
             }
             #else
+            printf("read_scalar_i64_from_tensor... 6\n");
             return *t->const_data_ptr<int64_t>();
             #endif
         } else if (dt == ScalarType::Int) {
+            printf("read_scalar_i64_from_tensor... 7\n");
             return static_cast<int64_t>(*t->const_data_ptr<int32_t>());
         } else {
             throw std::runtime_error("unexpected dtype for action tensor");
