@@ -660,19 +660,19 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         auto t_action_table = action_table.toTensor();
 
         std::cout << "-------------------- t_action:";
-        print_tensor_like_torch(std::make_shared<Tensor>(t_action), 5);
+        print_tensor_like_torch(std::make_shared<Tensor>(t_action), 5000);
 
         std::cout << "-------------------- t_act0_logits:";
-        print_tensor_like_torch(std::make_shared<Tensor>(t_act0_logits), 5);
+        print_tensor_like_torch(std::make_shared<Tensor>(t_act0_logits), 5000);
 
         std::cout << "-------------------- t_hex1_logits:";
-        print_tensor_like_torch(std::make_shared<Tensor>(t_hex1_logits), 5);
+        print_tensor_like_torch(std::make_shared<Tensor>(t_hex1_logits), 5000);
 
         std::cout << "-------------------- t_hex2_logits:";
-        print_tensor_like_torch(std::make_shared<Tensor>(t_hex2_logits), 5);
+        print_tensor_like_torch(std::make_shared<Tensor>(t_hex2_logits), 5000);
 
         std::cout << "-------------------- t_action_table:";
-        print_tensor_like_torch(std::make_shared<Tensor>(t_action_table), 5);
+        print_tensor_like_torch(std::make_shared<Tensor>(t_action_table), 5000);
 
         // BREAKPOINT HERE
 
