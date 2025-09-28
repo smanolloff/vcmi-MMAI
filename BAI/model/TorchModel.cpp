@@ -349,13 +349,13 @@ TorchModel::TorchModel(std::string &path)
         throwf("program error code: %d", static_cast<int>(programRes.error()));
     program = std::make_unique<executorch::runtime::Program>(std::move(*programRes));
 
-    auto t_version = call("get_version", 1, ScalarType::Long);
+    auto t_version = call("get_version", 1, ScalarType::Int);
     version = static_cast<int>(t_version.const_data_ptr<int64_t>()[0]);
 
-    auto t_side = call("get_side", 1, ScalarType::Long);
+    auto t_side = call("get_side", 1, ScalarType::Int);
     side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int64_t>()[0]));
 
-    auto t_all_sizes = call("get_all_sizes", 0, ScalarType::Long);
+    auto t_all_sizes = call("get_all_sizes", 0, ScalarType::Int);
 
     // Convert 3-D tensor to vector<vector<int64>>
     auto ndim = t_all_sizes.dim();
@@ -595,9 +595,9 @@ std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
         nbrs.insert(nbrs.end(), nbr.begin(), nbr.end());
 
     auto t_state = et_ext::from_blob(estate.data(), {int(estate.size())}, ScalarType::Float);
-    auto t_ei_flat = et_ext::from_blob(einds.data(), {2, sum_e}, ScalarType::Long);
+    auto t_ei_flat = et_ext::from_blob(einds.data(), {2, sum_e}, ScalarType::Int);
     auto t_ea_flat = et_ext::from_blob(build.ea_flat.data(), {sum_e, 1}, ScalarType::Float);
-    auto t_nbrs_flat = et_ext::from_blob(nbrs.data(), {165, sum_k}, ScalarType::Long);
+    auto t_nbrs_flat = et_ext::from_blob(nbrs.data(), {165, sum_k}, ScalarType::Int);
 
     auto tensors = std::vector<TensorPtr> {
         et_ext::clone_tensor_ptr(t_state),
@@ -649,7 +649,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     // printf("--------------- 3:\n");
     // print_tensor_like_torch(inputs.at(3), 10, 6); // show up to 4 per dim, 6 decimals
 
-    auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Long);
+    auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Int);
 
     int action = output.const_data_ptr<int64_t>()[0];
 
