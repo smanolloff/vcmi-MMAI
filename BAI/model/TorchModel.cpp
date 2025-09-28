@@ -194,8 +194,50 @@ namespace {
         return out;
     }
 
+    static inline size_t element_size(ScalarType dt) {
+        switch (dt) {
+            case ScalarType::Float:  return 4;
+            case ScalarType::Double: return 8;
+            case ScalarType::Long:   return 8;  // expected
+            case ScalarType::Int:    return 4;
+            case ScalarType::Short:  return 2;
+            case ScalarType::Byte:
+            case ScalarType::Char:   return 1;
+            default: throw std::runtime_error("unknown dtype");
+        }
+    }
 
-
+    static int64_t read_scalar_i64_from_tensor(const TensorPtr& t) {
+        ET_CHECK(t->numel() == 1);
+        auto dt = t->scalar_type();
+        if (dt == ScalarType::Long) {
+            // Defensive: if only 4 bytes are actually present, read as int32 and widen.
+            const void* p = static_cast<const void*>(t->const_data_ptr<uint8_t>());
+            // Prefer a real byte-count API if available; otherwise conservative check:
+            const bool looks_truncated = (alignof(int64_t) > 4) && ((reinterpret_cast<uintptr_t>(p) & 7) != 0);
+            if (looks_truncated) { // heuristic
+                return static_cast<int64_t>(*t->const_data_ptr<int32_t>());
+            }
+            // Safer: attempt both when compiled on Windows
+            #if defined(_MSC_VER)
+            {
+                const int64_t v64 = *t->const_data_ptr<int64_t>();
+                // If v64 looks like duplicated 32-bit halves, prefer the low 32.
+                const uint64_t u64 = static_cast<uint64_t>(v64);
+                const uint32_t hi = static_cast<uint32_t>(u64 >> 32);
+                const uint32_t lo = static_cast<uint32_t>(u64 & 0xFFFFFFFFu);
+                if (hi == lo) return static_cast<int64_t>(static_cast<int32_t>(lo));
+                return v64;
+            }
+            #else
+            return *t->const_data_ptr<int64_t>();
+            #endif
+        } else if (dt == ScalarType::Int) {
+            return static_cast<int64_t>(*t->const_data_ptr<int32_t>());
+        } else {
+            throw std::runtime_error("unexpected dtype for action tensor");
+        }
+    }
 
     static inline const char* dtype_name(ScalarType dt) {
         switch (dt) {
@@ -368,11 +410,13 @@ void TorchModel::maybeLoadMethod(const std::string& method_name) {
 
     auto method_metadata = methodMetaRes.get();
     const auto planned_buffers_count = method_metadata.num_memory_planned_buffers();
+    std::cout << "MEMDEBUG: planned_buffers_count: " << planned_buffers_count << "\n";
     mh.planned_buffers.reserve(planned_buffers_count);
     mh.planned_spans.reserve(planned_buffers_count);
 
     for (auto index = 0; index < planned_buffers_count; ++index) {
         const auto buffer_size = method_metadata.memory_planned_buffer_size(index).get();
+        std::cout << "MEMDEBUG: (" << index << ") buffer_size: " << buffer_size << "\n";
         mh.planned_buffers.emplace_back(buffer_size);
         mh.planned_spans.emplace_back(mh.planned_buffers.back().data(), buffer_size);
     }
@@ -633,7 +677,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
             throwf("set_inputs: %s: error code: %d", method_name, static_cast<int>(setRes));
 
         auto execRes = method->execute();
-        if (setRes != et_run::Error::Ok)
+        if (execRes != et_run::Error::Ok)
             throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
 
         const auto outputs_size = method->outputs_size();
@@ -659,19 +703,22 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         auto t_hex2_logits = hex2_logits.toTensor();
         auto t_action_table = action_table.toTensor();
 
-        std::cout << "-------------------- t_action:";
+        const auto action_id = read_scalar_i64_from_tensor(std::make_shared<Tensor>(t_action));
+        std::cout << "\n-------------------- read_scalar_i64_from_tensor: " << action_id << "\n";
+
+        std::cout << "\n-------------------- t_action:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_action), 5000);
 
-        std::cout << "-------------------- t_act0_logits:";
+        std::cout << "\n-------------------- t_act0_logits:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_act0_logits), 5000);
 
-        std::cout << "-------------------- t_hex1_logits:";
+        std::cout << "\n-------------------- t_hex1_logits:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_hex1_logits), 5000);
 
-        std::cout << "-------------------- t_hex2_logits:";
+        std::cout << "\n-------------------- t_hex2_logits:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_hex2_logits), 5000);
 
-        std::cout << "-------------------- t_action_table:";
+        std::cout << "\n-------------------- t_action_table:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_action_table), 5000);
 
         // BREAKPOINT HERE
