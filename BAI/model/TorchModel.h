@@ -16,6 +16,11 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <executorch/extension/data_loader/file_data_loader.h>
 #include <executorch/extension/memory_allocator/malloc_memory_allocator.h>
 #include <executorch/extension/tensor/tensor.h>
@@ -27,7 +32,6 @@
 #include "schema/base.h"
 
 namespace MMAI::BAI {
-
 namespace et_ext = executorch::extension;
 namespace et_run = executorch::runtime;
 using EValue = executorch::runtime::EValue;

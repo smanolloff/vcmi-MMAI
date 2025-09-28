@@ -16,7 +16,12 @@
 
 #pragma once
 
+#include <array>
 #include <bitset>
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include "schema/base.h"
 
 namespace MMAI::Schema::V12 {

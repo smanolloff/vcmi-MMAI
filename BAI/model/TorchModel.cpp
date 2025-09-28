@@ -1,7 +1,17 @@
+#include <any>
 #include <algorithm>
-#include <executorch/extension/tensor/tensor_ptr.h>
+#include <array>
+#include <chrono>
+#include <cstring>
+#include <initializer_list>
+#include <memory>
 #include <numeric>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <executorch/extension/tensor/tensor_ptr.h>
 #include <executorch/runtime/platform/runtime.h>
 
 #include "TorchModel.h"

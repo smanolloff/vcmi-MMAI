@@ -16,8 +16,12 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 #include <bitset>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include "schema/base.h"
 

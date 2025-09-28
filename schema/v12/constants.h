@@ -16,6 +16,11 @@
 
 #pragma once
 
+#include <array>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+
 #include "schema/base.h"
 #include "schema/v12/expbin.h"
 #include "schema/v12/types.h"
@@ -26,7 +31,7 @@ namespace MMAI::Schema::V12 {
     constexpr Action ACTION_RETREAT = 0;
     constexpr Action ACTION_WAIT = 1;
     constexpr int N_HEX_ACTIONS = EI(HexAction::_count);
-    constexpr int N_ACTIONS = N_NONHEX_ACTIONS + 165 * N_HEX_ACTIONS;
+    constexpr int N_ACTIONS = N_NONHEX_ACTIONS + 165*N_HEX_ACTIONS;
     constexpr int STACK_ATTR_OFFSET = EI(HexAttribute::_count) - EI(StackAttribute::_count);
 
 
