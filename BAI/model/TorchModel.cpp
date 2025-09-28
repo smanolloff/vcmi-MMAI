@@ -703,6 +703,15 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         auto t_hex2_logits = hex2_logits.toTensor();
         auto t_action_table = action_table.toTensor();
 
+        std::cout << "action numel=" << t_action.numel()
+                  << " dtype=" << dtype_name(t_action.scalar_type())
+                  << " sizeof(expected)=" << element_size(t_action.scalar_type())
+                  << "\n";
+
+        const uint8_t* pb = t_action.const_data_ptr<uint8_t>();
+        for (int i = 0; i < 8; ++i) std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)pb[i];
+        std::cout << std::dec << "\n";
+
         const auto action_id = read_scalar_i64_from_tensor(std::make_shared<Tensor>(t_action));
         std::cout << "\n-------------------- read_scalar_i64_from_tensor: " << action_id << "\n";
 
