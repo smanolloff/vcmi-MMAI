@@ -701,15 +701,22 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
 
         auto action = outputs.at(0);
         auto act0_logits = outputs.at(1);
-        auto hex1_logits = outputs.at(2);
-        auto hex2_logits = outputs.at(3);
-        auto action_table = outputs.at(4);
+        auto act0 = outputs.at(2);
+        auto hex1_logits = outputs.at(3);
+        auto hex1 = outputs.at(4);
+        auto hex2_logits = outputs.at(5);
+        auto hex2 = outputs.at(6);
+        // auto action_table = outputs.at(7);
 
-        auto t_action = action.toTensor();
-        auto t_act0_logits = act0_logits.toTensor();
-        auto t_hex1_logits = hex1_logits.toTensor();
-        auto t_hex2_logits = hex2_logits.toTensor();
-        auto t_action_table = action_table.toTensor();
+        auto t_action       = action.toTensor();
+        auto t_act0_logits  = act0_logits.toTensor();
+        auto t_act0         = act0.toTensor();
+        auto t_hex1_logits  = hex1_logits.toTensor();
+        auto t_hex1         = hex1.toTensor();
+        auto t_hex2_logits  = hex2_logits.toTensor();
+        auto t_hex2         = hex2.toTensor();
+
+        // auto t_action_table = action_table.toTensor();
 
         std::cout << "action numel=" << t_action.numel()
                   << " dtype=" << dtype_name(t_action.scalar_type())
@@ -729,14 +736,23 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         std::cout << "\n-------------------- t_act0_logits:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_act0_logits), 5000);
 
+        std::cout << "\n-------------------- t_act0:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_act0), 5000);
+
         std::cout << "\n-------------------- t_hex1_logits:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_hex1_logits), 5000);
+
+        std::cout << "\n-------------------- t_hex1:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_hex1), 5000);
 
         std::cout << "\n-------------------- t_hex2_logits:";
         print_tensor_like_torch(std::make_shared<Tensor>(t_hex2_logits), 5000);
 
-        std::cout << "\n-------------------- t_action_table:";
-        print_tensor_like_torch(std::make_shared<Tensor>(t_action_table), 5000);
+        std::cout << "\n-------------------- t_hex2:";
+        print_tensor_like_torch(std::make_shared<Tensor>(t_hex2), 5000);
+
+        // std::cout << "\n-------------------- t_action_table:";
+        // print_tensor_like_torch(std::make_shared<Tensor>(t_action_table), 5000);
 
         // BREAKPOINT HERE
 
