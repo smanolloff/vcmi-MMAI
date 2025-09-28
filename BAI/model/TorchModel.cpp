@@ -658,7 +658,9 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     // XXX: debug call _predict_with_logits3
     {
         std::string method_name = "_predict_with_logits3";
+        printf("SIMO1\n");
         maybeLoadMethod(method_name);
+        printf("SIMO2\n");
         auto [xxx, size_idx] = prepareInputsV13(s, sup, 3);
         auto values = std::vector<EValue>{};
 
@@ -672,6 +674,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         auto &input = values;
         auto& method = methods.at(method_name).method;
         auto& inputs = methods.at(method_name).inputs;
+        printf("SIMO3\n");
 
         if (input.size() != inputs.size())
             throwf("call: %s: input size: %zu does not match method input size: %zu", method_name, input.size(), inputs.size());
@@ -679,18 +682,22 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         for (auto i = 0; i < input.size(); ++i) {
             inputs[i] = input[i];
         }
+        printf("SIMO4\n");
 
         auto setRes = method->set_inputs(executorch::aten::ArrayRef<EValue>(inputs.data(), inputs.size()));
         if (setRes != et_run::Error::Ok)
             throwf("set_inputs: %s: error code: %d", method_name, static_cast<int>(setRes));
 
+        printf("SIMO5\n");
         auto execRes = method->execute();
         if (execRes != et_run::Error::Ok)
             throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
 
+        printf("SIMO6\n");
         const auto outputs_size = method->outputs_size();
         auto outputs = std::vector<EValue>(outputs_size);
 
+        printf("SIMO7\n");
         // Copy data to outputs
         auto getoutRes = method->get_outputs(outputs.data(), outputs_size);
         if (getoutRes != et_run::Error::Ok)
@@ -699,6 +706,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         // if (outputs.size() != 1)
         //     throwf("call: %s: outputs.size(): want: 1, have: %zu", method_name, outputs.size());
 
+        printf("SIMO8\n");
         auto action = outputs.at(0);
         auto act0_logits = outputs.at(1);
         auto act0 = outputs.at(2);
@@ -718,6 +726,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
 
         // auto t_action_table = action_table.toTensor();
 
+        printf("SIMO9\n");
         std::cout << "action numel=" << t_action.numel()
                   << " dtype=" << dtype_name(t_action.scalar_type())
                   << " sizeof(expected)=" << element_size(t_action.scalar_type())
