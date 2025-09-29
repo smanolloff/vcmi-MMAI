@@ -41,7 +41,7 @@ namespace {
         }
     };
 
-    std::array<std::vector<int32_t>, 165> buildNBR_unpadded(const std::vector<int32_t>& dst) {
+    std::array<std::vector<int64_t>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
         // Pass 1: validate and count degrees per node
         std::array<int, 165> deg{};
         for (size_t e = 0; e < dst.size(); ++e) {
@@ -51,36 +51,36 @@ namespace {
             ++deg[v];
         }
 
-        std::array<std::vector<int32_t>, 165> nbr{};
+        std::array<std::vector<int64_t>, 165> nbr{};
         for (int v = 0; v < 165; ++v) nbr[v].reserve(deg[v]);
         for (size_t e = 0; e < dst.size(); ++e) {
             int v = static_cast<int>(dst[e]);
-            nbr[v].push_back(static_cast<int32_t>(e));
+            nbr[v].push_back(static_cast<int64_t>(e));
         }
 
         return nbr;
     }
 
     struct IndexContainer {
-        std::array<std::vector<int32_t>, 2> ei;
+        std::array<std::vector<int64_t>, 2> ei;
         std::vector<float> ea;
-        std::array<std::vector<int32_t>, 165> nbrs;
+        std::array<std::vector<int64_t>, 165> nbrs;
     };
 
     struct BuildOutputs {
         int size_index = -1;                                // chosen index in all_sizes
-        std::array<int32_t, LT_COUNT> emax{};               // chosen emax per link type
-        std::array<int32_t, LT_COUNT> kmax{};               // chosen kmax per link type
+        std::array<int64_t, LT_COUNT> emax{};               // chosen emax per link type
+        std::array<int64_t, LT_COUNT> kmax{};               // chosen kmax per link type
 
-        std::array<std::vector<int32_t>, 2> ei_flat;        // each length sum(emax)
+        std::array<std::vector<int64_t>, 2> ei_flat;        // each length sum(emax)
         std::vector<float> ea_flat;                         // length sum(emax)
-        std::array<std::vector<int32_t>, 165> nbrs_flat;    // each length sum(kmax)
+        std::array<std::vector<int64_t>, 165> nbrs_flat;    // each length sum(kmax)
     };
 
     // all_sizes: S x LT_COUNT x 2, where [s][l] = {emax, kmax}
     BuildOutputs build_flattened(
         const std::array<IndexContainer, LT_COUNT>& containers,
-        const std::vector<std::vector<std::vector<int32_t>>>& all_sizes,
+        const std::vector<std::vector<std::vector<int64_t>>>& all_sizes,
         int bucket
     ) {
         BuildOutputs out{};
@@ -98,17 +98,17 @@ namespace {
 
         // 1) Find smallest valid size index
         int chosen = -1;
-        std::array<int32_t, LT_COUNT> emax{}, kmax{};
+        std::array<int64_t, LT_COUNT> emax{}, kmax{};
         for (int s = 0; s < static_cast<int>(all_sizes.size()); ++s) {
             const auto& sz = all_sizes[s];
             if (sz.size() != LT_COUNT) continue;  // skip malformed
             bool ok = true;
             for (int l = 0; l < LT_COUNT && ok; ++l) {
                 if (sz[l].size() != 2) { ok = false; break; }
-                int32_t emax_l = sz[l][0];
-                int32_t kmax_l = sz[l][1];
-                if (emax_l < static_cast<int32_t>(e_req[l]) ||
-                    kmax_l < static_cast<int32_t>(k_req[l])) {
+                int64_t emax_l = sz[l][0];
+                int64_t kmax_l = sz[l][1];
+                if (emax_l < static_cast<int64_t>(e_req[l]) ||
+                    kmax_l < static_cast<int64_t>(k_req[l])) {
                     ok = false;
                 }
             }
@@ -183,7 +183,7 @@ namespace {
                 const auto& src = containers[l].nbrs[v];
                 dst.insert(dst.end(), src.begin(), src.end());
                 const size_t need = static_cast<size_t>(kmax[l]) - src.size();
-                if (need > 0) dst.insert(dst.end(), need, static_cast<int32_t>(-1));
+                if (need > 0) dst.insert(dst.end(), need, static_cast<int64_t>(-1));
             }
             // Optional sanity:
             if (dst.size() != sum_kmax) {
@@ -224,17 +224,17 @@ namespace {
     static void print_like_torch_impl(const TensorPtr& t, int max_per_dim, int float_prec) {
         const auto& sizes = t->sizes();                 // std::vector<int64_t>
         const int D = static_cast<int>(sizes.size());
-        std::vector<int32_t> strides(D, 1);
+        std::vector<int64_t> strides(D, 1);
         for (int i = D - 2; i >= 0; --i) strides[i] = strides[i + 1] * sizes[i + 1];
 
         const T* data = t->const_data_ptr<T>();
 
-        auto print_dim = [&](auto&& self, int dim, int32_t offset, int indent) -> void {
+        auto print_dim = [&](auto&& self, int dim, int64_t offset, int indent) -> void {
             std::cout << "[";
             if (dim == D - 1) {
-                int32_t n = sizes[dim];
-                int32_t show = std::min<int32_t>(n, max_per_dim);
-                for (int32_t i = 0; i < show; ++i) {
+                int64_t n = sizes[dim];
+                int64_t show = std::min<int64_t>(n, max_per_dim);
+                for (int64_t i = 0; i < show; ++i) {
                     if (i) std::cout << ", ";
                     if constexpr (std::is_floating_point<T>::value) {
                         std::cout << std::fixed << std::setprecision(float_prec) << data[offset + i];
@@ -246,9 +246,9 @@ namespace {
                 std::cout << "]";
                 return;
             }
-            int32_t n = sizes[dim];
-            int32_t show = std::min<int32_t>(n, max_per_dim);
-            for (int32_t i = 0; i < show; ++i) {
+            int64_t n = sizes[dim];
+            int64_t show = std::min<int64_t>(n, max_per_dim);
+            for (int64_t i = 0; i < show; ++i) {
                 if (i) std::cout << ",\n" << std::string(indent + 2, ' ');
                 self(self, dim + 1, offset + i * strides[dim], indent + 2);
             }
@@ -286,15 +286,15 @@ namespace {
     }
 
 
-    inline std::vector<int32_t> vec_int64_to_int32(const std::vector<int64_t>& v64) {
-        std::vector<int32_t> v32;
+    inline std::vector<int64_t> vec_int64_to_int32(const std::vector<int64_t>& v64) {
+        std::vector<int64_t> v32;
         v32.reserve(v64.size());
         for (int64_t x : v64) {
-            if (x < std::numeric_limits<int32_t>::min() ||
-                x > std::numeric_limits<int32_t>::max()) {
-                throw std::out_of_range("narrowing int64_t->int32_t");
+            if (x < std::numeric_limits<int64_t>::min() ||
+                x > std::numeric_limits<int64_t>::max()) {
+                throw std::out_of_range("narrowing int64_t->int64_t");
             }
-            v32.push_back(static_cast<int32_t>(x));
+            v32.push_back(static_cast<int64_t>(x));
         }
         return v32;
     }
@@ -338,7 +338,7 @@ TorchModel::TorchModel(std::string &path)
         throwf("call: unexpected result dtype: %d", EI(t_side.dtype()));
     }
 
-    auto t_all_sizes = call("get_all_sizes", 0, ScalarType::Int);
+    auto t_all_sizes = call("get_all_sizes", 0, ScalarType::Long);
 
     // Convert 3-D tensor to vector<vector<int64>>
     auto ndim = t_all_sizes.dim();
@@ -368,20 +368,20 @@ TorchModel::TorchModel(std::string &path)
 
     // print_tensor_like_torch(std::make_shared<executorch::runtime::etensor::Tensor>(t_all_sizes));
 
-    const int32_t* baseptr = t_all_sizes.const_data_ptr<int32_t>(); // or equivalent getter
+    const int64_t* baseptr = t_all_sizes.const_data_ptr<int64_t>(); // or equivalent getter
     all_sizes.resize(d0);
     for (int i0=0; i0<d0; ++i0) {
         all_sizes.at(i0).resize(d1);
         for (int i1=0; i1<d1; ++i1) {
             all_sizes.at(i0).at(i1).resize(d2);
-            const int32_t* ptr = baseptr + i0 * s0 + i1 * s1;
+            const int64_t* ptr = baseptr + i0 * s0 + i1 * s1;
 
             if (s2 == 1) {
                 // Fast path: last dimension contiguous
-                std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int32_t) * static_cast<size_t>(d2));
+                std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int64_t) * static_cast<size_t>(d2));
             } else {
                 // Generic path: strided copy along last dimension
-                for (int32_t k = 0; k < d2; ++k) {
+                for (int64_t k = 0; k < d2; ++k) {
                     all_sizes.at(i0).at(i1).at(k) = ptr[k * s2];
                 }
             }
@@ -449,7 +449,7 @@ Tensor TorchModel::call(
         throwf("set_inputs: %s: error code: %d", method_name, static_cast<int>(setRes));
 
     auto execRes = method->execute();
-    if (setRes != et_run::Error::Ok)
+    if (execRes != et_run::Error::Ok)
         throwf("execute: %s: error code: %d", method_name, static_cast<int>(execRes));
 
     const auto outputs_size = method->outputs_size();
@@ -519,12 +519,9 @@ std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
 
         auto &c = containers.at(count);
 
-        const auto srcinds0 = links->getSrcIndex();
-        const auto dstinds0 = links->getDstIndex();
+        const auto srcinds = links->getSrcIndex();
+        const auto dstinds = links->getDstIndex();
         const auto attrs = links->getAttributes();
-
-        const auto srcinds = vec_int64_to_int32(srcinds0);
-        const auto dstinds = vec_int64_to_int32(dstinds0);
 
         auto nlinks = srcinds.size();
 
@@ -574,20 +571,20 @@ std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
         }
     }
 
-    auto einds = std::vector<int32_t> {};
+    auto einds = std::vector<int64_t> {};
     einds.reserve(2*sum_e);
     for (auto &eind : build.ei_flat)
         einds.insert(einds.end(), eind.begin(), eind.end());
 
-    auto nbrs = std::vector<int32_t> {};
+    auto nbrs = std::vector<int64_t> {};
     nbrs.reserve(165*sum_k);
     for (auto &nbr : build.nbrs_flat)
         nbrs.insert(nbrs.end(), nbr.begin(), nbr.end());
 
     auto t_state = et_ext::from_blob(estate.data(), {int(estate.size())}, ScalarType::Float);
-    auto t_ei_flat = et_ext::from_blob(einds.data(), {2, sum_e}, ScalarType::Int);
+    auto t_ei_flat = et_ext::from_blob(einds.data(), {2, sum_e}, ScalarType::Long);
     auto t_ea_flat = et_ext::from_blob(build.ea_flat.data(), {sum_e, 1}, ScalarType::Float);
-    auto t_nbrs_flat = et_ext::from_blob(nbrs.data(), {165, sum_k}, ScalarType::Int);
+    auto t_nbrs_flat = et_ext::from_blob(nbrs.data(), {165, sum_k}, ScalarType::Long);
 
     auto tensors = std::vector<TensorPtr> {
         et_ext::clone_tensor_ptr(t_state),
