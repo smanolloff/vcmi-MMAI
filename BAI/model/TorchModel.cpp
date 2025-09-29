@@ -19,7 +19,7 @@
 
 namespace MMAI::BAI {
 
-using TensorPtr = executorch::extension::TensorPtr;
+using TensorPtr = et_ext::TensorPtr;
 
 constexpr int LT_COUNT = EI(MMAI::Schema::V13::LinkType::_count);
 
@@ -302,23 +302,23 @@ namespace {
 
 TorchModel::TorchModel(std::string &path)
 : path(path) {
-    auto loaderRes = executorch::extension::FileDataLoader::from(path.c_str());
+    auto loaderRes = et_ext::FileDataLoader::from(path.c_str());
     if (!loaderRes.ok())
         throwf("loader error code: %d", static_cast<int>(loaderRes.error()));
 
-    loader = std::make_unique<executorch::extension::FileDataLoader>(std::move(loaderRes.get()));
+    loader = std::make_unique<et_ext::FileDataLoader>(std::move(loaderRes.get()));
 
-    memory_allocator = std::make_unique<executorch::extension::MallocMemoryAllocator>();
-    temp_allocator = std::make_unique<executorch::extension::MallocMemoryAllocator>();
+    memory_allocator = std::make_unique<et_ext::MallocMemoryAllocator>();
+    temp_allocator = std::make_unique<et_ext::MallocMemoryAllocator>();
 
-    executorch::runtime::runtime_init();
+    et_run::runtime_init();
 
-    auto programRes = executorch::runtime::Program::load(loader.get());
+    auto programRes = et_run::Program::load(loader.get(), et_run::Program::Verification::InternalConsistency);
     if (!programRes.ok())
         throwf("program error code: %d", static_cast<int>(programRes.error()));
-    auto program_ = std::make_unique<executorch::runtime::Program>(std::move(*programRes));
-    program = std::shared_ptr<executorch::runtime::Program>(
-        program_.release(), [](executorch::runtime::Program* pointer) { delete pointer; });
+    auto program_ = std::make_unique<et_run::Program>(std::move(*programRes));
+    program = std::shared_ptr<et_run::Program>(
+        program_.release(), [](et_run::Program* pointer) { delete pointer; });
 
     auto t_version = call("get_version", 1, ScalarType(-1));
 
@@ -366,7 +366,7 @@ TorchModel::TorchModel(std::string &path)
     if (d2 != 2)
         throwf("t_all_sizes: bad size(2): want: %d, have: %d", 2, d2);
 
-    // print_tensor_like_torch(std::make_shared<executorch::runtime::etensor::Tensor>(t_all_sizes));
+    // print_tensor_like_torch(std::make_shared<et_run::etensor::Tensor>(t_all_sizes));
 
     const int64_t* baseptr = t_all_sizes.const_data_ptr<int64_t>(); // or equivalent getter
     all_sizes.resize(d0);
@@ -412,17 +412,17 @@ void TorchModel::maybeLoadMethod(const std::string& method_name) {
         mh.planned_spans.emplace_back(mh.planned_buffers.back().data(), buffer_size);
     }
 
-    mh.planned_memory = std::make_unique<executorch::runtime::HierarchicalAllocator>(
-        executorch::runtime::Span(mh.planned_spans.data(), mh.planned_spans.size())
+    mh.planned_memory = std::make_unique<et_run::HierarchicalAllocator>(
+        et_run::Span(mh.planned_spans.data(), mh.planned_spans.size())
     );
 
-    mh.memory_manager = std::make_unique<executorch::runtime::MemoryManager>(memory_allocator.get(), mh.planned_memory.get(), temp_allocator.get());
+    mh.memory_manager = std::make_unique<et_run::MemoryManager>(memory_allocator.get(), mh.planned_memory.get(), temp_allocator.get());
 
     auto methodRes = program->load_method(method_name.c_str(), mh.memory_manager.get());
     if (!methodRes.ok())
         throwf("load_method: error code: %d", static_cast<int>(methodRes.error()));
 
-    mh.method = std::make_unique<executorch::runtime::Method>(std::move(*methodRes));
+    mh.method = std::make_unique<et_run::Method>(std::move(*methodRes));
     mh.inputs.resize(mh.method->inputs_size());
     methods.emplace(method_name, std::move(mh));
 }
