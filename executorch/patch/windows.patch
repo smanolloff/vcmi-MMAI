@@ -1,20 +1,16 @@
-diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
-index 7456d749f3..8da7644aa9 100644
---- a/third-party/CMakeLists.txt
-+++ b/third-party/CMakeLists.txt
-@@ -30,6 +30,9 @@ ExternalProject_Add(
-   flatbuffers_external_project
-   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers_external_project
-   SOURCE_DIR ${PROJECT_SOURCE_DIR}/third-party/flatbuffers
-+  CMAKE_GENERATOR "Visual Studio 17 2022"
-+  CMAKE_GENERATOR_PLATFORM "x64"
-   CMAKE_ARGS -DFLATBUFFERS_BUILD_FLATC=ON
-              -DFLATBUFFERS_INSTALL=ON
-              -DFLATBUFFERS_BUILD_FLATHASH=OFF
 diff --git a/extension/threadpool/threadpool.cpp b/extension/threadpool/threadpool.cpp
-index 5fee732b05..9e659cdac7 100644
+index 5fee732b05..0ff5954dd2 100644
 --- a/extension/threadpool/threadpool.cpp
 +++ b/extension/threadpool/threadpool.cpp
+@@ -19,7 +19,7 @@
+ 
+ namespace executorch::extension::threadpool {
+ 
+-#if !(defined(WIN32))
++#if !(defined(_WIN32))
+ namespace {
+ // After fork, the child process inherits the data-structures of the parent
+ // process' thread-pool, but since those threads don't exist, the thread-pool
 @@ -116,7 +116,7 @@ ThreadPool* get_threadpool() {
  
  // Inheriting from old threadpool to get around segfault issue
@@ -24,3 +20,17 @@ index 5fee732b05..9e659cdac7 100644
    // @lint-ignore CLANGTIDY facebook-hte-std::once_flag
    static std::once_flag flag;
    // @lint-ignore CLANGTIDY facebook-hte-std::call_once
+diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
+index 7456d749f3..a48b463c91 100644
+--- a/third-party/CMakeLists.txt
++++ b/third-party/CMakeLists.txt
+@@ -30,6 +30,8 @@ ExternalProject_Add(
+   flatbuffers_external_project
+   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers_external_project
+   SOURCE_DIR ${PROJECT_SOURCE_DIR}/third-party/flatbuffers
++  CMAKE_GENERATOR "Visual Studio 17 2022"
++  CMAKE_GENERATOR_PLATFORM "x64"
+   CMAKE_ARGS -DFLATBUFFERS_BUILD_FLATC=ON
+              -DFLATBUFFERS_INSTALL=ON
+              -DFLATBUFFERS_BUILD_FLATHASH=OFF
+
