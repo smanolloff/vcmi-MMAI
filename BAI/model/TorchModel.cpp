@@ -407,9 +407,10 @@ void TorchModel::maybeLoadMethod(const std::string& method_name) {
 
     for (auto index = 0; index < planned_buffers_count; ++index) {
         const auto buffer_size = method_metadata.memory_planned_buffer_size(index).get();
-        std::cout << "MEMDEBUG: (" << index << ") buffer_size: " << buffer_size << "\n";
-        mh.planned_buffers.emplace_back(buffer_size);
-        mh.planned_spans.emplace_back(mh.planned_buffers.back().data(), buffer_size);
+        const auto safe_size = buffer_size * 5;
+        std::cout << "MEMDEBUG: (" << index << ") buffer_size: " << buffer_size << " (safe: " << safe_size << ")\n";
+        mh.planned_buffers.emplace_back(safe_size);
+        mh.planned_spans.emplace_back(mh.planned_buffers.back().data(), safe_size);
     }
 
     mh.planned_memory = std::make_unique<et_run::HierarchicalAllocator>(
