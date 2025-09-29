@@ -12,7 +12,7 @@
             "generator": "Unix Makefiles",
             "cacheVariables": {
                 "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0",
-                "EXECUTORCH_ENABLE_PROGRAM_VERIFICATION": "OFF",
+                "EXECUTORCH_ENABLE_PROGRAM_VERIFICATION": "ON",
                 "EXECUTORCH_BUILD_SIZE_TEST": "OFF",
                 "EXECUTORCH_OPTIMIZE_SIZE": "OFF",
                 "EXECUTORCH_BUILD_COREML": "OFF",
