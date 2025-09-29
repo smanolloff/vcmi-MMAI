@@ -337,7 +337,7 @@ TorchModel::TorchModel(std::string &path)
     if (!loaderRes.ok())
         throwf("loader error code: %d", static_cast<int>(loaderRes.error()));
 
-    loader = std::make_unique<executorch::extension::FileDataLoader>(std::move(*loaderRes));
+    loader = std::make_unique<executorch::extension::FileDataLoader>(std::move(loaderRes.get()));
 
     memory_allocator = std::make_unique<executorch::extension::MallocMemoryAllocator>();
     temp_allocator = std::make_unique<executorch::extension::MallocMemoryAllocator>();
@@ -490,8 +490,12 @@ Tensor TorchModel::call(
     if (resNumel && t.numel() != resNumel)
         throwf("call: %s: bad resNumel: want: %d, have: %d", method_name, resNumel, EI(t.numel()));
 
-    if (t.dtype() != st)
-        throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.dtype()));
+    // Optionally check scalar type
+    // TODO: make mandatory (remove -1 hack) after int32/int64 issue is resovled
+    if (st != ScalarType(-1)) {
+        if (t.dtype() != st)
+            throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.dtype()));
+    }
 
     return t;
 }
@@ -649,11 +653,16 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     // printf("--------------- 3:\n");
     // print_tensor_like_torch(inputs.at(3), 10, 6); // show up to 4 per dim, 6 decimals
 
-    auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType::Long);
+    auto output = call("predict" + std::to_string(size_idx), values, 1, ScalarType(-1)); // -1=don't check dtype
 
-    int action = output.const_data_ptr<int64_t>()[0];
+    int action;
 
-
+    switch(output.dtype()) {
+    break; case ScalarType::Long: action = static_cast<int>(output.const_data_ptr<int64_t>()[0]);
+    break; case ScalarType::Int: action = static_cast<int>(output.const_data_ptr<int32_t>()[0]);
+    break; default:
+        throwf("call: unexpected result dtype: %d", EI(output.dtype()));
+    }
 
     // XXX: debug call _predict_with_logits3
     {
@@ -769,8 +778,6 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
 
         if (!out.isTensor())
             throwf("call: %s: not a tensor", method_name);
-
-        auto t = out.toTensor();
     }
 
 
