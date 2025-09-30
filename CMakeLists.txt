@@ -7,7 +7,7 @@ set(MMAI_FILES
   BAI/router.h
   BAI/model/ScriptedModel.h
   BAI/model/ScriptedModel.cpp
-  BAI/model/TorchModel.h
+  # BAI/model/TorchModel.h
   # BAI/model/TorchModel.cpp       # optionally added later
   # BAI/model/TorchModelDummy.cpp  # optionally added later
 
@@ -91,40 +91,53 @@ set(MMAI_FILES
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
 option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
 set(MMAI_EXECUTORCH_INSTALL_DIR "" CACHE PATH "Path to executorch v0.7.0 install directory")
+set(MMAI_LIBTORCH_PATH "" CACHE PATH "Link against libtorch located at the specified path (don't link if empty)")
+
 set(EXECUTORCH_LIBRARIES "")
-
-#[[
-About the MMAI_EXECUTORCH_INSTALL_DIR flag:
-
-`executorch` is the library which handles loading pre-trained ML models during
-gameplay. It must be compiled externally so VCMI can be linked against it.
-MMAI_EXECUTORCH_INSTALL_DIR contains header files and build artifacts (static libs).
-
-Example setup:
-
-  $ cd /some/path
-  $ git clone --recurse-submodules -b release/0.7 https://github.com/pytorch/executorch.git
-  $ cd executorch
-  $ python3 -m venv .venv
-  $ . ./venv/bin/activate
-
-  # Copy cmake files from MMAI dir
-  $ {vcmi_dir}/executorch/install_headers.cmake ./
-  $ {vcmi_dir}/executorch/CMakeUserPresets.json ./
-
-  $ cmake --preset mmai-executorch-release
-  $ cmake --build --preset mmai-executorch-release -j10
-  $ cmake --preset mmai-executorch-release -P install_headers.cmake
-
-Now you can build VCMI with:
-  MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/install-release
-]]
 
 set(MMAI_LIBS vcmi)
 set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 set(MMAI_THIRD_PARTY_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/schema/gcem)
 
 if(MMAI_EXECUTORCH_INSTALL_DIR)
+  if(WIN32 AND NOT (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64"))
+    # NOTE: I've actually never tested it on ARM64, assuming it works for now.
+    # Officially not supported on windows yet.
+    # As of executorch-0.7.0, it causes memory violations and program crashes.
+    message(FATAL_ERROR "ExecuTorch is not supported on windoes, except for ARM architectures. Use libtorch instead.")
+  endif()
+
+  if(MMAI_LIBTORCH_PATH)
+    message(FATAL_ERROR "MMAI_EXECUTORCH_INSTALL_DIR and MMAI_LIBTORCH_PATH are mutually exclusive.")
+  endif()
+
+  #[[
+  About the MMAI_EXECUTORCH_INSTALL_DIR flag:
+
+  `executorch` is the library which handles loading pre-trained ML models during
+  gameplay. It must be compiled externally so VCMI can be linked against it.
+  MMAI_EXECUTORCH_INSTALL_DIR contains header files and build artifacts (static libs).
+
+  Example setup:
+
+    $ cd /some/path
+    $ git clone --recurse-submodules -b release/0.7 https://github.com/pytorch/executorch.git
+    $ cd executorch
+    $ python3 -m venv .venv
+    $ . ./venv/bin/activate
+
+    # Copy cmake files from MMAI dir
+    $ {vcmi_dir}/executorch/install_headers.cmake ./
+    $ {vcmi_dir}/executorch/CMakeUserPresets.json ./
+
+    $ cmake --preset mmai-executorch-release
+    $ cmake --build --preset mmai-executorch-release -j10
+    $ cmake --preset mmai-executorch-release -P install_headers.cmake
+
+  Now you can build VCMI with:
+    MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/install-release
+  ]]
+
   add_definitions(-DUSING_EXECUTORCH=1)
 
   if (ENABLE_MMAI_STRICT_LOAD)
@@ -139,14 +152,99 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
   message(STATUS "EXECUTORCH_LIBRARIES: ${EXECUTORCH_LIBRARIES}")
 
   list(APPEND MMAI_THIRD_PARTY_INCLUDES ${EXECUTORCH_INCLUDE_DIRS})
-  # list(APPEND MMAI_LIBS ${EXECUTORCH_LIBRARIES})
-  list(APPEND MMAI_FILES BAI/model/TorchModel.cpp)
-else()
-  if(NOT ENABLE_ML)
-    message(FATAL_ERROR "MMAI_EXECUTORCH_INSTALL_DIR is required unless ENABLE_ML is set")
+  list(APPEND MMAI_FILES BAI/model/TorchModel_ET.h)
+  list(APPEND MMAI_FILES BAI/model/TorchModel_ET.cpp)
+
+  function(force_link_static TARGET LIBDIR)
+    foreach(lib IN LISTS ARGN)
+      if(NOT lib IN_LIST EXECUTORCH_LIBRARIES)
+        message(STATUS "force_link_static: skip ${lib} (not in EXECUTORCH_LIBRARIES)")
+        continue()
+      endif()
+
+      message(STATUS "force_link_static: ${lib}")
+
+      # MSVC uses foo.lib, others use libfoo.a
+      set(_path "${LIBDIR}/$<IF:$<BOOL:${MSVC}>,,lib>${lib}$<IF:$<BOOL:${MSVC}>,.lib,.a>")
+      target_link_libraries(${TARGET} PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,${_path}>)
+    endforeach()
+  endfunction()
+
+  set(_force_libs
+    xnnpack_backend
+    optimized_kernels
+    quantized_kernels
+    portable_ops_lib
+  )
+
+  set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
+  list(REMOVE_ITEM _nonforce_libs ${_force_libs})
+
+  message(STATUS "_force_libs: ${_force_libs}")
+  message(STATUS "_nonforce_libs: ${_nonforce_libs}")
+elseif(MMAI_LIBTORCH_PATH)
+  #[[
+  About the MMAI_LIBTORCH_PATH flag:
+
+  MMAI_LIBTORCH_PATH must point to a lightweight (CPU-only) version of "libtorch"
+  which will be used by VCMI for loading pre-trained ML models during gameplay.
+  Depending on what VCMI is being compiled for:
+  a) gameplay (i.e. if ENABLE_ML=0): MMAI_LIBTORCH_PATH must be a valid path
+  b) training (i.e. if ENABLE_ML=1): MMAI_LIBTORCH_PATH must be blank
+
+  Libtorch should only be used on windows, where executorch is not an option.
+  ]]
+  if(NOT (WIN32 AND NOT (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")))
+    # Technically should work some other platforms, but executorch should be preferred.
+    message(WARNING "LibTorch should only be used on non-arm Windows platforms. Prefer executorch instead.")
   endif()
 
-  list(APPEND MMAI_FILES BAI/model/TorchModelDummy.cpp)
+  add_definitions(-DUSING_LIBTORCH=1)
+  list(APPEND CMAKE_PREFIX_PATH "${MMAI_LIBTORCH_PATH}")
+  find_package(Torch REQUIRED)
+  if(APPLE_IOS)
+    # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
+    find_library(ACCELERATE Accelerate)
+    list(APPEND MMAI_LIBS "${ACCELERATE}")
+  endif()
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
+  list(APPEND MMAI_LIBS "${TORCH_LIBRARIES}")
+  list(APPEND MMAI_THIRD_PARTY_INCLUDES "${TORCH_INCLUDE_DIRS}")
+  list(APPEND MMAI_FILES BAI/model/TorchModel_LT.h)
+  list(APPEND MMAI_FILES BAI/model/TorchModel_LT.cpp)
+
+  message("MMAI_LIBS: ${MMAI_LIBS}")
+  message("MMAI_FILES: ${MMAI_INCLUDES}")
+  # message(STATUS "TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
+  # message(STATUS "TORCH_CXX_FLAGS: ${TORCH_CXX_FLAGS}")
+  # message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
+
+  function(install_torch_libs)
+    foreach(libname IN LISTS ARGN)
+      unset(${libname}_LIBRARY CACHE)
+      find_library(${libname}_LIBRARY ${libname} PATHS "${TORCH_INSTALL_PREFIX}/lib")
+      set(libpath ${${libname}_LIBRARY})
+
+      if(MSVC)
+        string(REPLACE ".lib" ".dll" libpath ${libpath})
+        add_custom_command(TARGET MMAI POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libpath}" "$<TARGET_FILE_DIR:vcmi>"
+        )
+      endif()
+
+      message("Found ${libname}: ${libpath}")
+      install(FILES ${libpath} DESTINATION ${LIB_DIR})
+    endforeach()
+  endfunction(install_torch_libs)
+else()
+  if(NOT ENABLE_ML)
+    message(FATAL_ERROR "Either MMAI_EXECUTORCH_INSTALL_DIR or MMAI_LIBTORCH_PATH is required unless ENABLE_ML is set")
+  endif()
+
+  list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.h)
+  list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.cpp)
 endif()
 
 if(NOT ENABLE_STATIC_LIBS)
@@ -162,45 +260,29 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-function(force_link_static TARGET LIBDIR)
-  foreach(lib IN LISTS ARGN)
-    if(NOT lib IN_LIST EXECUTORCH_LIBRARIES)
-      message(STATUS "force_link_static: skip ${lib} (not in EXECUTORCH_LIBRARIES)")
-      continue()
-    endif()
+if (MMAI_LIBTORCH_PATH AND NOT (APPLE_IOS OR ANDROID))
+  # libtorch libs are static on mobile
+  install_torch_libs(torch torch_cpu c10)
+endif()
+if (MMAI_EXECUTORCH_INSTALL_DIR)
+  force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${_force_libs})
+endif()
 
-    message(STATUS "force_link_static: ${lib}")
-
-    # MSVC uses foo.lib, others use libfoo.a
-    set(_path "${LIBDIR}/$<IF:$<BOOL:${MSVC}>,,lib>${lib}$<IF:$<BOOL:${MSVC}>,.lib,.a>")
-    target_link_libraries(${TARGET} PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,${_path}>)
-  endforeach()
-endfunction()
-
-set(_force_libs
-  xnnpack_backend
-  optimized_kernels
-  quantized_kernels
-  portable_ops_lib
-)
-
-set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
-list(REMOVE_ITEM _nonforce_libs ${_force_libs})
-
-message(STATUS "_force_libs: ${_force_libs}")
-message(STATUS "_nonforce_libs: ${_nonforce_libs}")
-message(STATUS "MMAI_LIBS: ${MMAI_LIBS}")
-
+message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS}")
 target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
-force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${_force_libs})
+message(STATUS "MMAI target_link_libraries: ${_nonforce_libs}")
 target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
+
 target_link_options(MMAI PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/VERBOSE:LIB>)
 
 # Used in schema/base.h to determine if it is imported by MMAI or vcmi-gym
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")
+
+message(STATUS "MMAI target_include_directories: ${MMAI_INCLUDES}")
 target_include_directories(MMAI PUBLIC ${MMAI_INCLUDES})
 
 # Mark as SYSTEM to prevent -Werror failing builds due to warnings from these
+message(STATUS "MMAI target_include_directories: ${MMAI_THIRD_PARTY_INCLUDES}")
 target_include_directories(MMAI SYSTEM PRIVATE ${MMAI_THIRD_PARTY_INCLUDES})
 
 if(ENABLE_MMAI_TEST)

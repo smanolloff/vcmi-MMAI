@@ -59,7 +59,7 @@ private:
     std::unique_ptr<et_ext::FileDataLoader> loader;
     std::unique_ptr<et_ext::MallocMemoryAllocator> memory_allocator;
     std::unique_ptr<et_ext::MallocMemoryAllocator> temp_allocator;
-    std::unique_ptr<executorch::runtime::Program> program;
+    std::shared_ptr<executorch::runtime::Program> program;
 
     struct MethodHolder {
         std::vector<std::vector<uint8_t>> planned_buffers;
@@ -87,7 +87,7 @@ private:
         const std::string& method_name,
         const std::vector<EValue>& input,
         int numel,
-        ScalarType st
+        ScalarType st = ScalarType(-1)  // magic for "don't check"
     );
 
     Tensor call(const std::string &method_name, const EValue& ev, int numel, ScalarType st) {

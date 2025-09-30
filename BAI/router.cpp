@@ -34,6 +34,12 @@ namespace MMAI::BAI {
     using ConfigStorage = std::map<std::string, std::string>;
     using ModelStorage = std::map<std::string, std::unique_ptr<TorchModel>>;
 
+    #if defined(USING_EXECUTORCH)
+    static auto modelExt = ".pte";
+    #elif defined(USING_LIBTORCH)
+    static auto modelExt = ".pts";
+    #endif
+
     static auto modelconfig = ConfigStorage();
     static auto models = ModelStorage();
     static std::unique_ptr<ScriptedModel> fallbackModel;
@@ -45,9 +51,13 @@ namespace MMAI::BAI {
 
         auto cfg = JsonUtils::assembleFromFiles("MMAI/CONFIG/mmai-settings.json").Struct();
 
-        for (auto &key : {"attacker", "defender", "fallback"}) {
+        for (const auto &key : {"attacker", "defender", "fallback"}) {
             if(cfg[key].isString()) {
-                modelconfig.insert({key, cfg[key].String()});
+                std::string k = cfg[key].String();
+                if (k != "fallback")
+                    k = "MMAI/models/" + k + modelExt;
+
+                modelconfig.insert({key, k});
             } else {
                 logAi->warn("MMAI config contains invalid values: value for '%s' is not a string", key);
             }
