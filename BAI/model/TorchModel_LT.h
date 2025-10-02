@@ -25,39 +25,52 @@
 #include "schema/base.h"
 
 namespace MMAI::BAI {
-    class TorchModel : public MMAI::Schema::IModel {
-    public:
-        TorchModel(std::string &path);
 
-        Schema::ModelType getType() override;
-        std::string getName() override;
-        int getVersion() override;
-        Schema::Side getSide() override;
-        int getAction(const MMAI::Schema::IState * s) override;
-        double getValue(const MMAI::Schema::IState * s) override;
-    private:
-        std::string path;
-        std::string name;
-        int version;
-        Schema::Side side;
+namespace tj = torch::jit;
 
-        std::mutex m;
+class TorchModel : public MMAI::Schema::IModel {
+public:
+    explicit TorchModel(std::string &path);
 
-        std::pair<std::vector<at::Tensor>, int> prepareInputsV13(
-            const MMAI::Schema::IState * state,
-            const MMAI::Schema::V13::ISupplementaryData* sup,
-            int bucket = -1
-        );
+    Schema::ModelType getType() override;
+    std::string getName() override;
+    int getVersion() override;
+    Schema::Side getSide() override;
+    int getAction(const MMAI::Schema::IState * s) override;
+    double getValue(const MMAI::Schema::IState * s) override;
+private:
+    std::string path;
+    std::string name;
+    int version;
+    Schema::Side side;
+    std::mutex m;
+    std::vector<std::vector<std::vector<int64_t>>> all_buckets;
 
-        std::vector<std::vector<std::vector<int64_t>>> all_buckets;
+    std::pair<std::vector<at::Tensor>, int> prepareInputsV13(
+        const MMAI::Schema::IState * state,
+        const MMAI::Schema::V13::ISupplementaryData* sup,
+        int bucket = -1
+    );
 
-        class TorchJitContainer {
-        public:
-            TorchJitContainer(std::string path) : module(torch::jit::_load_for_mobile(path)) {}
-            c10::InferenceMode guard;
-            torch::jit::mobile::Module module;
-        };
+    at::Tensor call(
+        const std::string& method_name,
+        const std::vector<c10::IValue>& input,
+        int numel,
+        at::ScalarType st
+    );
 
-        std::unique_ptr<TorchJitContainer> tjc;
-    };
-}
+    at::Tensor call(const std::string &method_name, const c10::IValue& ev, int numel, at::ScalarType st) {
+        return call(method_name, std::vector<c10::IValue>{ev}, numel, st);
+    }
+
+    at::Tensor call(const std::string &method_name, int numel, at::ScalarType st) {
+        return call(method_name, std::vector<c10::IValue>{}, numel, st);
+    }
+
+    template <typename T> T getScalar(const std::string &method_name);
+
+    c10::InferenceMode guard;
+    std::unique_ptr<tj::mobile::Module> model;
+};
+
+} // namespace MMAI::BAI

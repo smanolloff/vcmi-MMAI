@@ -53,11 +53,11 @@ namespace MMAI::BAI {
 
         for (const auto &key : {"attacker", "defender", "fallback"}) {
             if(cfg[key].isString()) {
-                std::string k = cfg[key].String();
-                if (k != "fallback")
-                    k = "MMAI/models/" + k + modelExt;
+                std::string value = cfg[key].String();
+                if (std::string(key) != "fallback")
+                    value = "MMAI/models/" + value + modelExt;
 
-                modelconfig.insert({key, k});
+                modelconfig.insert({key, value});
             } else {
                 logAi->warn("MMAI config contains invalid values: value for '%s' is not a string", key);
             }

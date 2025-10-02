@@ -43,7 +43,7 @@ namespace {
         explicit ScopedTimer(const char* n) : name(n), t0(std::chrono::steady_clock::now()) {}
         ~ScopedTimer() {
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
-            logAi->debug("%s: %lld ms", name, dt);
+            logAi->warn("%s: %lld ms", name, dt);
         }
     };
 
@@ -201,6 +201,37 @@ namespace {
     }
 }
 
+template <typename T>
+T TorchModel::getScalar(const std::string &method_name) {
+    static_assert(std::is_same_v<T, float> || std::is_same_v<T, int>, "T must be float or int");
+    at::ScalarType st;
+
+    if constexpr (std::is_same_v<T, float>) {
+        st = at::kFloat;
+    } else { // T == int
+        st = at::kLong;
+    }
+
+    auto t = call(method_name, 1, st);
+
+    if (t.dim() != 1)
+        throwf("getScalar: %s: bad dim(): want: 1, have: %ld", method_name, t.dim());
+
+    if constexpr (std::is_same_v<T, float>) {
+        if (t.scalar_type() != at::kFloat)
+            throwf("getScalar: %s: bad dtype: want: %d, have: %d", method_name, EI(at::kFloat), EI(t.scalar_type()));
+        return t.item<float>();
+    } else { // T == int
+        if (t.scalar_type() != at::kLong)
+            throwf("getScalar: %s: bad dtype: want: %d, have: %d", method_name, EI(at::kLong), EI(t.scalar_type()));
+
+        int64_t v64 = t.item<int64_t>();
+        if (v64 < std::numeric_limits<int>::min() || v64 > std::numeric_limits<int>::max())
+            throwf("getScalar: %s: out of range for int: %ld", method_name, v64);
+        return static_cast<int>(v64);
+    }
+}
+
 std::pair<std::vector<at::Tensor>, int> TorchModel::prepareInputsV13(
     const MMAI::Schema::IState * s,
     const MMAI::Schema::V13::ISupplementaryData* sup,
@@ -300,25 +331,47 @@ std::pair<std::vector<at::Tensor>, int> TorchModel::prepareInputsV13(
 }
 
 
+at::Tensor TorchModel::call(
+    const std::string& method_name,
+    const std::vector<c10::IValue>& input,
+    int resNumel,
+    at::ScalarType st
+) {
+    std::unique_lock lock(m);
+    auto raw = model->get_method(method_name)(input);
+
+    if (!raw.isTensor())
+        throwf("call: %s: not a tensor", method_name);
+
+    at::Tensor t = raw.toTensor().contiguous();
+
+    if (t.dim() != 1)
+        throwf("call: %s: bad dim(): want: 1, have: %ld", method_name, t.dim());
+
+    if (t.scalar_type() != st)
+        throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.scalar_type()));
+
+    if (resNumel && t.numel() != 1)
+        throwf("call: %s: bad numel: want: %d, have: %ld", method_name, resNumel, t.numel());
+
+    return t;
+}
+
 TorchModel::TorchModel(std::string &path)
 : path(path)
-, tjc(std::make_unique<TorchJitContainer>(path))
+, model(std::make_unique<tj::mobile::Module>(tj::_load_for_mobile(path)))
 {
-    version = tjc->module.get_method("get_version")({}).toInt();
-    side = Schema::Side(tjc->module.get_method("get_side")({}).toInt());
+    version = getScalar<int>("get_side");
+    side = Schema::Side(getScalar<int>("get_side"));
 
-    c10::IValue raw_buckets = tjc->module.get_method("get_all_sizes")({});
-    if (!raw_buckets.isTensor())
-        throwf("raw_buckets: not a tensor");
-    at::Tensor t = raw_buckets.toTensor().contiguous();
+    if (version != 13)
+        throwf("unsupported model version: want: 13, have: %d", version);
 
-    if (t.dtype().toScalarType() != at::kLong)
-        throwf("get_all_sizes: bad dtype: want: %d, have: %d", EI(at::kLong), EI(t.dtype().toScalarType()));
+    auto t_buckets = call("get_all_sizes", 0, at::kLong);
+    std::vector<int64_t> flat_buckets(t_buckets.numel());
+    std::memcpy(flat_buckets.data(), t_buckets.data_ptr<int64_t>(), flat_buckets.size() * sizeof(int64_t));
 
-    std::vector<int64_t> flat_buckets(t.numel());
-    std::memcpy(flat_buckets.data(), t.data_ptr<int64_t>(), flat_buckets.size() * sizeof(int64_t));
-
-    auto dims = t.sizes();              // [D0, D1, D2]
+    auto dims = t_buckets.sizes();              // [D0, D1, D2]
 
     if (dims.size() != 3)
         throwf("dims.size(): expected 3, got: %zu", dims.size());
@@ -340,18 +393,6 @@ TorchModel::TorchModel(std::string &path)
             }
         }
     }
-
-    // XXX: jit::mobile::Module has no toModule() attribute
-    //      Maybe a call to .predict() with a dummy observation would work
-    //
-
-    // auto out_features = tjc->module.attr("actor", c10::IValue("method_not_found:actor")).toModule().attr("out_features").toInt();
-    // switch(out_features) {
-    // break; case 2311: actionOffset = 1;
-    // break; case 2312: actionOffset = 0;
-    // break; default:
-    //     throw std::runtime_error("Expected 2311 or 2312 out_features for actor, got: " + std::to_string(out_features));
-    // }
 }
 
 Schema::ModelType TorchModel::getType() {
@@ -374,16 +415,13 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     auto timer = ScopedTimer("getAction");
     auto any = s->getSupplementaryData();
 
-    if (version != 13)
-        throwf("unsupported model version: want: 13, have: %d", version);
-
-    if (s->version() != 13)
-        throwf("unsupported IState version: want: 13, have: %d", s->version());
+    if (s->version() != version)
+        throwf("getAction: unsupported IState version: want: %d, have: %d", version, s->version());
 
     if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
     auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
     if(!err.empty())
-        throwf("anycast failed: %s", err);
+        throwf("getAction: anycast failed: %s", err);
 
     const auto *sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
 
@@ -397,23 +435,9 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         values.push_back(t);
     }
 
-    std::unique_lock lock(m);
-
     auto method = "predict" + std::to_string(size_idx);
-    auto res = tjc->module.get_method(method)(values);
-
-    if (!res.isTensor())
-        throwf("res: not a tensor");
-    at::Tensor &t = res.toTensor();
-
-    if (t.dtype().toScalarType() != at::kLong)
-        throwf("predict: bad dtype: want: %d, have: %d", EI(at::kLong), EI(t.dtype().toScalarType()));
-
-    if (t.numel() != 1)
-        throwf("predict: bad numel: want: 1, have: %ld", t.numel());
-
-    auto action = t.item<int64_t>();
-    logAi->debug("AI action prediction: %ld\n", res);
+    auto action = getScalar<int>(method);
+    logAi->debug("AI action prediction: %d\n", action);
 
     // Also esitmate value
     // XXX: this value is useless (seems pretty random)
@@ -430,16 +454,13 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
 double TorchModel::getValue(const MMAI::Schema::IState * s) {
     auto any = s->getSupplementaryData();
 
-    if (version != 13)
-        throwf("unsupported model version: want: 13, have: %d", version);
-
-    if (s->version() != 13)
-        throwf("unsupported IState version: want: 13, have: %d", s->version());
+    if (s->version() != version)
+        throwf("getValue: unsupported IState version: want: %d, have: %d", version, s->version());
 
     if(!any.has_value()) throw std::runtime_error("extractSupplementaryData: supdata is empty");
     auto err = MMAI::Schema::AnyCastError(any, typeid(const MMAI::Schema::V13::ISupplementaryData*));
     if(!err.empty())
-        throwf("anycast failed: %s", err);
+        throwf("getValue: anycast failed: %s", err);
 
     const auto *sup = std::any_cast<const MMAI::Schema::V13::ISupplementaryData*>(any);
 
@@ -452,21 +473,8 @@ double TorchModel::getValue(const MMAI::Schema::IState * s) {
         values.push_back(t);
     }
 
-    std::unique_lock lock(m);
     auto method = "get_value" + std::to_string(size_idx);
-    auto raw_value = tjc->module.get_method(method)(values);
-
-    if (!raw_value.isTensor())
-        throwf("get_value: not a tensor");
-    at::Tensor &t = raw_value.toTensor();
-
-    if (t.dtype().toScalarType() != at::kFloat)
-        throwf("get_value: bad dtype: want: %d, have: %d", EI(at::kFloat), EI(t.dtype().toScalarType()));
-
-    if (t.numel() != 1)
-        throwf("get_value: bad numel: want: 1, have: %ld", t.numel());
-
-    auto value = t.item<float>();
+    auto value = getScalar<float>(method);
     logAi->debug("AI value prediction: %f\n", value);
 
     return value;

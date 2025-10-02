@@ -99,17 +99,33 @@ set(MMAI_LIBS vcmi)
 set(MMAI_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 set(MMAI_THIRD_PARTY_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/schema/gcem)
 
-if(MMAI_EXECUTORCH_INSTALL_DIR)
-  if(WIN32 AND NOT (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64"))
-    # NOTE: I've actually never tested it on ARM64, assuming it works for now.
-    # Officially not supported on windows yet.
-    # As of executorch-0.7.0, it causes memory violations and program crashes.
-    message(FATAL_ERROR "ExecuTorch is not supported on windoes, except for ARM architectures. Use libtorch instead.")
-  endif()
+#[[
+About ExecuTorch vs. Libtorch:
+Executorch is a more "modern" and flexible alternative to Libtorch.
+Executorch must not be used on Windows, as it causes memory corruption.
+Executorch's XNNPACK-lowered models run ~3x slower than libtorch's optimized
+models on Mac M1.
+Executorch is linked statically to VCMI and has a tiny size footprint.
+Libtorch is linked dynamically (except for mobile) and is huge in size (100MB).
+Executorch build is super fast (few minutes at most), compared to libtorch
+which requires *several houts* to build. This is why libtorch is pre-built
+on CI, but such builds regularly need to re-run to keep up with upstream
+updates (e.g. new pytorch releases). If the builds stop working, it will be
+difficult to troubleshoot the issue given the huge build times.
+---
+Ultimately, runtime performance matters most, so libtorch should be preferred.
+The only reason keep the door open for executorch would be:
+- future potential (when the project matures enough)
+- edge device support, e.g. it compiles on android32 (libtorch does not).
+  However, I have NOT tested it on such a device.
+]]
 
+if(MMAI_EXECUTORCH_INSTALL_DIR)
   if(MMAI_LIBTORCH_PATH)
     message(FATAL_ERROR "MMAI_EXECUTORCH_INSTALL_DIR and MMAI_LIBTORCH_PATH are mutually exclusive.")
   endif()
+
+  message(WARNING "ExecuTorch does causes memory corruption on windows. Prefer libtorch.")
 
   #[[
   About the MMAI_EXECUTORCH_INSTALL_DIR flag:
@@ -124,7 +140,7 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
     $ git clone --recurse-submodules -b release/0.7 https://github.com/pytorch/executorch.git
     $ cd executorch
     $ python3 -m venv .venv
-    $ . ./venv/bin/activate
+    $ . .venv/bin/activate
 
     # Copy cmake files from MMAI dir
     $ {vcmi_dir}/executorch/install_headers.cmake ./
@@ -194,10 +210,6 @@ elseif(MMAI_LIBTORCH_PATH)
 
   Libtorch should only be used on windows, where executorch is not an option.
   ]]
-  if(NOT (WIN32 AND NOT (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")))
-    # Technically should work some other platforms, but executorch should be preferred.
-    message(WARNING "LibTorch should only be used on non-arm Windows platforms. Prefer executorch instead.")
-  endif()
 
   add_definitions(-DUSING_LIBTORCH=1)
   list(APPEND CMAKE_PREFIX_PATH "${MMAI_LIBTORCH_PATH}")
