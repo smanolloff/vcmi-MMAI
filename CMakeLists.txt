@@ -122,8 +122,10 @@ The only reason keep the door open for executorch would be:
 
 if(MMAI_EXECUTORCH_PATH)
   if(MMAI_LIBTORCH_PATH)
-    message(Path to libtorch install directory")
-  endifPath to libtorch install directory")
+    message(FATAL_ERROR "MMAI_EXECUTORCH_INSTALL_DIR and MMAI_LIBTORCH_PATH are mutually exclusive.")
+  endif()
+
+  message(WARNING "ExecuTorch does causes memory corruption on windows. Prefer libtorch.")
 
   #[[
   About the MMAI_EXECUTORCH_PATH flag:
@@ -201,7 +203,7 @@ elseif(MMAI_LIBTORCH_PATH)
   #[[
   About Path to libtorch install director:
 
-  Path to libtorch install directoryy"
+  MMAI_LIBTORCH_PATH must point to a lightweight (CPU-only) version of "libtorch"
   which will be used by VCMI for loading pre-trained ML models during gameplay.
   Depending on what VCMI is being compiled for:
   a) gameplay (i.e. if ENABLE_ML=0):
@@ -209,12 +211,13 @@ elseif(MMAI_LIBTORCH_PATH)
   b) training (i.e. if ENABLE_ML=1):
     MMAI_LIBTORCH_PATH must be blank
 
-  Path to libtorch install directoryn.
+  As of Oct 2025, Libtorch must be used on windows as executorch is broken.
   ]]
 
   add_definitions(-DUSING_LIBTORCH=1)
   list(APPEND CMAKE_PREFIX_PATH "${MMAI_LIBTORCH_PATH}")
-  find_package(Torch Path to libtorch install director)
+  find_package(Torch REQUIRED)
+  if(APPLE_IOS)
     # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
     find_library(ACCELERATE Accelerate)
     list(APPEND MMAI_LIBS "${ACCELERATE}")
@@ -252,7 +255,9 @@ elseif(MMAI_LIBTORCH_PATH)
   endfunction(install_torch_libs)
 else()
   if(NOT ENABLE_ML)
-    message(FATAL_ERROR "Either MMAI_EXECUTORCH_PATH or MMAI_LIBTORCH_PATH is required unless Path to libtorch install directo
+    message(FATAL_ERROR "Either MMAI_EXECUTORCH_PATH or MMAI_LIBTORCH_PATH is required unless ENABLE_ML is set")
+  endif()
+
   list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.h)
   list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.cpp)
 endif()
@@ -270,7 +275,8 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-if (MMAI_LIBTORCH_PATH AND NOT (Path to libtorch install directoryle
+if (MMAI_LIBTORCH_PATH AND NOT (APPLE_IOS OR ANDROID))
+  # libtorch libs are static on mobile
   install_torch_libs(torch torch_cpu c10)
 endif()
 if (MMAI_EXECUTORCH_PATH)
