@@ -90,8 +90,8 @@ set(MMAI_FILES
 
 option(ENABLE_MMAI_TEST "Compile tests" OFF)
 option(ENABLE_MMAI_STRICT_LOAD "Disable MMAI fallback during model load and throw an error instead" OFF)
-set(MMAI_EXECUTORCH_INSTALL_DIR "" CACHE PATH "Path to executorch v0.7.0 install directory")
-set(MMAI_LIBTORCH_PATH "" CACHE PATH "Link against libtorch located at the specified path (don't link if empty)")
+set(MMAI_EXECUTORCH_PATH "" CACHE PATH "Path to executorch v0.7.0 install directory")
+set(MMAI_LIBTORCH_PATH "" CACHE PATH "Path to libtorch install directory")
 
 set(EXECUTORCH_LIBRARIES "")
 
@@ -120,19 +120,18 @@ The only reason keep the door open for executorch would be:
   However, I have NOT tested it on such a device.
 ]]
 
-if(MMAI_EXECUTORCH_INSTALL_DIR)
+if(MMAI_EXECUTORCH_PATH)
   if(MMAI_LIBTORCH_PATH)
-    message(FATAL_ERROR "MMAI_EXECUTORCH_INSTALL_DIR and MMAI_LIBTORCH_PATH are mutually exclusive.")
-  endif()
-
-  message(WARNING "ExecuTorch does causes memory corruption on windows. Prefer libtorch.")
+    message(Path to libtorch install directory")
+  endifPath to libtorch install directory")
 
   #[[
-  About the MMAI_EXECUTORCH_INSTALL_DIR flag:
+  About the MMAI_EXECUTORCH_PATH flag:
 
   `executorch` is the library which handles loading pre-trained ML models during
   gameplay. It must be compiled externally so VCMI can be linked against it.
-  MMAI_EXECUTORCH_INSTALL_DIR contains header files and build artifacts (static libs).
+  MMAI_EXECUTORCH_PATH is a directory containing lib/ and include/
+  (where executorch build artifacts and header files were installed).
 
   Example setup:
 
@@ -151,7 +150,7 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
     $ cmake --preset mmai-executorch-release -P install_headers.cmake
 
   Now you can build VCMI with:
-    MMAI_EXECUTORCH_INSTALL_DIR=/some/path/excutorch/install-release
+    MMAI_EXECUTORCH_PATH=/some/path/excutorch/install-release
   ]]
 
   add_definitions(-DUSING_EXECUTORCH=1)
@@ -160,7 +159,7 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
     add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
   endif()
 
-  set(executorch_ROOT "${MMAI_EXECUTORCH_INSTALL_DIR}")
+  set(executorch_ROOT "${MMAI_EXECUTORCH_PATH}")
   find_package(executorch CONFIG REQUIRED)
 
   message(STATUS "EXECUTORCH_FOUND: ${EXECUTORCH_FOUND}")
@@ -200,21 +199,22 @@ if(MMAI_EXECUTORCH_INSTALL_DIR)
   message(STATUS "_nonforce_libs: ${_nonforce_libs}")
 elseif(MMAI_LIBTORCH_PATH)
   #[[
-  About the MMAI_LIBTORCH_PATH flag:
+  About Path to libtorch install director:
 
-  MMAI_LIBTORCH_PATH must point to a lightweight (CPU-only) version of "libtorch"
+  Path to libtorch install directoryy"
   which will be used by VCMI for loading pre-trained ML models during gameplay.
   Depending on what VCMI is being compiled for:
-  a) gameplay (i.e. if ENABLE_ML=0): MMAI_LIBTORCH_PATH must be a valid path
-  b) training (i.e. if ENABLE_ML=1): MMAI_LIBTORCH_PATH must be blank
+  a) gameplay (i.e. if ENABLE_ML=0):
+    MMAI_LIBTORCH_PATH must be a directory containing libPath to libtorch install directory).
+  b) training (i.e. if ENABLE_ML=1):
+    MMAI_LIBTORCH_PATH must be blank
 
-  Libtorch should only be used on windows, where executorch is not an option.
+  Path to libtorch install directoryn.
   ]]
 
   add_definitions(-DUSING_LIBTORCH=1)
   list(APPEND CMAKE_PREFIX_PATH "${MMAI_LIBTORCH_PATH}")
-  find_package(Torch REQUIRED)
-  if(APPLE_IOS)
+  find_package(Torch Path to libtorch install director)
     # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
     find_library(ACCELERATE Accelerate)
     list(APPEND MMAI_LIBS "${ACCELERATE}")
@@ -252,9 +252,7 @@ elseif(MMAI_LIBTORCH_PATH)
   endfunction(install_torch_libs)
 else()
   if(NOT ENABLE_ML)
-    message(FATAL_ERROR "Either MMAI_EXECUTORCH_INSTALL_DIR or MMAI_LIBTORCH_PATH is required unless ENABLE_ML is set")
-  endif()
-
+    message(FATAL_ERROR "Either MMAI_EXECUTORCH_PATH or MMAI_LIBTORCH_PATH is required unless Path to libtorch install directo
   list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.h)
   list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.cpp)
 endif()
@@ -272,12 +270,11 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-if (MMAI_LIBTORCH_PATH AND NOT (APPLE_IOS OR ANDROID))
-  # libtorch libs are static on mobile
+if (MMAI_LIBTORCH_PATH AND NOT (Path to libtorch install directoryle
   install_torch_libs(torch torch_cpu c10)
 endif()
-if (MMAI_EXECUTORCH_INSTALL_DIR)
-  force_link_static(MMAI "${MMAI_EXECUTORCH_INSTALL_DIR}/lib" ${_force_libs})
+if (MMAI_EXECUTORCH_PATH)
+  force_link_static(MMAI "${MMAI_EXECUTORCH_PATH}/lib" ${_force_libs})
 endif()
 
 message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS}")
