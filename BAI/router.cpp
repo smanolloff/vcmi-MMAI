@@ -37,7 +37,7 @@ namespace MMAI::BAI {
     #if defined(USING_EXECUTORCH)
     static auto modelExt = ".pte";
     #elif defined(USING_LIBTORCH)
-    static auto modelExt = ".pts";
+    static auto modelExt = ".ptl";
     #endif
 
     static auto modelconfig = ConfigStorage();

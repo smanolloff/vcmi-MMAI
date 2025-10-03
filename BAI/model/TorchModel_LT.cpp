@@ -24,6 +24,7 @@
 
 #include "TorchModel_LT.h"
 #include "schema/schema.h"
+#include "vstd/CLoggerBase.h"
 
 namespace MMAI::BAI {
 
@@ -202,7 +203,7 @@ namespace {
 }
 
 template <typename T>
-T TorchModel::getScalar(const std::string &method_name) {
+T TorchModel::getScalar(const std::string &method_name, const std::vector<c10::IValue>& input) {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, int>, "T must be float or int");
     at::ScalarType st;
 
@@ -212,7 +213,7 @@ T TorchModel::getScalar(const std::string &method_name) {
         st = at::kLong;
     }
 
-    auto t = call(method_name, 1, st);
+    auto t = call(method_name, input, 1, 1, st);
 
     if (t.dim() != 1)
         throwf("getScalar: %s: bad dim(): want: 1, have: %ld", method_name, t.dim());
@@ -334,10 +335,12 @@ std::pair<std::vector<at::Tensor>, int> TorchModel::prepareInputsV13(
 at::Tensor TorchModel::call(
     const std::string& method_name,
     const std::vector<c10::IValue>& input,
-    int resNumel,
+    int numel,
+    int ndim,
     at::ScalarType st
 ) {
     std::unique_lock lock(m);
+    logAi->warn("call: %s...", method_name);
     auto raw = model->get_method(method_name)(input);
 
     if (!raw.isTensor())
@@ -345,14 +348,14 @@ at::Tensor TorchModel::call(
 
     at::Tensor t = raw.toTensor().contiguous();
 
-    if (t.dim() != 1)
+    if (t.dim() != ndim)
         throwf("call: %s: bad dim(): want: 1, have: %ld", method_name, t.dim());
 
     if (t.scalar_type() != st)
         throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.scalar_type()));
 
-    if (resNumel && t.numel() != 1)
-        throwf("call: %s: bad numel: want: %d, have: %ld", method_name, resNumel, t.numel());
+    if (numel && t.numel() != 1)
+        throwf("call: %s: bad numel: want: %d, have: %ld", method_name, numel, t.numel());
 
     return t;
 }
@@ -361,13 +364,13 @@ TorchModel::TorchModel(std::string &path)
 : path(path)
 , model(std::make_unique<tj::mobile::Module>(tj::_load_for_mobile(path)))
 {
-    version = getScalar<int>("get_side");
+    version = getScalar<int>("get_version");
     side = Schema::Side(getScalar<int>("get_side"));
 
     if (version != 13)
         throwf("unsupported model version: want: 13, have: %d", version);
 
-    auto t_buckets = call("get_all_sizes", 0, at::kLong);
+    auto t_buckets = call("get_all_sizes", 0, 3, at::kLong);
     std::vector<int64_t> flat_buckets(t_buckets.numel());
     std::memcpy(flat_buckets.data(), t_buckets.data_ptr<int64_t>(), flat_buckets.size() * sizeof(int64_t));
 
@@ -436,7 +439,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     }
 
     auto method = "predict" + std::to_string(size_idx);
-    auto action = getScalar<int>(method);
+    auto action = getScalar<int>(method, values);
     logAi->debug("AI action prediction: %d\n", action);
 
     // Also esitmate value

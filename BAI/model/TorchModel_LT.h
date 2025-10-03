@@ -56,18 +56,22 @@ private:
         const std::string& method_name,
         const std::vector<c10::IValue>& input,
         int numel,
+        int ndim,
         at::ScalarType st
     );
 
-    at::Tensor call(const std::string &method_name, const c10::IValue& ev, int numel, at::ScalarType st) {
-        return call(method_name, std::vector<c10::IValue>{ev}, numel, st);
+    at::Tensor call(const std::string &method_name, const c10::IValue& ev, int numel, int ndim, at::ScalarType st) {
+        return call(method_name, std::vector<c10::IValue>{ev}, numel, ndim, st);
     }
 
-    at::Tensor call(const std::string &method_name, int numel, at::ScalarType st) {
-        return call(method_name, std::vector<c10::IValue>{}, numel, st);
+    at::Tensor call(const std::string &method_name, int numel, int ndim, at::ScalarType st) {
+        return call(method_name, std::vector<c10::IValue>{}, numel, ndim, st);
     }
 
-    template <typename T> T getScalar(const std::string &method_name);
+    template <typename T> T getScalar(const std::string &method_name, const std::vector<c10::IValue>& input);
+    template <typename T> T getScalar(const std::string &method_name) {
+        return getScalar<T>(method_name, std::vector<c10::IValue>{});
+    };
 
     c10::InferenceMode guard;
     std::unique_ptr<tj::mobile::Module> model;
