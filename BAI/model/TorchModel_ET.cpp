@@ -193,7 +193,11 @@ namespace {
 
         return out;
     }
+}
 
+/*
+// DEBUG FUNCTIONS
+namespace {
     static inline size_t element_size(ScalarType dt) {
         switch (dt) {
             case ScalarType::Float:  return 4;
@@ -299,6 +303,8 @@ namespace {
         return v32;
     }
 }
+// EOF: DEBUG FUNCTIONS
+*/
 
 TorchModel::TorchModel(std::string &path)
 : path(path) {
