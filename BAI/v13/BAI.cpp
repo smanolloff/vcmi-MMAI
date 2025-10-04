@@ -16,6 +16,7 @@
 
 #include "StdInc.h"
 #include "battle/BattleAction.h"
+#include "battle/BattleStateInfoForRetreat.h"
 #include "battle/CBattleInfoEssentials.h"
 
 #include "BAI/base.h"
@@ -29,6 +30,7 @@
 #include "schema/v13/types.h"
 
 #include "AI/BattleAI/BattleEvaluator.h"
+#include <optional>
 
 namespace MMAI::BAI::V13 {
     Schema::Action BAI::getNonRenderAction() {
@@ -126,8 +128,14 @@ namespace MMAI::BAI::V13 {
         if (battle->battleCanCastSpell(hero, spells::Mode::HERO) != ESpellCastProblem::OK)
             return false;
 
+        auto lv = state->lpstats->getAttr(PA::ARMY_VALUE_NOW_ABS);
+        auto rv = state->rpstats->getAttr(PA::ARMY_VALUE_NOW_ABS);
+        float vratio = static_cast<float>(lv) / rv;
+        if (battle->battleGetMySide() == BattleSide::RIGHT_SIDE)
+            vratio = 1 / vratio;
+
         logAi->debug("Attempting a BattleAI spellcast");
-        auto evaluator = BattleEvaluator(env, cb, astack, playerID, bid, battle->battleGetMySide(), 0.5, 2);
+        auto evaluator = BattleEvaluator(env, cb, astack, playerID, bid, battle->battleGetMySide(), vratio, 2);
         return evaluator.attemptCastingSpell(astack);
     }
 
@@ -194,11 +202,37 @@ namespace MMAI::BAI::V13 {
         return nullptr;
     }
 
+    std::optional<BattleAction> BAI::maybeFleeOrSurrender(const BattleID &bid) {
+        BattleStateInfoForRetreat bs;
+
+        bs.canFlee = battle->battleCanFlee();
+        bs.canSurrender = battle->battleCanSurrender(playerID);
+        if(!bs.canFlee && !bs.canSurrender) {
+            logAi->info("Can't flee or surrender.");
+            return std::nullopt;
+        }
+
+        bs.ourSide = battle->battleGetMySide();
+        bs.ourHero = battle->battleGetMyHero();
+        bs.enemyHero = nullptr;
+
+        for(const auto *stack : battle->battleGetAllStacks(false)) {
+            if(stack->alive()) {
+                if(stack->unitSide() == bs.ourSide) {
+                    bs.ourStacks.push_back(stack);
+                } else {
+                    bs.enemyStacks.push_back(stack);
+                    bs.enemyHero = battle->battleGetOwnerHero(stack);
+                }
+            }
+        }
+
+        logAi->info("Making surrender/retreat decision...");
+        return cb->makeSurrenderRetreatDecision(bid, bs);
+    }
+
     void BAI::activeStack(const BattleID &bid, const CStack *astack) {
         Base::activeStack(bid, astack);
-
-        if (maybeCastSpell(astack, bid))
-            return;
 
         auto ba = maybeBuildAutoAction(astack);
 
@@ -210,6 +244,9 @@ namespace MMAI::BAI::V13 {
 
         state->onActiveStack(astack);
 
+        if (maybeCastSpell(astack, bid))
+            return;
+
         if (state->battlefield->astack == nullptr) {
             error("The current stack is not part of the state. "
                     "This should NOT happen. "
@@ -219,6 +256,14 @@ namespace MMAI::BAI::V13 {
             return;
         }
 
+        auto concede = maybeFleeOrSurrender(bid);
+        if (concede) {
+            info("Making retreat/surrender action.");
+            cb->battleMakeUnitAction(bid, *concede);
+            return;
+        }
+
+        logAi->info("Not conceding.");
 
         while(true) {
             for (int i = 0; i < static_cast<int>(state->transitions.size()); ++i) {

@@ -283,9 +283,8 @@ if (MMAI_EXECUTORCH_PATH)
   force_link_static(MMAI "${MMAI_EXECUTORCH_PATH}/lib" ${_force_libs})
 endif()
 
-message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS}")
+message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS} ${_nonforce_libs}")
 target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
-message(STATUS "MMAI target_link_libraries: ${_nonforce_libs}")
 target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
 target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
 
