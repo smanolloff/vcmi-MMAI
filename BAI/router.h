@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "battle/AutocombatPreferences.h"
 #include "battle/CPlayerBattleCallback.h"
 
 #include "BAI/base.h"
@@ -64,6 +65,7 @@ namespace MMAI::BAI {
 
     private:
         bool wasWaitingForRealize = false;
+        AutocombatPreferences autocombatPreferences;
         std::string addrstr = "?";
         std::string colorname = "?";
 

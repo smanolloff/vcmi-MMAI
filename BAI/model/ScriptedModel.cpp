@@ -44,12 +44,14 @@ namespace MMAI::BAI {
         return Schema::Side::BOTH;
     }
 
-    // The below methods should never be called on this object:
     // SCRIPTED models are dummy models which should not be used for anything
     // other than their getType() and getName() methods. Based on the return
     // value, the corresponding scripted bot (e.g. StupidAI) should be
     // used for the upcoming battle instead.
+    // When MMAI fails to load an ML model, it loads a SCRIPTED model instead
+    // as per MMAI mod's "fallback" setting in order to prevent a game crash.
 
+    // The below methods should never be called on this object:
     int ScriptedModel::getVersion() {
         warn("getVersion", -666);
         return -666;

@@ -66,5 +66,6 @@ namespace MMAI::BAI::V13 {
         std::string debugInfo(Action *action, const CStack *astack, BattleHex *nbh); // DEBUG ONLY
         std::shared_ptr<BattleAction> buildBattleAction();
         std::shared_ptr<BattleAction> maybeBuildAutoAction(const CStack * stack);
+        bool maybeCastSpell(const CStack * stack, const BattleID &bid);
     };
 }

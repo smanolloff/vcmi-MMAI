@@ -30,7 +30,8 @@ namespace MMAI::BAI {
     std::shared_ptr<Base> Base::Create(
         Schema::IModel* model,
         const std::shared_ptr<Environment> env,
-        const std::shared_ptr<CBattleCallback> cb
+        const std::shared_ptr<CBattleCallback> cb,
+        const bool enableSpellsUsage
     ) {
         std::shared_ptr<Base> res;
         auto version = model->getVersion();
@@ -44,7 +45,7 @@ namespace MMAI::BAI {
             throw std::runtime_error("Unsupported schema version: " + std::to_string(version));
         }
 
-        res->init();
+        res->init(enableSpellsUsage);
         return res;
     }
 
@@ -87,7 +88,8 @@ namespace MMAI::BAI {
      * Their implementation here is a no-op.
      */
 
-    void Base::init() {
+    void Base::init(bool enableSpellsUsage_) {
+        enableSpellsUsage = enableSpellsUsage_;
         debug("*** init ***");
     }
 

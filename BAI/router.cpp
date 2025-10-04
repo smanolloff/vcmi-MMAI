@@ -144,7 +144,8 @@ namespace MMAI::BAI {
         bai.reset();
     }
 
-    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences _) {
+    void Router::initBattleInterface(std::shared_ptr<Environment> ENV, std::shared_ptr<CBattleCallback> CB, AutocombatPreferences prefs) {
+        autocombatPreferences = prefs;
         initBattleInterface(ENV, CB);
     }
 
@@ -231,22 +232,23 @@ namespace MMAI::BAI {
         case Schema::ModelType::SCRIPTED:
             if (model->getName() == "StupidAI") {
                 bai = CDynLibHandler::getNewBattleAI("StupidAI");
-                bai->initBattleInterface(env, cb);
+                bai->initBattleInterface(env, cb, autocombatPreferences);
             } else if (model->getName() == "BattleAI") {
                 bai = CDynLibHandler::getNewBattleAI("BattleAI");
-                bai->initBattleInterface(env, cb);
+                bai->initBattleInterface(env, cb, autocombatPreferences);
             } else {
                 THROW_FORMAT("Unexpected scripted model name: %s", model->getName());
             }
             break;
         case Schema::ModelType::TORCH:
             // XXX: must not call initBattleInterface here
-            bai = Base::Create(model, env, cb);
+            bai = Base::Create(model, env, cb, autocombatPreferences.enableSpellsUsage);
             break;
 
         default:
             THROW_FORMAT("Unexpected model type: %d", EI(model->getType()));
         }
+
 
         bai->battleStart(bid, army1, army2, tile, hero1, hero2, side, replayAllowed);
     }

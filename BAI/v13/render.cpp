@@ -300,7 +300,7 @@ namespace MMAI::BAI::V13 {
 
             // XXX: The logic in battleIsFinished is flawed and returns no value
             //      (i.e. "not finished") if both sides have units, which can
-            //      happen if the OPPONENT (not us) retreats.
+            //      happen if the WE some has retreated as a regular action (not via reset).
             // ASSERT(fin.has_value(), "ended, but battleIsFinished returns no value?");
 
             if (fin.has_value()) {
@@ -309,8 +309,8 @@ namespace MMAI::BAI::V13 {
                     ? ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), NULL_VALUE_UNENCODED, "GA.BATTLE_WINNER (draw)")
                     : ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), EI(fin.value()), "GA.BATTLE_WINNER");
             } else {
-                // the opponent retreated -- we must be the winner
-                ensureValueMatch(gstats->getAttr(GA::BATTLE_WINNER), gstats->getAttr(GA::BATTLE_SIDE), "GA.BATTLE_WINNER (enemy retreat)");
+                // we have retreated *as an action*
+                // There seems to be no way to ask vcmi "which side retreated"
             }
 
             ensureValueMatch(gstats->getAttr(GA::BATTLE_SIDE_ACTIVE_PLAYER), NULL_VALUE_UNENCODED, "GA.BATTLE_SIDE_ACTIVE_PLAYER");

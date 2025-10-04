@@ -28,6 +28,8 @@
 #include "common.h"
 #include "schema/v13/types.h"
 
+#include "AI/BattleAI/BattleEvaluator.h"
+
 namespace MMAI::BAI::V13 {
     Schema::Action BAI::getNonRenderAction() {
         // info("getNonRenderAciton called with result type: " + std::to_string(result->type));
@@ -112,6 +114,23 @@ namespace MMAI::BAI::V13 {
         cb->battleMakeTacticAction(bid, BattleAction::makeEndOFTacticPhase(battle->battleGetTacticsSide()));
     }
 
+    bool BAI::maybeCastSpell(const CStack* astack, const BattleID &bid) {
+        if(!enableSpellsUsage)
+            return false;
+
+        const auto *hero = battle->battleGetMyHero();
+
+        if(!hero)
+            return false;
+
+        if (battle->battleCanCastSpell(hero, spells::Mode::HERO) != ESpellCastProblem::OK)
+            return false;
+
+        logAi->debug("Attempting a BattleAI spellcast");
+        auto evaluator = BattleEvaluator(env, cb, astack, playerID, bid, battle->battleGetMySide(), 0.5, 2);
+        return evaluator.attemptCastingSpell(astack);
+    }
+
     std::shared_ptr<BattleAction> BAI::maybeBuildAutoAction(const CStack *astack) {
         if (astack->creatureId() == CreatureID::FIRST_AID_TENT) {
             const CStack* target = nullptr;
@@ -177,6 +196,9 @@ namespace MMAI::BAI::V13 {
 
     void BAI::activeStack(const BattleID &bid, const CStack *astack) {
         Base::activeStack(bid, astack);
+
+        if (maybeCastSpell(astack, bid))
+            return;
 
         auto ba = maybeBuildAutoAction(astack);
 

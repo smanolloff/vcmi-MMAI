@@ -31,7 +31,8 @@ namespace MMAI::BAI {
         static std::shared_ptr<Base> Create(
             Schema::IModel* model,
             const std::shared_ptr<Environment> env,
-            const std::shared_ptr<CBattleCallback> cb
+            const std::shared_ptr<CBattleCallback> cb,
+            const bool enableSpellsUsage
         );
 
         Base() = delete;
@@ -57,7 +58,7 @@ namespace MMAI::BAI {
          * Their base implementation is for logging purposes only.
          */
 
-        virtual void init();  // called shortly after object construction
+        virtual void init(bool enableSpellsUsage);  // called shortly after object construction
         virtual void actionFinished(const BattleID &bid, const BattleAction &action) override;
         virtual void actionStarted(const BattleID &bid, const BattleAction &action) override;
         virtual void battleAttack(const BattleID &bid, const BattleAttack *ba) override;
@@ -96,6 +97,8 @@ namespace MMAI::BAI {
 
         // Set via VCMI_BAI_VERBOSE env var ("1" to enable)
         bool verbose = false;
+
+        bool enableSpellsUsage = false;
 
         /*
          * Templates defined in the header
