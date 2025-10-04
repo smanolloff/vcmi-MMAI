@@ -442,6 +442,8 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     auto action = getScalar<int>(method, values);
     logAi->debug("AI action prediction: %d\n", action);
 
+    auto value = getScalar<float>("get_value" + std::to_string(size_idx), values);
+    logAi->info("AI value prediction (side=%d): %.3f\n", EI(side), value);
     // Also esitmate value
     // XXX: this value is useless (seems pretty random)
     /*

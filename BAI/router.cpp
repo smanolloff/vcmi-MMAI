@@ -54,8 +54,12 @@ namespace MMAI::BAI {
         for (const auto &key : {"attacker", "defender", "fallback"}) {
             if(cfg[key].isString()) {
                 std::string value = cfg[key].String();
-                if (std::string(key) != "fallback")
-                    value = "MMAI/models/" + value + modelExt;
+                if (std::string(key) != "fallback") {
+                    value = "MMAI/models/" + value;
+                    if (!boost::algorithm::ends_with(value, modelExt)) {
+                        value += modelExt;
+                    }
+                }
 
                 modelconfig.insert({key, value});
             } else {
