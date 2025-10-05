@@ -506,7 +506,8 @@ namespace MMAI::BAI::V13 {
 
         int cid = cstack->creatureId().num;
         if (cid > Schema::V13::CREATURE_ID_MAX) {
-            logAi->error("MMAI error: unknown creature with: %d (%s)", cid, cstack->getDescription());
+            // This would trigger every time a non-vanilla H3 creature becomes active for MMAI
+            // logAi->debug("MMAI was not trained with this creature: id=%d (%s)", cid, cstack->getDescription());
             #ifdef ENABLE_ML
                 throw std::runtime_error("unknown creature id: " + std::to_string(cid));
             #endif
