@@ -217,7 +217,7 @@ elseif(MMAI_LIBTORCH_PATH)
   add_definitions(-DUSING_LIBTORCH=1)
   list(APPEND CMAKE_PREFIX_PATH "${MMAI_LIBTORCH_PATH}")
   find_package(Torch REQUIRED)
-  if(APPLE_IOS)
+  if(IOS)
     # Found in system SDK, somewhere in `xcrun --sdk iphoneos --show-sdk-path`
     find_library(ACCELERATE Accelerate)
     list(APPEND MMAI_LIBS "${ACCELERATE}")
@@ -275,7 +275,7 @@ else()
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
 endif()
 
-if (MMAI_LIBTORCH_PATH AND NOT (APPLE_IOS OR ANDROID))
+if (MMAI_LIBTORCH_PATH AND NOT (IOS OR ANDROID))
   # libtorch libs are static on mobile
   install_torch_libs(torch torch_cpu c10)
 endif()
