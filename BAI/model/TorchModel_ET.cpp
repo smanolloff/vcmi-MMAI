@@ -37,7 +37,7 @@ namespace {
         explicit ScopedTimer(const char* n) : name(n), t0(std::chrono::steady_clock::now()) {}
         ~ScopedTimer() {
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
-            logAi->debug("%s: %lld ms", name, dt);
+            logAi->warn("%s: %lld ms", name, dt);
         }
     };
 
@@ -442,6 +442,7 @@ Tensor TorchModel::call(
     int resNumel,
     ScalarType st
 ) {
+    auto timer = ScopedTimer("call");
     maybeLoadMethod(method_name);
     auto& method = methods.at(method_name).method;
     auto& inputs = methods.at(method_name).inputs;
@@ -580,20 +581,20 @@ std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
         }
     }
 
-    auto einds = std::vector<int64_t> {};
+    auto einds = std::vector<int> {};
     einds.reserve(2*sum_e);
     for (auto &eind : build.ei_flat)
         einds.insert(einds.end(), eind.begin(), eind.end());
 
-    auto nbrs = std::vector<int64_t> {};
+    auto nbrs = std::vector<int> {};
     nbrs.reserve(165*sum_k);
     for (auto &nbr : build.nbrs_flat)
         nbrs.insert(nbrs.end(), nbr.begin(), nbr.end());
 
     auto t_state = et_ext::from_blob(estate.data(), {int(estate.size())}, ScalarType::Float);
-    auto t_ei_flat = et_ext::from_blob(einds.data(), {2, sum_e}, ScalarType::Long);
+    auto t_ei_flat = et_ext::from_blob(einds.data(), {2, sum_e}, ScalarType::Int);
     auto t_ea_flat = et_ext::from_blob(build.ea_flat.data(), {sum_e, 1}, ScalarType::Float);
-    auto t_nbrs_flat = et_ext::from_blob(nbrs.data(), {165, sum_k}, ScalarType::Long);
+    auto t_nbrs_flat = et_ext::from_blob(nbrs.data(), {165, sum_k}, ScalarType::Int);
 
     auto tensors = std::vector<TensorPtr> {
         et_ext::clone_tensor_ptr(t_state),
