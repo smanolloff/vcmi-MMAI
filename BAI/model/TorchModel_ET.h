@@ -75,7 +75,9 @@ private:
     void maybeLoadMethod(const std::string& method_name);
 
     // 3D tensor as a vector
-    std::vector<std::vector<std::vector<int64_t>>> all_sizes;
+    std::vector<std::vector<std::vector<int>>> all_sizes;
+
+    executorch::extension::TensorPtr prepareDummyInput();
 
     std::pair<std::vector<executorch::extension::TensorPtr>, int> prepareInputsV13(
         const MMAI::Schema::IState * state,

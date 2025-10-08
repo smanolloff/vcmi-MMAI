@@ -189,16 +189,37 @@ if(MMAI_EXECUTORCH_PATH)
 
   set(_force_libs
     xnnpack_backend
+    coremldelegate
     optimized_kernels
     quantized_kernels
     portable_ops_lib
   )
 
-  set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
+  # XXX: not sure if ALL of these are needed for CoreML models
+  find_library(COREML_FRAMEWORK CoreML)
+  find_library(FOUNDATION_FRAMEWORK Foundation)
+  find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
+  find_library(ACCELERATE_FRAMEWORK Accelerate)
+  find_library(METAL_FRAMEWORK Metal)
+  find_library(MPS_FRAMEWORK MetalPerformanceShaders)
+
+  set(_nonforce_libs
+    ${EXECUTORCH_LIBRARIES}
+    ${COREML_FRAMEWORK}
+    ${FOUNDATION_FRAMEWORK}
+    ${COREFOUNDATION_FRAMEWORK}
+    ${ACCELERATE_FRAMEWORK}
+    ${METAL_FRAMEWORK}
+    ${MPS_FRAMEWORK}
+    sqlite3
+  )
   list(REMOVE_ITEM _nonforce_libs ${_force_libs})
 
   message(STATUS "_force_libs: ${_force_libs}")
   message(STATUS "_nonforce_libs: ${_nonforce_libs}")
+
+
+
 elseif(MMAI_LIBTORCH_PATH)
   #[[
   About Path to libtorch install director:
@@ -291,6 +312,11 @@ target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
 target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
 
 target_link_options(MMAI PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/VERBOSE:LIB>)
+
+# 3) Make sure Obj-C categories in static libs are loaded.
+# Either of the following usually works; use the first if possible:
+target_link_options(MMAI PRIVATE -ObjC)
+
 
 # Used in schema/base.h to determine if it is imported by MMAI or vcmi-gym
 set_target_properties(MMAI PROPERTIES COMPILE_DEFINITIONS "MMAI_DLL=1")

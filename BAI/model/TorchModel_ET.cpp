@@ -3,6 +3,7 @@
 #include <array>
 #include <chrono>
 #include <cstring>
+#include <executorch/extension/tensor/tensor_ptr_maker.h>
 #include <initializer_list>
 #include <memory>
 #include <numeric>
@@ -15,6 +16,7 @@
 #include <executorch/runtime/platform/runtime.h>
 
 #include "StdInc.h"
+#include "BAI/model/TorchModel_ET.h"
 #include "TorchModel.h"
 
 namespace MMAI::BAI {
@@ -41,7 +43,7 @@ namespace {
         }
     };
 
-    std::array<std::vector<int64_t>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
+    std::array<std::vector<int>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
         // Pass 1: validate and count degrees per node
         std::array<int, 165> deg{};
         for (size_t e = 0; e < dst.size(); ++e) {
@@ -51,36 +53,36 @@ namespace {
             ++deg[v];
         }
 
-        std::array<std::vector<int64_t>, 165> nbr{};
+        std::array<std::vector<int>, 165> nbr{};
         for (int v = 0; v < 165; ++v) nbr[v].reserve(deg[v]);
         for (size_t e = 0; e < dst.size(); ++e) {
             int v = static_cast<int>(dst[e]);
-            nbr[v].push_back(static_cast<int64_t>(e));
+            nbr[v].push_back(static_cast<int>(e));
         }
 
         return nbr;
     }
 
     struct IndexContainer {
-        std::array<std::vector<int64_t>, 2> ei;
+        std::array<std::vector<int>, 2> ei;
         std::vector<float> ea;
-        std::array<std::vector<int64_t>, 165> nbrs;
+        std::array<std::vector<int>, 165> nbrs;
     };
 
     struct BuildOutputs {
         int size_index = -1;                                // chosen index in all_sizes
-        std::array<int64_t, LT_COUNT> emax{};               // chosen emax per link type
-        std::array<int64_t, LT_COUNT> kmax{};               // chosen kmax per link type
+        std::array<int, LT_COUNT> emax{};               // chosen emax per link type
+        std::array<int, LT_COUNT> kmax{};               // chosen kmax per link type
 
-        std::array<std::vector<int64_t>, 2> ei_flat;        // each length sum(emax)
+        std::array<std::vector<int>, 2> ei_flat;        // each length sum(emax)
         std::vector<float> ea_flat;                         // length sum(emax)
-        std::array<std::vector<int64_t>, 165> nbrs_flat;    // each length sum(kmax)
+        std::array<std::vector<int>, 165> nbrs_flat;    // each length sum(kmax)
     };
 
     // all_sizes: S x LT_COUNT x 2, where [s][l] = {emax, kmax}
     BuildOutputs build_flattened(
         const std::array<IndexContainer, LT_COUNT>& containers,
-        const std::vector<std::vector<std::vector<int64_t>>>& all_sizes,
+        const std::vector<std::vector<std::vector<int>>>& all_sizes,
         int bucket
     ) {
         BuildOutputs out{};
@@ -98,17 +100,17 @@ namespace {
 
         // 1) Find smallest valid size index
         int chosen = -1;
-        std::array<int64_t, LT_COUNT> emax{}, kmax{};
+        std::array<int, LT_COUNT> emax{}, kmax{};
         for (int s = 0; s < static_cast<int>(all_sizes.size()); ++s) {
             const auto& sz = all_sizes[s];
             if (sz.size() != LT_COUNT) continue;  // skip malformed
             bool ok = true;
             for (int l = 0; l < LT_COUNT && ok; ++l) {
                 if (sz[l].size() != 2) { ok = false; break; }
-                int64_t emax_l = sz[l][0];
-                int64_t kmax_l = sz[l][1];
-                if (emax_l < static_cast<int64_t>(e_req[l]) ||
-                    kmax_l < static_cast<int64_t>(k_req[l])) {
+                int emax_l = sz[l][0];
+                int kmax_l = sz[l][1];
+                if (emax_l < static_cast<int>(e_req[l]) ||
+                    kmax_l < static_cast<int>(k_req[l])) {
                     ok = false;
                 }
             }
@@ -128,7 +130,7 @@ namespace {
             throw std::runtime_error("No size option in all_sizes satisfies the data requirements.");
         }
 
-        logAi->debug("Size: %d", chosen);
+        logAi->warn("Size: %d", chosen);
         for (int i=0; i<LT_COUNT; ++i)
             logAi->debug("  %d: [%ld, %ld] -> [%lld, %lld]", i, e_req[i], k_req[i], all_sizes[chosen][i][0], all_sizes[chosen][i][1]);
 
@@ -183,7 +185,7 @@ namespace {
                 const auto& src = containers[l].nbrs[v];
                 dst.insert(dst.end(), src.begin(), src.end());
                 const size_t need = static_cast<size_t>(kmax[l]) - src.size();
-                if (need > 0) dst.insert(dst.end(), need, static_cast<int64_t>(-1));
+                if (need > 0) dst.insert(dst.end(), need, static_cast<int>(-1));
             }
             // Optional sanity:
             if (dst.size() != sum_kmax) {
@@ -226,19 +228,19 @@ namespace {
 
     template <typename T>
     static void print_like_torch_impl(const TensorPtr& t, int max_per_dim, int float_prec) {
-        const auto& sizes = t->sizes();                 // std::vector<int64_t>
+        const auto& sizes = t->sizes();                 // std::vector<int>
         const int D = static_cast<int>(sizes.size());
-        std::vector<int64_t> strides(D, 1);
+        std::vector<int> strides(D, 1);
         for (int i = D - 2; i >= 0; --i) strides[i] = strides[i + 1] * sizes[i + 1];
 
         const T* data = t->const_data_ptr<T>();
 
-        auto print_dim = [&](auto&& self, int dim, int64_t offset, int indent) -> void {
+        auto print_dim = [&](auto&& self, int dim, int offset, int indent) -> void {
             std::cout << "[";
             if (dim == D - 1) {
-                int64_t n = sizes[dim];
-                int64_t show = std::min<int64_t>(n, max_per_dim);
-                for (int64_t i = 0; i < show; ++i) {
+                int n = sizes[dim];
+                int show = std::min<int>(n, max_per_dim);
+                for (int i = 0; i < show; ++i) {
                     if (i) std::cout << ", ";
                     if constexpr (std::is_floating_point<T>::value) {
                         std::cout << std::fixed << std::setprecision(float_prec) << data[offset + i];
@@ -250,9 +252,9 @@ namespace {
                 std::cout << "]";
                 return;
             }
-            int64_t n = sizes[dim];
-            int64_t show = std::min<int64_t>(n, max_per_dim);
-            for (int64_t i = 0; i < show; ++i) {
+            int n = sizes[dim];
+            int show = std::min<int>(n, max_per_dim);
+            for (int i = 0; i < show; ++i) {
                 if (i) std::cout << ",\n" << std::string(indent + 2, ' ');
                 self(self, dim + 1, offset + i * strides[dim], indent + 2);
             }
@@ -280,7 +282,7 @@ namespace {
         switch (t->scalar_type()) {
             case ScalarType::Float:  print_like_torch_impl<float>(t,  max_per_dim, float_precision); break;
             case ScalarType::Double: print_like_torch_impl<double>(t, max_per_dim, float_precision); break;
-            case ScalarType::Long:   print_like_torch_impl<int64_t>(t, max_per_dim, 0); break;
+            case ScalarType::Long:   print_like_torch_impl<int>(t, max_per_dim, 0); break;
             case ScalarType::Int:    print_like_torch_impl<int32_t>(t, max_per_dim, 0); break;
             case ScalarType::Short:  print_like_torch_impl<int16_t>(t, max_per_dim, 0); break;
             case ScalarType::Byte:   print_like_torch_impl<uint8_t>(t, max_per_dim, 0); break;
@@ -290,15 +292,15 @@ namespace {
     }
 
 
-    inline std::vector<int64_t> vec_int64_to_int32(const std::vector<int64_t>& v64) {
-        std::vector<int64_t> v32;
+    inline std::vector<int> vec_into_int32(const std::vector<int>& v64) {
+        std::vector<int> v32;
         v32.reserve(v64.size());
-        for (int64_t x : v64) {
-            if (x < std::numeric_limits<int64_t>::min() ||
-                x > std::numeric_limits<int64_t>::max()) {
-                throw std::out_of_range("narrowing int64_t->int64_t");
+        for (int x : v64) {
+            if (x < std::numeric_limits<int>::min() ||
+                x > std::numeric_limits<int>::max()) {
+                throw std::out_of_range("narrowing int->int");
             }
-            v32.push_back(static_cast<int64_t>(x));
+            v32.push_back(static_cast<int>(x));
         }
         return v32;
     }
@@ -326,25 +328,25 @@ TorchModel::TorchModel(std::string &path)
     program = std::shared_ptr<et_run::Program>(
         program_.release(), [](et_run::Program* pointer) { delete pointer; });
 
-    auto t_version = call("get_version", 1, ScalarType(-1));
+    auto t_version = call("get_version", EValue(prepareDummyInput()), 1, ScalarType(-1));
 
     switch(t_version.dtype()) {
-    break; case ScalarType::Long: version = static_cast<int>(t_version.const_data_ptr<int64_t>()[0]);
+    break; case ScalarType::Long: version = static_cast<int>(t_version.const_data_ptr<int>()[0]);
     break; case ScalarType::Int: version = static_cast<int>(t_version.const_data_ptr<int32_t>()[0]);
     break; default:
         throwf("call: unexpected result dtype: %d", EI(t_version.dtype()));
     }
 
-    auto t_side = call("get_side", 1, ScalarType(-1));
+    auto t_side = call("get_side", EValue(prepareDummyInput()), 1, ScalarType(-1));
 
     switch(t_side.dtype()) {
-    break; case ScalarType::Long: side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int64_t>()[0]));
+    break; case ScalarType::Long: side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int>()[0]));
     break; case ScalarType::Int: side = Schema::Side(static_cast<int>(t_side.const_data_ptr<int32_t>()[0]));
     break; default:
         throwf("call: unexpected result dtype: %d", EI(t_side.dtype()));
     }
 
-    auto t_all_sizes = call("get_all_sizes", 0, ScalarType::Long);
+    auto t_all_sizes = call("get_all_sizes", EValue(prepareDummyInput()), 0, ScalarType::Int);
 
     // Convert 3-D tensor to vector<vector<int64>>
     auto ndim = t_all_sizes.dim();
@@ -374,20 +376,20 @@ TorchModel::TorchModel(std::string &path)
 
     // print_tensor_like_torch(std::make_shared<et_run::etensor::Tensor>(t_all_sizes));
 
-    const int64_t* baseptr = t_all_sizes.const_data_ptr<int64_t>(); // or equivalent getter
+    const int* baseptr = t_all_sizes.const_data_ptr<int>(); // or equivalent getter
     all_sizes.resize(d0);
     for (int i0=0; i0<d0; ++i0) {
         all_sizes.at(i0).resize(d1);
         for (int i1=0; i1<d1; ++i1) {
             all_sizes.at(i0).at(i1).resize(d2);
-            const int64_t* ptr = baseptr + i0 * s0 + i1 * s1;
+            const int* ptr = baseptr + i0 * s0 + i1 * s1;
 
             if (s2 == 1) {
                 // Fast path: last dimension contiguous
-                std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int64_t) * static_cast<size_t>(d2));
+                std::memcpy(all_sizes.at(i0).at(i1).data(), ptr, sizeof(int) * static_cast<size_t>(d2));
             } else {
                 // Generic path: strided copy along last dimension
-                for (int64_t k = 0; k < d2; ++k) {
+                for (int k = 0; k < d2; ++k) {
                     all_sizes.at(i0).at(i1).at(k) = ptr[k * s2];
                 }
             }
@@ -405,7 +407,7 @@ void TorchModel::maybeLoadMethod(const std::string& method_name) {
 
     const auto methodMetaRes = program->method_meta(method_name.c_str());
     if (!methodMetaRes.ok())
-        throwf("method_meta: error code: %d", static_cast<int>(methodMetaRes.error()));
+        throwf("method_meta '%s': error code: %d", method_name, static_cast<int>(methodMetaRes.error()));
 
     const auto method_metadata = methodMetaRes.get();
     const auto planned_buffers_count = method_metadata.num_memory_planned_buffers();
@@ -429,7 +431,7 @@ void TorchModel::maybeLoadMethod(const std::string& method_name) {
 
     auto methodRes = program->load_method(method_name.c_str(), mh.memory_manager.get());
     if (!methodRes.ok())
-        throwf("load_method: error code: %d", static_cast<int>(methodRes.error()));
+        throwf("load_method '%s': error code: %d", method_name, static_cast<int>(methodRes.error()));
 
     mh.method = std::make_unique<et_run::Method>(std::move(*methodRes));
     mh.inputs.resize(mh.method->inputs_size());
@@ -454,6 +456,7 @@ Tensor TorchModel::call(
         inputs[i] = input[i];
     }
 
+    std::cout << "INOPUTS SIZE: " << inputs.size() << ", INPUTS0 isTensor: " << inputs.at(0).isTensor() << ", numel: " << inputs[0].toTensor().numel() << ", dtype: " << EI(inputs[0].toTensor().dtype()) << "\n";
     auto setRes = method->set_inputs(executorch::aten::ArrayRef<EValue>(inputs.data(), inputs.size()));
     if (setRes != et_run::Error::Ok)
         throwf("set_inputs: %s: error code: %d", method_name, static_cast<int>(setRes));
@@ -508,6 +511,14 @@ int TorchModel::getVersion() {
 Schema::Side TorchModel::getSide() {
     return side;
 };
+
+
+// auto DUMMY_INPUT_VEC = std::vector<int>{0};
+// auto DUMMY_INPUT = et_ext::from_blob(DUMMY_INPUT_VEC.data(), {1}, ScalarType::Int);
+
+TensorPtr TorchModel::prepareDummyInput() {
+    return et_ext::make_tensor_ptr({0}, ScalarType::Int);
+}
 
 std::pair<std::vector<TensorPtr>, int> TorchModel::prepareInputsV13(
     const MMAI::Schema::IState * s,
@@ -651,7 +662,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     int action;
 
     switch(output.dtype()) {
-    break; case ScalarType::Long: action = static_cast<int>(output.const_data_ptr<int64_t>()[0]);
+    break; case ScalarType::Long: action = static_cast<int64_t>(output.const_data_ptr<int64_t>()[0]);
     break; case ScalarType::Int: action = static_cast<int>(output.const_data_ptr<int32_t>()[0]);
     break; default:
         throwf("call: unexpected result dtype: %d", EI(output.dtype()));
