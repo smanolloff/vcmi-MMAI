@@ -288,7 +288,7 @@ endif()
 message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS} ${_nonforce_libs}")
 target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
 target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
-# target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
+target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
 
 target_link_options(MMAI PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/VERBOSE:LIB>)
 
