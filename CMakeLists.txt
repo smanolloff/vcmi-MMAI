@@ -238,20 +238,14 @@ if(MMAI_EXECUTORCH_PATH)
 
     # XXX: not sure if ALL of these are needed for CoreML models
     find_library(COREML_FRAMEWORK CoreML)
-    find_library(FOUNDATION_FRAMEWORK Foundation)
-    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
     find_library(ACCELERATE_FRAMEWORK Accelerate)
-    find_library(METAL_FRAMEWORK Metal)
-    find_library(MPS_FRAMEWORK MetalPerformanceShaders)
+    find_library(FOUNDATION_FRAMEWORK Foundation)
 
     list(APPEND _nonforce_libs
       ${EXECUTORCH_LIBRARIES}
       ${COREML_FRAMEWORK}
-      ${FOUNDATION_FRAMEWORK}
-      ${COREFOUNDATION_FRAMEWORK}
       ${ACCELERATE_FRAMEWORK}
-      ${METAL_FRAMEWORK}
-      ${MPS_FRAMEWORK}
+      ${FOUNDATION_FRAMEWORK}
       sqlite3
     )
   endif()

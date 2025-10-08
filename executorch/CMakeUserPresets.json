@@ -3,7 +3,8 @@
     "$comment": [
         "This file is used for compiling executorch from source and",
         "must be copied into the executorch root dir.",
-        "See comments in MMAI/CMakeLists.txt for more info."
+        "See comments in MMAI/CMakeLists.txt for more info.",
+        "For MacOS/iOS builds, set EXECUTORCH_BUILD_COREML=ON"
     ],
     "configurePresets": [
         {
