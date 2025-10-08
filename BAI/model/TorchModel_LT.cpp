@@ -339,6 +339,7 @@ at::Tensor TorchModel::call(
     int ndim,
     at::ScalarType st
 ) {
+    auto timer = ScopedTimer("call");
     std::unique_lock lock(m);
     logAi->warn("call: %s...", method_name);
     auto raw = model->get_method(method_name)(input);
@@ -442,16 +443,14 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     auto action = getScalar<int>(method, values);
     logAi->debug("AI action prediction: %d\n", action);
 
-    auto value = getScalar<float>("get_value" + std::to_string(size_idx), values);
-    logAi->info("AI value prediction (side=%d): %.3f\n", EI(side), value);
     // Also esitmate value
-    // XXX: this value is useless (seems pretty random)
-    /*
-    auto vmethod = tjc->module.get_method("get_value");
-    auto vinputs = std::vector<c10::IValue>{obs};
-    auto vres = vmethod(vinputs).toDouble();
-    logAi->debug("AI value estimation: %f\n", vres);
-    */
+    // XXX: this value is not useful
+    //      It represents the estimated reward until the episode's end
+    //      However, during training there is a fixed per-step negative reward
+    //      which means this estimation is heavily influenced by the number of turns left
+    //      which is not informative for the player.
+    // auto value = getScalar<float>("get_value" + std::to_string(size_idx), values);
+    // logAi->info("AI value prediction (side=%d): %.3f\n", EI(side), value);
 
     return static_cast<MMAI::Schema::Action>(action);
 };
