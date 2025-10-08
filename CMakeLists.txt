@@ -231,6 +231,8 @@ if(MMAI_EXECUTORCH_PATH)
     # cpublas
   )
 
+  set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
+
   if (MACOS)
     list(APPEND _force_libs coremldelegate)
 
@@ -242,7 +244,7 @@ if(MMAI_EXECUTORCH_PATH)
     find_library(METAL_FRAMEWORK Metal)
     find_library(MPS_FRAMEWORK MetalPerformanceShaders)
 
-    set(_nonforce_libs
+    list(APPEND _nonforce_libs
       ${EXECUTORCH_LIBRARIES}
       ${COREML_FRAMEWORK}
       ${FOUNDATION_FRAMEWORK}
