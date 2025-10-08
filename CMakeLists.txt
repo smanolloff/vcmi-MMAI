@@ -156,6 +156,7 @@ if(MMAI_EXECUTORCH_PATH)
   ]]
 
   add_definitions(-DUSING_EXECUTORCH=1)
+  add_definitions(-DC10_USING_CUSTOM_GENERATED_MACROS=1)
 
   if (ENABLE_MMAI_STRICT_LOAD)
     add_definitions(-DENABLE_MMAI_STRICT_LOAD=1)
@@ -167,6 +168,29 @@ if(MMAI_EXECUTORCH_PATH)
   message(STATUS "EXECUTORCH_FOUND: ${EXECUTORCH_FOUND}")
   message(STATUS "EXECUTORCH_INCLUDE_DIRS: ${EXECUTORCH_INCLUDE_DIRS}")
   message(STATUS "EXECUTORCH_LIBRARIES: ${EXECUTORCH_LIBRARIES}")
+
+  function(_strip_gcc_like_flags tgt)
+    if(NOT TARGET "${tgt}")
+      return()
+    endif()
+    foreach(prop IN ITEMS INTERFACE_COMPILE_OPTIONS COMPILE_OPTIONS)
+      get_target_property(_opts "${tgt}" ${prop})
+      if(_opts)
+        set(_clean "${_opts}")
+        # remove GCC/Clang-only flags that break MSVC
+        list(FILTER _clean EXCLUDE REGEX "^-Wno-.*")  # e.g. -Wno-deprecated-declarations
+        list(FILTER _clean EXCLUDE REGEX "^-fPIC$")   # also exported by ExecuTorch
+        if(NOT "${_clean}" STREQUAL "${_opts}")
+          message(STATUS "_strip_gcc_like_flags: ${tgt}")
+          set_property(TARGET "${tgt}" PROPERTY ${prop} "${_clean}")
+        endif()
+      endif()
+    endforeach()
+  endfunction()
+
+  foreach(t IN LISTS EXECUTORCH_LIBRARIES)
+    _strip_gcc_like_flags("${t}")
+  endforeach()
 
   list(APPEND MMAI_THIRD_PARTY_INCLUDES ${EXECUTORCH_INCLUDE_DIRS})
   list(APPEND MMAI_FILES BAI/model/TorchModel_ET.h)
@@ -189,37 +213,51 @@ if(MMAI_EXECUTORCH_PATH)
 
   set(_force_libs
     xnnpack_backend
-    coremldelegate
     optimized_kernels
     quantized_kernels
     portable_ops_lib
+
+
+    # executorch
+    # executorch_core
+    # portable_kernels
+    # extension_flat_tensor
+    # extension_evalue_util
+    # extension_tensor
+    # extension_threadpool
+    xnnpack_backend
+    # optimized_kernels
+    # optimized_portable_kernels
+    # cpublas
   )
 
-  # XXX: not sure if ALL of these are needed for CoreML models
-  find_library(COREML_FRAMEWORK CoreML)
-  find_library(FOUNDATION_FRAMEWORK Foundation)
-  find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
-  find_library(ACCELERATE_FRAMEWORK Accelerate)
-  find_library(METAL_FRAMEWORK Metal)
-  find_library(MPS_FRAMEWORK MetalPerformanceShaders)
+  if (MACOS)
+    list(APPEND _force_libs coremldelegate)
 
-  set(_nonforce_libs
-    ${EXECUTORCH_LIBRARIES}
-    ${COREML_FRAMEWORK}
-    ${FOUNDATION_FRAMEWORK}
-    ${COREFOUNDATION_FRAMEWORK}
-    ${ACCELERATE_FRAMEWORK}
-    ${METAL_FRAMEWORK}
-    ${MPS_FRAMEWORK}
-    sqlite3
-  )
+    # XXX: not sure if ALL of these are needed for CoreML models
+    find_library(COREML_FRAMEWORK CoreML)
+    find_library(FOUNDATION_FRAMEWORK Foundation)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
+    find_library(ACCELERATE_FRAMEWORK Accelerate)
+    find_library(METAL_FRAMEWORK Metal)
+    find_library(MPS_FRAMEWORK MetalPerformanceShaders)
+
+    set(_nonforce_libs
+      ${EXECUTORCH_LIBRARIES}
+      ${COREML_FRAMEWORK}
+      ${FOUNDATION_FRAMEWORK}
+      ${COREFOUNDATION_FRAMEWORK}
+      ${ACCELERATE_FRAMEWORK}
+      ${METAL_FRAMEWORK}
+      ${MPS_FRAMEWORK}
+      sqlite3
+    )
+  endif()
+
   list(REMOVE_ITEM _nonforce_libs ${_force_libs})
 
   message(STATUS "_force_libs: ${_force_libs}")
   message(STATUS "_nonforce_libs: ${_nonforce_libs}")
-
-
-
 elseif(MMAI_LIBTORCH_PATH)
   #[[
   About Path to libtorch install director:
@@ -306,10 +344,43 @@ if (MMAI_EXECUTORCH_PATH)
   force_link_static(MMAI "${MMAI_EXECUTORCH_PATH}/lib" ${_force_libs})
 endif()
 
-message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS} ${_nonforce_libs}")
+if (MSVC)
+  # Wrap each with LINK_ONLY
+  set(_et_link_only "")
+  foreach(l IN LISTS _nonforce_libs)
+    if(TARGET "${l}")
+      list(APPEND _et_link_only "$<LINK_ONLY:${l}>")
+    endif()
+  endforeach()
+else()
+  set(_et_link_only ${_nonforce_libs})
+endif()
+
+message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS}")
 target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
-target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
-target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
+#target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
+
+# XXX: this causes issues on windows:
+#      VCMI fails to load at game start with error "Resource not found" (game crashes)
+# target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
+
+message(STATUS "MMAI target_link_libraries: ${_et_link_only}")
+target_link_libraries(MMAI PRIVATE ${_et_link_only})
+
+if (MSVC)
+  # Remove GCC/Clang-only flags that slipped into MMAI
+  foreach(prop IN ITEMS COMPILE_OPTIONS INTERFACE_COMPILE_OPTIONS)
+    get_target_property(_opts MMAI ${prop})
+    if(_opts)
+      set(_clean "${_opts}")
+      list(FILTER _clean EXCLUDE REGEX "^-Wno-.*") # e.g. -Wno-deprecated-declarations
+      list(FILTER _clean EXCLUDE REGEX "^-fPIC$")  # harmless on MSVC but strip anyway
+      if(NOT "${_clean}" STREQUAL "${_opts}")
+        set_property(TARGET MMAI PROPERTY ${prop} "${_clean}")
+      endif()
+    endif()
+  endforeach()
+endif()
 
 target_link_options(MMAI PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/VERBOSE:LIB>)
 

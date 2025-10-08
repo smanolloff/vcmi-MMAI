@@ -117,26 +117,27 @@ namespace MMAI::BAI::V13 {
     }
 
     bool BAI::maybeCastSpell(const CStack* astack, const BattleID &bid) {
-        if(!enableSpellsUsage)
-            return false;
+        // if(!enableSpellsUsage)
+        //     return false;
 
-        const auto *hero = battle->battleGetMyHero();
+        // const auto *hero = battle->battleGetMyHero();
 
-        if(!hero)
-            return false;
+        // if(!hero)
+        //     return false;
 
-        if (battle->battleCanCastSpell(hero, spells::Mode::HERO) != ESpellCastProblem::OK)
-            return false;
+        // if (battle->battleCanCastSpell(hero, spells::Mode::HERO) != ESpellCastProblem::OK)
+        //     return false;
 
-        auto lv = state->lpstats->getAttr(PA::ARMY_VALUE_NOW_ABS);
-        auto rv = state->rpstats->getAttr(PA::ARMY_VALUE_NOW_ABS);
-        float vratio = static_cast<float>(lv) / rv;
-        if (battle->battleGetMySide() == BattleSide::RIGHT_SIDE)
-            vratio = 1 / vratio;
+        // auto lv = state->lpstats->getAttr(PA::ARMY_VALUE_NOW_ABS);
+        // auto rv = state->rpstats->getAttr(PA::ARMY_VALUE_NOW_ABS);
+        // float vratio = static_cast<float>(lv) / rv;
+        // if (battle->battleGetMySide() == BattleSide::RIGHT_SIDE)
+        //     vratio = 1 / vratio;
 
-        logAi->debug("Attempting a BattleAI spellcast");
-        auto evaluator = BattleEvaluator(env, cb, astack, playerID, bid, battle->battleGetMySide(), vratio, 2);
-        return evaluator.attemptCastingSpell(astack);
+        // logAi->debug("Attempting a BattleAI spellcast");
+        // auto evaluator = BattleEvaluator(env, cb, astack, playerID, bid, battle->battleGetMySide(), vratio, 2);
+        // return evaluator.attemptCastingSpell(astack);
+        return false;
     }
 
     std::shared_ptr<BattleAction> BAI::maybeBuildAutoAction(const CStack *astack) {
