@@ -1,0 +1,25 @@
+============= QT fails to build (develop, Oct 2025)
+- conan failed to build QT:
+ERROR: Feature 'opengl-desktop' was enabled, but the pre-condition
+    '(config.win32 && !config.winrt && !features.opengles2 && (config.msvc || libs.opengl))
+        || (!config.watchos && !config.win32 && !config.wasm && libs.opengl)'
+failed. ERROR: The OpenGL functionality tests failed!
+
+Problem: xcrun --sdk macosx --show-sdk-path
+
+on the failing mac the `xcrun --sdk macosx --show-sdk-path` returns:
+    /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk
+on another mac where the build succeeds:
+    /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+Fix: sudo xcode-select --switch /Library/Developer/CommandLineTools
+
+NOTE: for installing 
+
+============= iOS IPA fails to sign
+Sideloadly gives "Signature verification failed" at 40% install.
+AltStore signs it, but app fails to launch due to lib symlinks (altstore-specific issue it seems).
+
+What I did:
+- updated xcode (did not install ios specific SDK)
+- created new xcode project
