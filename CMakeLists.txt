@@ -217,7 +217,6 @@ if(MMAI_EXECUTORCH_PATH)
     quantized_kernels
     portable_ops_lib
 
-
     # executorch
     # executorch_core
     # portable_kernels
@@ -225,7 +224,7 @@ if(MMAI_EXECUTORCH_PATH)
     # extension_evalue_util
     # extension_tensor
     # extension_threadpool
-    xnnpack_backend
+    # xnnpack_backend
     # optimized_kernels
     # optimized_portable_kernels
     # cpublas
@@ -248,6 +247,8 @@ if(MMAI_EXECUTORCH_PATH)
       ${FOUNDATION_FRAMEWORK}
       sqlite3
     )
+  elseif(ANDROID)
+    list(APPEND _force_libs vulkan_backend)
   endif()
 
   list(REMOVE_ITEM _nonforce_libs ${_force_libs})
