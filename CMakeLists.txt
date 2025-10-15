@@ -249,7 +249,7 @@ if(MMAI_EXECUTORCH_PATH)
     )
   elseif(ANDROID)
     list(APPEND _force_libs vulkan_backend)
-    list(APPEND MMAI_LIBS c++_shared)
+    list(APPEND MMAI_LIBS c++_static)
   endif()
 
   list(REMOVE_ITEM _nonforce_libs ${_force_libs})
