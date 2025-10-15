@@ -278,7 +278,7 @@ elseif(MMAI_LIBTORCH_PATH)
     find_library(ACCELERATE Accelerate)
     list(APPEND MMAI_LIBS "${ACCELERATE}")
   elseif(ANDROID)
-    list(APPEND MMAI_LIBS c++_shared)
+    list(APPEND MMAI_LIBS c++_static)
   endif()
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
