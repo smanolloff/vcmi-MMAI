@@ -232,7 +232,7 @@ if(MMAI_EXECUTORCH_PATH)
 
   set(_nonforce_libs ${EXECUTORCH_LIBRARIES})
 
-  if (MACOS)
+  if (APPLE)
     list(APPEND _force_libs coremldelegate)
 
     # XXX: not sure if ALL of these are needed for CoreML models
