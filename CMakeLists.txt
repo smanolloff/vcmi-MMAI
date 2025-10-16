@@ -356,11 +356,11 @@ endif()
 
 message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS}")
 target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
-#target_link_libraries(MMAI PRIVATE ${_nonforce_libs})
 
 # XXX: this causes issues on windows:
 #      VCMI fails to load at game start with error "Resource not found" (game crashes)
-# target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
+add_dependencies(MMAI BattleAI)
+target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
 
 message(STATUS "MMAI target_link_libraries: ${_et_link_only}")
 target_link_libraries(MMAI PRIVATE ${_et_link_only})
