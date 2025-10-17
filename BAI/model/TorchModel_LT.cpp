@@ -45,12 +45,12 @@ namespace {
     }
 
     struct ScopedTimer {
-        const std::string name;
+        std::string name;
         std::chrono::steady_clock::time_point t0;
         explicit ScopedTimer(const std::string& n) : name(n), t0(std::chrono::steady_clock::now()) {}
         ~ScopedTimer() {
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
-            logAi->warn("%s: %lld ms", name, dt);
+            logAi->info("%s: %lld ms", name, dt);
         }
     };
 
@@ -158,8 +158,8 @@ namespace {
         auto hex2 = sample_masked_logits(h2_log, m_h2_for_pair, false, temperature, gen);
 
         // joint
-        printf("fback: %d     / %d     / %d\n", 0, hex1.fallback, hex2.fallback);
-        printf("probs: %.3f / %.3f / %.3f\n", act0.prob, hex1.prob, hex2.prob);
+        // printf("fback: %d     / %d     / %d\n", 0, hex1.fallback, hex2.fallback);
+        // printf("probs: %.3f / %.3f / %.3f\n", act0.prob, hex1.prob, hex2.prob);
         double confidence = act0.prob * (hex1.fallback ? 1.0 : hex1.prob) * (hex2.fallback ? 1.0 : hex2.prob);
 
         return {act0.index, hex1.index, hex2.index, confidence};
@@ -655,10 +655,9 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     auto s_action = action_table.at(sample.act0).at(sample.hex1).at(sample.hex2);
 
     if (s_action != action)
-        logAi->warn("Sampled %d != %d", s_action, action);
+        logAi->debug("Sampled a non-greedy action: %d != %d", s_action, action);
 
-    logAi->info("MMAI action: %d (confidence=%.2f)", action, sample.confidence);
-
+    timer.name = boost::str(boost::format("MMAI action: %d (confidence=%.2f)") % action % sample.confidence);
     return static_cast<MMAI::Schema::Action>(s_action);
 };
 
