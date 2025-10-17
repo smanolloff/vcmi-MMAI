@@ -83,8 +83,9 @@ namespace MMAI::BAI {
                 auto rpath = ResourcePath(it2->second);
                 auto loaders = CResourceHandler::get()->getResourcesWithName(rpath);
 
-                if (loaders.size() != 1)
-                    logAi->warn("Expected 1 loader, found %d for %s", static_cast<int>(loaders.size()), rpath.getName());
+                if (loaders.size() != 1) {
+                    THROW_FORMAT("Expected 1 %s loader, found %d", rpath.getName() % EI(loaders.size()));
+                }
 
                 auto fullpath = loaders.at(0)->getResourceName(rpath);
                 ASSERT(fullpath.has_value(), "could not obtain path for resource " + rpath.getName());

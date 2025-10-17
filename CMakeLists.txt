@@ -103,12 +103,18 @@ set(MMAI_THIRD_PARTY_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/schema/gcem)
 About ExecuTorch vs. Libtorch:
 Executorch is a more "modern" and flexible alternative to Libtorch.
 Executorch must not be used on Windows, as it causes memory corruption.
-Executorch's XNNPACK-lowered models run ~3x slower than libtorch's optimized
-models on Mac M1.
+Executorch's Vulkan support is not good yet, and models fail to load at runtime.
+Executorch's CoreML support is good, but exported models are huge (100MB) and
+have an initial 10+s load spike which is not present on libtorch models (20MB).
+Executorch's XNNPACK-lowered models are several times slower than libtorch's
+optimized models on Mac M1.
 Executorch is linked statically to VCMI and has a tiny size footprint.
-Libtorch is linked dynamically (except for mobile) and is huge in size (100MB).
-Executorch build is super fast (few minutes at most), compared to libtorch
-which requires *several houts* to build. This is why libtorch is pre-built
+Libtorch is linked dynamically (except for mobile) and is large in size (100MB).
+Executorch build is super fast compared to libtorch which requires *hours* to
+build.
+Executorch models are specialized for specific NN backend, e.g. a CoreML model
+is only usale on apple devices, Vulkan models - only on Android, etc. This
+makes model management complex, given VCMI supports a wide range platforms.
 on CI, but such builds regularly need to re-run to keep up with upstream
 updates (e.g. new pytorch releases). If the builds stop working, it will be
 difficult to troubleshoot the issue given the huge build times.
@@ -135,7 +141,10 @@ if(MMAI_EXECUTORCH_PATH)
   MMAI_EXECUTORCH_PATH is a directory containing lib/ and include/
   (where executorch build artifacts and header files were installed).
 
-  Example setup:
+  Executorch prebuild libs are published here:
+  https://github.com/smanolloff/vcmi-executorch-builds/releases
+
+  Example setup (building locally):
 
     $ cd /some/path
     $ git clone --recurse-submodules -b release/0.7 https://github.com/pytorch/executorch.git
