@@ -27,8 +27,11 @@
 #include "BAI/model/ScriptedModel.h"
 #include "BAI/model/TorchModel.h"
 #include "BAI/router.h"
+
 #include "common.h"
 #include "schema/schema.h"
+
+#include <utility>
 
 namespace MMAI::BAI {
     using ConfigStorage = std::map<std::string, std::string>;
@@ -42,6 +45,8 @@ namespace MMAI::BAI {
 
     static auto modelconfig = ConfigStorage();
     static auto models = ModelStorage();
+    static float temperature = 1.0;
+    static uint64_t seed = 0;
     static std::unique_ptr<ScriptedModel> fallbackModel;
     static std::mutex modelmutex;
 
@@ -49,7 +54,31 @@ namespace MMAI::BAI {
         auto lock = std::lock_guard(modelmutex);
         if (!modelconfig.empty()) return;
 
+        auto warncfg = [](std::string problem) {
+            logAi->warn("MMAI config error: %s", std::move(problem));
+        };
+
         auto cfg = JsonUtils::assembleFromFiles("MMAI/CONFIG/mmai-settings.json").Struct();
+
+        if (cfg["temperature"].isNumber()) {
+            if (cfg["temperature"].Float() < 0) {
+                warncfg("temperature: value is negative");
+            } else {
+                temperature = static_cast<float>(cfg["temperature"].Float());
+            }
+        } else {
+            warncfg("temperature: not a number");
+        }
+
+        if (cfg["seed"].getType() == JsonNode::JsonType::DATA_INTEGER) {
+            if (cfg["seed"].Integer() < 0) {
+                warncfg("seed: value is negative");
+            } else {
+                seed = static_cast<uint64_t>(cfg["seed"].Integer());
+            }
+        } else {
+            warncfg("seed: not an integer");
+        }
 
         for (const auto &key : {"attacker", "defender", "fallback"}) {
             if(cfg[key].isString()) {
@@ -63,7 +92,7 @@ namespace MMAI::BAI {
 
                 modelconfig.insert({key, value});
             } else {
-                logAi->warn("MMAI config contains invalid values: value for '%s' is not a string", key);
+                warncfg(std::string(key) + ": not a string");
             }
         }
     }
@@ -92,7 +121,7 @@ namespace MMAI::BAI {
                 auto fullpathstr = fullpath.value().string();
 
                 logAi->info("Loading Torch %s model from %s", key, fullpathstr);
-                it = models.emplace(key, std::make_unique<TorchModel>(fullpathstr)).first;
+                it = models.emplace(key, std::make_unique<TorchModel>(fullpathstr, temperature, seed)).first;
             } else {
                 logAi->debug("Using previously loaded %s", key);
             }

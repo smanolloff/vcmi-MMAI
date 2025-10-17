@@ -30,7 +30,7 @@ namespace tj = torch::jit;
 
 class TorchModel : public MMAI::Schema::IModel {
 public:
-    explicit TorchModel(std::string &path);
+    explicit TorchModel(std::string &path, float temperature, uint64_t seed);
 
     Schema::ModelType getType() override;
     std::string getName() override;
@@ -40,11 +40,14 @@ public:
     double getValue(const MMAI::Schema::IState * s) override;
 private:
     std::string path;
+    float temperature;
+    c10::optional<at::Generator> rng;
     std::string name;
     int version;
     Schema::Side side;
     std::mutex m;
     std::vector<std::vector<std::vector<int32_t>>> all_buckets;
+    std::vector<std::vector<std::vector<int32_t>>> action_table;
 
     // libtorch does allow 0-arg model methods, but (some) executorch backends
     // do not allow it => 0-arg input methods (such as get_version()) are
@@ -56,6 +59,8 @@ private:
         const MMAI::Schema::V13::ISupplementaryData* sup,
         int bucket = -1
     );
+
+    at::Tensor toTensor(const std::string& name, const c10::IValue& ivalue, int ndim, int numel, at::ScalarType st);
 
     at::Tensor call(
         const std::string& method_name,

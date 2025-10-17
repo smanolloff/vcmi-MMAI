@@ -16,12 +16,17 @@
 
 #include "StdInc.h"
 
-#include <ATen/core/TensorBody.h>
-#include <ATen/core/ivalue.h>
-#include <ATen/ops/from_blob.h>
-#include <ATen/ops/tensor.h>
+// #include <ATen/core/TensorBody.h>
+// #include <ATen/core/ivalue.h>
+// #include <ATen/ops/from_blob.h>
+// #include <ATen/ops/tensor.h>
+#include <ATen/ATen.h>
+#include <ATen/core/Generator.h>
 #include <c10/core/ScalarType.h>
 #include <mutex>
+#include <tuple>
+#include <limits>
+#include <utility>
 
 #include "TorchModel_LT.h"
 #include "schema/schema.h"
@@ -40,14 +45,126 @@ namespace {
     }
 
     struct ScopedTimer {
-        const char* name;
+        const std::string name;
         std::chrono::steady_clock::time_point t0;
-        explicit ScopedTimer(const char* n) : name(n), t0(std::chrono::steady_clock::now()) {}
+        explicit ScopedTimer(const std::string& n) : name(n), t0(std::chrono::steady_clock::now()) {}
         ~ScopedTimer() {
             auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
             logAi->warn("%s: %lld ms", name, dt);
         }
     };
+
+    struct SampleResult {
+        int index;
+        double prob;      // softmax probability of the chosen index
+        bool fallback;    // true if choice came from the policy fallback
+    };
+
+    inline SampleResult sample_masked_logits(
+        const at::Tensor& logits_1d,     // shape [K], float
+        const at::Tensor& mask_1d,       // shape [K], bool
+        bool throw_if_empty,
+        float temperature = 1.0,
+        const c10::optional<at::Generator>& gen = c10::nullopt
+    ) {
+        if (logits_1d.size(0) != mask_1d.size(0)) throwf("size mismatch");
+        if (temperature < 0.0) throwf("negative temperature");
+
+        // Count valid options
+        auto n_valid = mask_1d.sum().item<int>();
+        if (n_valid == 0) {
+            if (throw_if_empty)
+                throwf("No valid options available for act0");
+            return {0, 0.0, true}; // fallback index
+        }
+
+        // Promote to float32 for stability if needed
+        auto logits = logits_1d.toType(at::kFloat);
+        auto mask = mask_1d.toType(at::kBool);
+
+        auto neginf = at::full_like(logits, -INFINITY);
+        auto masked_logits = at::where(mask, logits, neginf);
+
+        int64_t idx_chosen;
+        double p_chosen;
+
+        if (temperature > 1e8) {
+            // Uniform over valid
+            auto uniform = at::zeros_like(logits);
+            uniform.masked_fill_(mask, 1.0 / static_cast<double>(n_valid));
+            auto sampled = at::multinomial(uniform, 1, false, gen);
+            idx_chosen = sampled.item<int64_t>();
+            p_chosen = uniform.index({idx_chosen}).item<double>();
+        } else if (temperature < 1e-8) {
+            // Argmax among valid
+            const auto& vals = masked_logits; // already has -inf on invalids
+            auto max_idx = std::get<1>(vals.max(-1, false)).item<int64_t>();
+            idx_chosen = max_idx;
+            p_chosen = 1.0;
+        } else {
+            // Standard softmax(logits / T)
+            auto scaled = masked_logits / temperature;
+            // stability: subtract max over valid slice
+            auto m = std::get<0>(scaled.max(-1, false));
+            auto stabilized = scaled - m;
+            auto probs = at::softmax(stabilized, -1);
+            if(!at::isfinite(probs).all().item<bool>())
+                throwf("non-finite probabilities");
+            auto sampled = at::multinomial(probs, 1, false, gen);
+            idx_chosen = sampled.item<int64_t>();
+            p_chosen = probs.index({idx_chosen}).item<double>();
+        }
+
+        return {static_cast<int>(idx_chosen), p_chosen, false};
+    }
+
+    struct TripletSample {
+        int act0;  // over 4 actions
+        int hex1;  // over 165 hexes
+        int hex2;  // over 165 hexes
+        double confidence;  // joint prob
+    };
+
+    inline TripletSample sample_triplet(
+        const at::Tensor& act0_logits,   // [1, 4]
+        const at::Tensor& hex1_logits,   // [1, 165]
+        const at::Tensor& hex2_logits,   // [1, 165]
+        const at::Tensor& mask_act0,     // [1, 4] bool
+        const at::Tensor& mask_hex1,     // [1, 4, 165] bool
+        const at::Tensor& mask_hex2,
+        float temperature,
+        const c10::optional<at::Generator>& gen = c10::nullopt
+    ) {   // [1, 4, 165, 165] bool
+
+        // Squeeze batch dimension
+        auto a0_log = act0_logits.squeeze(0);
+        auto h1_log = hex1_logits.squeeze(0);
+        auto h2_log = hex2_logits.squeeze(0);
+
+        auto m_a0 = mask_act0.squeeze(0).toType(at::kBool);
+        auto m_h1 = mask_hex1.squeeze(0).toType(at::kBool); // [4,165]
+        auto m_h2 = mask_hex2.squeeze(0).toType(at::kBool); // [4,165,165]
+
+        // Sample act0
+        auto act0 = sample_masked_logits(a0_log, m_a0, true, temperature, gen);
+
+        // Slice masks for hex1 and hex2 based on act0 and hex1
+        // Sample hex1
+        auto m_h1_for_act0 = m_h1.index({act0.index, at::indexing::Slice()}); // [165]
+        auto hex1 = sample_masked_logits(h1_log, m_h1_for_act0, false, temperature, gen);
+
+        // Sample hex2
+        auto m_h2_for_pair = m_h2.index({act0.index, hex1.index, at::indexing::Slice()}); // [165]
+        auto hex2 = sample_masked_logits(h2_log, m_h2_for_pair, false, temperature, gen);
+
+        // joint
+        printf("fback: %d     / %d     / %d\n", 0, hex1.fallback, hex2.fallback);
+        printf("probs: %.3f / %.3f / %.3f\n", act0.prob, hex1.prob, hex2.prob);
+        double confidence = act0.prob * (hex1.fallback ? 1.0 : hex1.prob) * (hex2.fallback ? 1.0 : hex2.prob);
+
+        return {act0.index, hex1.index, hex2.index, confidence};
+    }
+
 
     std::array<std::vector<int32_t>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
         // Pass 1: validate and count degrees per node
@@ -333,6 +450,29 @@ std::pair<std::vector<at::Tensor>, int> TorchModel::prepareInputsV13(
     return {tensors, build.size_index};
 }
 
+at::Tensor TorchModel::toTensor(
+    const std::string& name,
+    const c10::IValue& ivalue,
+    int ndim,
+    int numel,
+    at::ScalarType st
+) {
+    if (!ivalue.isTensor())
+        throwf("toTensor: %s: not a tensor", name);
+
+    at::Tensor t = ivalue.toTensor().contiguous();
+
+    if (t.dim() != ndim)
+        throwf("toTensor: %s: bad dim(): want: %d, have: %ld", name, ndim, t.dim());
+
+    if (t.scalar_type() != st)
+        throwf("toTensor: %s: bad dtype: want: %d, have: %d", name, EI(st), EI(t.scalar_type()));
+
+    if (numel && t.numel() != numel)
+        throwf("toTensor: %s: bad numel: want: %d, have: %ld", name, numel, t.numel());
+
+    return t;
+}
 
 at::Tensor TorchModel::call(
     const std::string& method_name,
@@ -341,61 +481,94 @@ at::Tensor TorchModel::call(
     int ndim,
     at::ScalarType st
 ) {
-    auto timer = ScopedTimer("call");
+    auto tag = "call: " + method_name;
+    auto timer = ScopedTimer(tag);
     std::unique_lock lock(m);
-    logAi->warn("call: %s...", method_name);
+    logAi->debug("%s...", tag);
     auto raw = model->get_method(method_name)(input);
-
-    if (!raw.isTensor())
-        throwf("call: %s: not a tensor", method_name);
-
-    at::Tensor t = raw.toTensor().contiguous();
-
-    if (t.dim() != ndim)
-        throwf("call: %s: bad dim(): want: 1, have: %ld", method_name, t.dim());
-
-    if (t.scalar_type() != st)
-        throwf("call: %s: bad dtype: want: %d, have: %d", method_name, EI(st), EI(t.scalar_type()));
-
-    if (numel && t.numel() != 1)
-        throwf("call: %s: bad numel: want: %d, have: %ld", method_name, numel, t.numel());
-
-    return t;
+    return toTensor(tag, raw, ndim, numel, st);
 }
 
-TorchModel::TorchModel(std::string &path)
+TorchModel::TorchModel(std::string &path, float temperature, uint64_t seed)
 : path(path)
+, temperature(temperature)
 , model(std::make_unique<tj::mobile::Module>(tj::_load_for_mobile(path)))
 {
     version = getScalar<int>("get_version");
     side = Schema::Side(getScalar<int>("get_side"));
 
+    logAi->info("MMAI params: seed=%1%, temperature=%2%, model=%3%", seed, temperature, path);
+
+    if (seed > 0) {
+        rng = at::make_generator<at::CPUGeneratorImpl>();
+        rng->set_current_seed(seed);
+    }
+
     if (version != 13)
         throwf("unsupported model version: want: 13, have: %d", version);
 
-    auto t_buckets = call("get_all_sizes", 0, 3, at::kInt);
-    std::vector<int32_t> flat_buckets(t_buckets.numel());
-    std::memcpy(flat_buckets.data(), t_buckets.data_ptr<int32_t>(), flat_buckets.size() * sizeof(int32_t));
+    //
+    // buckets
+    //
 
-    auto dims = t_buckets.sizes();              // [D0, D1, D2]
+    {
+        auto t_buckets = call("get_all_sizes", 0, 3, at::kInt);
+        std::vector<int32_t> flat_buckets(t_buckets.numel());
+        std::memcpy(flat_buckets.data(), t_buckets.data_ptr<int32_t>(), flat_buckets.size() * sizeof(int32_t));
 
-    if (dims.size() != 3)
-        throwf("dims.size(): expected 3, got: %zu", dims.size());
+        auto dims = t_buckets.sizes();              // [D0, D1, D2]
 
-    auto d0 = dims[0];
-    auto d1 = dims[1];
-    auto d2 = dims[2];
+        if (dims.size() != 3)
+            throwf("dims.size(): expected 3, got: %zu", dims.size());
 
-    all_buckets = std::vector<std::vector<std::vector<int32_t>>>(
-        d0, std::vector<std::vector<int32_t>>(
-            d1, std::vector<int32_t>(d2)
-    ));
+        auto d0 = dims[0];
+        auto d1 = dims[1];
+        auto d2 = dims[2];
 
-    int32_t idx = 0;
-    for (int32_t i = 0; i < d0; ++i) {
-        for (int32_t j = 0; j < d1; ++j) {
-            for (int32_t k = 0; k < d2; ++k, ++idx) {
-                all_buckets[i][j][k] = flat_buckets[idx];
+        all_buckets = std::vector<std::vector<std::vector<int32_t>>>(
+            d0, std::vector<std::vector<int32_t>>(
+                d1, std::vector<int32_t>(d2)
+        ));
+
+        int32_t idx = 0;
+        for (int32_t i = 0; i < d0; ++i) {
+            for (int32_t j = 0; j < d1; ++j) {
+                for (int32_t k = 0; k < d2; ++k, ++idx) {
+                    all_buckets[i][j][k] = flat_buckets[idx];
+                }
+            }
+        }
+    }
+
+    //
+    // action_table
+    //
+
+    {
+        auto t_table = call("get_action_table", 4*165*165, 3, at::kInt);
+        std::vector<int32_t> flat_table(t_table.numel());
+        std::memcpy(flat_table.data(), t_table.data_ptr<int32_t>(), flat_table.size() * sizeof(int32_t));
+
+        auto dims = t_table.sizes();              // [D0, D1, D2]
+
+        if (dims.size() != 3)
+            throwf("dims.size(): expected 3, got: %zu", dims.size());
+
+        auto d0 = dims[0];
+        auto d1 = dims[1];
+        auto d2 = dims[2];
+
+        action_table = std::vector<std::vector<std::vector<int32_t>>>(
+            d0, std::vector<std::vector<int32_t>>(
+                d1, std::vector<int32_t>(d2)
+        ));
+
+        int32_t idx = 0;
+        for (int32_t i = 0; i < d0; ++i) {
+            for (int32_t j = 0; j < d1; ++j) {
+                for (int32_t k = 0; k < d2; ++k, ++idx) {
+                    action_table[i][j][k] = flat_table[idx];
+                }
             }
         }
     }
@@ -441,20 +614,52 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         values.push_back(t);
     }
 
-    auto method = "predict" + std::to_string(size_idx);
-    auto action = getScalar<int>(method, values);
-    logAi->debug("AI action prediction: %d\n", action);
+    auto method_name = "predict_with_logits" + std::to_string(size_idx);
+    auto raw = model->get_method(method_name)(values);
 
-    // Also esitmate value
-    // XXX: this value is not useful
-    //      It represents the estimated reward until the episode's end
-    //      However, during training there is a fixed per-step negative reward
-    //      which means this estimation is heavily influenced by the number of turns left
-    //      which is not informative for the player.
-    // auto value = getScalar<float>("get_value" + std::to_string(size_idx), values);
-    // logAi->info("AI value prediction (side=%d): %.3f\n", EI(side), value);
+    if (!raw.isTuple())
+        throwf("call: %s: not a tensor", method_name);
 
-    return static_cast<MMAI::Schema::Action>(action);
+    auto tuple = raw.toTuple();
+    const auto& elems = tuple->elements();
+
+    if (elems.size() != 10)
+        throwf("call: %s: expected 10 outputs in the tuple", method_name);
+
+    auto t_action = toTensor("predict_with_logits: t_action", elems[0], 1, 1, at::kInt);
+
+    // deterministic action (useful for debugging)
+    int action = t_action.item<int>();
+
+    auto t_act0_logits = toTensor("predict_with_logits: t_act0_logits",  elems[1], 2, 4,         at::kFloat); // [1, 4]
+    auto t_hex1_logits = toTensor("predict_with_logits: t_hex1_logits",  elems[2], 2, 165,       at::kFloat); // [1, 165]
+    auto t_hex2_logits = toTensor("predict_with_logits: t_hex2_logits",  elems[3], 2, 165,       at::kFloat); // [1, 165]
+    auto t_mask_act0   = toTensor("predict_with_logits: mask_act0",      elems[4], 2, 4,         at::kInt);   // [1, 4]
+    auto t_mask_hex1   = toTensor("predict_with_logits: mask_hex1",      elems[5], 3, 4*165,     at::kInt);   // [1, 4, 165]
+    auto t_mask_hex2   = toTensor("predict_with_logits: mask_hex2",      elems[6], 4, 4*165*165, at::kInt);   // [1, 4, 165, 165]
+    auto t_act0        = toTensor("predict_with_logits: t_act0",         elems[7], 1, 1,         at::kInt);   // [1]
+    auto t_hex1        = toTensor("predict_with_logits: t_hex1",         elems[8], 1, 1,         at::kInt);   // [1]
+    auto t_hex2        = toTensor("predict_with_logits: t_hex2",         elems[9], 1, 1,         at::kInt);   // [1]
+
+    auto sample = sample_triplet(
+        t_act0_logits,
+        t_hex1_logits,
+        t_hex2_logits,
+        t_mask_act0,
+        t_mask_hex1,
+        t_mask_hex2,
+        temperature,
+        rng
+    );
+
+    auto s_action = action_table.at(sample.act0).at(sample.hex1).at(sample.hex2);
+
+    if (s_action != action)
+        logAi->warn("Sampled %d != %d", s_action, action);
+
+    logAi->info("MMAI action: %d (confidence=%.2f)", action, sample.confidence);
+
+    return static_cast<MMAI::Schema::Action>(s_action);
 };
 
 double TorchModel::getValue(const MMAI::Schema::IState * s) {
@@ -481,7 +686,7 @@ double TorchModel::getValue(const MMAI::Schema::IState * s) {
 
     auto method = "get_value" + std::to_string(size_idx);
     auto value = getScalar<float>(method);
-    logAi->debug("AI value prediction: %f\n", value);
+    logAi->debug("AI value prediction: %f", value);
 
     return value;
 }

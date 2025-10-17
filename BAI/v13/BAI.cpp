@@ -209,7 +209,7 @@ namespace MMAI::BAI::V13 {
         bs.canFlee = battle->battleCanFlee();
         bs.canSurrender = battle->battleCanSurrender(playerID);
         if(!bs.canFlee && !bs.canSurrender) {
-            logAi->info("Can't flee or surrender.");
+            logAi->debug("Can't flee or surrender.");
             return std::nullopt;
         }
 
@@ -266,7 +266,7 @@ namespace MMAI::BAI::V13 {
             return;
         }
 
-        logAi->info("Not conceding.");
+        logAi->debug("Not conceding.");
 
         while(true) {
             for (int i = 0; i < static_cast<int>(state->transitions.size()); ++i) {
