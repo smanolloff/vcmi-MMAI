@@ -366,8 +366,12 @@ endif()
 message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS}")
 target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
 
-# XXX: this causes issues on windows:
-#      VCMI fails to load at game start with error "Resource not found" (game crashes)
+if(MACOS)
+  set_target_properties(MMAI PROPERTIES INSTALL_RPATH "@loader_path")
+elseif(UNIX AND NOT IOS AND NOT ANDROID)
+  set_target_properties(MMAI PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
 add_dependencies(MMAI BattleAI)
 target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
 
