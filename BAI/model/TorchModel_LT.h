@@ -44,7 +44,12 @@ private:
     int version;
     Schema::Side side;
     std::mutex m;
-    std::vector<std::vector<std::vector<int64_t>>> all_buckets;
+    std::vector<std::vector<std::vector<int32_t>>> all_buckets;
+
+    // libtorch does allow 0-arg model methods, but (some) executorch backends
+    // do not allow it => 0-arg input methods (such as get_version()) are
+    // exported methods with a single dummy argument.
+    at::Tensor prepareDummyInput();
 
     std::pair<std::vector<at::Tensor>, int> prepareInputsV13(
         const MMAI::Schema::IState * state,
@@ -65,12 +70,12 @@ private:
     }
 
     at::Tensor call(const std::string &method_name, int numel, int ndim, at::ScalarType st) {
-        return call(method_name, std::vector<c10::IValue>{}, numel, ndim, st);
+        return call(method_name, std::vector<c10::IValue>{prepareDummyInput()}, numel, ndim, st);
     }
 
     template <typename T> T getScalar(const std::string &method_name, const std::vector<c10::IValue>& input);
     template <typename T> T getScalar(const std::string &method_name) {
-        return getScalar<T>(method_name, std::vector<c10::IValue>{});
+        return getScalar<T>(method_name, std::vector<c10::IValue>{prepareDummyInput()});
     };
 
     c10::InferenceMode guard;

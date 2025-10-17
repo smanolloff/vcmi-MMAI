@@ -19,6 +19,7 @@
 #include <ATen/core/TensorBody.h>
 #include <ATen/core/ivalue.h>
 #include <ATen/ops/from_blob.h>
+#include <ATen/ops/tensor.h>
 #include <c10/core/ScalarType.h>
 #include <mutex>
 
@@ -48,7 +49,7 @@ namespace {
         }
     };
 
-    std::array<std::vector<int64_t>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
+    std::array<std::vector<int32_t>, 165> buildNBR_unpadded(const std::vector<int64_t>& dst) {
         // Pass 1: validate and count degrees per node
         std::array<int, 165> deg{};
         for (size_t e = 0; e < dst.size(); ++e) {
@@ -58,36 +59,36 @@ namespace {
             ++deg[v];
         }
 
-        std::array<std::vector<int64_t>, 165> nbr{};
+        std::array<std::vector<int32_t>, 165> nbr{};
         for (int v = 0; v < 165; ++v) nbr[v].reserve(deg[v]);
         for (size_t e = 0; e < dst.size(); ++e) {
             int v = static_cast<int>(dst[e]);
-            nbr[v].push_back(static_cast<int64_t>(e));
+            nbr[v].push_back(static_cast<int32_t>(e));
         }
 
         return nbr;
     }
 
     struct IndexContainer {
-        std::array<std::vector<int64_t>, 2> ei;
+        std::array<std::vector<int32_t>, 2> ei;
         std::vector<float> ea;
-        std::array<std::vector<int64_t>, 165> nbrs;
+        std::array<std::vector<int32_t>, 165> nbrs;
     };
 
     struct BuildOutputs {
         int size_index = -1;                                // chosen index in all_sizes
-        std::array<int64_t, LT_COUNT> emax{};               // chosen emax per link type
-        std::array<int64_t, LT_COUNT> kmax{};               // chosen kmax per link type
+        std::array<int32_t, LT_COUNT> emax{};               // chosen emax per link type
+        std::array<int32_t, LT_COUNT> kmax{};               // chosen kmax per link type
 
-        std::array<std::vector<int64_t>, 2> ei_flat;        // each length sum(emax)
+        std::array<std::vector<int32_t>, 2> ei_flat;        // each length sum(emax)
         std::vector<float> ea_flat;                         // length sum(emax)
-        std::array<std::vector<int64_t>, 165> nbrs_flat;    // each length sum(kmax)
+        std::array<std::vector<int32_t>, 165> nbrs_flat;    // each length sum(kmax)
     };
 
     // all_sizes: S x LT_COUNT x 2, where [s][l] = {emax, kmax}
     BuildOutputs build_flattened(
         const std::array<IndexContainer, LT_COUNT>& containers,
-        const std::vector<std::vector<std::vector<int64_t>>>& all_sizes,
+        const std::vector<std::vector<std::vector<int32_t>>>& all_sizes,
         int bucket
     ) {
         BuildOutputs out{};
@@ -105,17 +106,17 @@ namespace {
 
         // 1) Find smallest valid size index
         int chosen = -1;
-        std::array<int64_t, LT_COUNT> emax{}, kmax{};
+        std::array<int32_t, LT_COUNT> emax{}, kmax{};
         for (int s = 0; s < static_cast<int>(all_sizes.size()); ++s) {
             const auto& sz = all_sizes[s];
             if (sz.size() != LT_COUNT) continue;  // skip malformed
             bool ok = true;
             for (int l = 0; l < LT_COUNT && ok; ++l) {
                 if (sz[l].size() != 2) { ok = false; break; }
-                int64_t emax_l = sz[l][0];
-                int64_t kmax_l = sz[l][1];
-                if (emax_l < static_cast<int64_t>(e_req[l]) ||
-                    kmax_l < static_cast<int64_t>(k_req[l])) {
+                int32_t emax_l = sz[l][0];
+                int32_t kmax_l = sz[l][1];
+                if (emax_l < static_cast<int32_t>(e_req[l]) ||
+                    kmax_l < static_cast<int32_t>(k_req[l])) {
                     ok = false;
                 }
             }
@@ -190,7 +191,7 @@ namespace {
                 const auto& src = containers[l].nbrs[v];
                 dst.insert(dst.end(), src.begin(), src.end());
                 const size_t need = static_cast<size_t>(kmax[l]) - src.size();
-                if (need > 0) dst.insert(dst.end(), need, static_cast<int64_t>(-1));
+                if (need > 0) dst.insert(dst.end(), need, static_cast<int32_t>(-1));
             }
             // Optional sanity:
             if (dst.size() != sum_kmax) {
@@ -210,7 +211,7 @@ T TorchModel::getScalar(const std::string &method_name, const std::vector<c10::I
     if constexpr (std::is_same_v<T, float>) {
         st = at::kFloat;
     } else { // T == int
-        st = at::kLong;
+        st = at::kInt;
     }
 
     auto t = call(method_name, input, 1, 1, st);
@@ -223,14 +224,15 @@ T TorchModel::getScalar(const std::string &method_name, const std::vector<c10::I
             throwf("getScalar: %s: bad dtype: want: %d, have: %d", method_name, EI(at::kFloat), EI(t.scalar_type()));
         return t.item<float>();
     } else { // T == int
-        if (t.scalar_type() != at::kLong)
-            throwf("getScalar: %s: bad dtype: want: %d, have: %d", method_name, EI(at::kLong), EI(t.scalar_type()));
+        if (t.scalar_type() != at::kInt)
+            throwf("getScalar: %s: bad dtype: want: %d, have: %d", method_name, EI(at::kInt), EI(t.scalar_type()));
 
-        int64_t v64 = t.item<int64_t>();
-        if (v64 < std::numeric_limits<int>::min() || v64 > std::numeric_limits<int>::max())
-            throwf("getScalar: %s: out of range for int: %ld", method_name, v64);
-        return static_cast<int>(v64);
+        return t.item<int32_t>();
     }
+}
+
+at::Tensor TorchModel::prepareDummyInput() {
+    return at::tensor({0}, at::kInt);
 }
 
 std::pair<std::vector<at::Tensor>, int> TorchModel::prepareInputsV13(
@@ -305,21 +307,21 @@ std::pair<std::vector<at::Tensor>, int> TorchModel::prepareInputsV13(
         }
     }
 
-    auto einds = std::vector<int64_t> {};
+    auto einds = std::vector<int32_t> {};
     einds.reserve(2*sum_e);
     for (auto &eind : build.ei_flat)
         einds.insert(einds.end(), eind.begin(), eind.end());
 
-    auto nbrs = std::vector<int64_t> {};
+    auto nbrs = std::vector<int32_t> {};
     nbrs.reserve(165*sum_k);
     for (auto &nbr : build.nbrs_flat)
         nbrs.insert(nbrs.end(), nbr.begin(), nbr.end());
 
     // auto t_state = et_ext::from_blob(estate.data(), {int(estate.size())}, ScalarType::Float);
     auto t_state = at::from_blob(estate.data(), {int(estate.size())}, at::kFloat);
-    auto t_ei_flat = at::from_blob(einds.data(), {2, sum_e}, at::kLong);
+    auto t_ei_flat = at::from_blob(einds.data(), {2, sum_e}, at::kInt);
     auto t_ea_flat = at::from_blob(build.ea_flat.data(), {sum_e, 1}, at::kFloat);
-    auto t_nbrs_flat = at::from_blob(nbrs.data(), {165, sum_k}, at::kLong);
+    auto t_nbrs_flat = at::from_blob(nbrs.data(), {165, sum_k}, at::kInt);
 
     auto tensors = std::vector<at::Tensor> {
         t_state.clone(),
@@ -371,9 +373,9 @@ TorchModel::TorchModel(std::string &path)
     if (version != 13)
         throwf("unsupported model version: want: 13, have: %d", version);
 
-    auto t_buckets = call("get_all_sizes", 0, 3, at::kLong);
-    std::vector<int64_t> flat_buckets(t_buckets.numel());
-    std::memcpy(flat_buckets.data(), t_buckets.data_ptr<int64_t>(), flat_buckets.size() * sizeof(int64_t));
+    auto t_buckets = call("get_all_sizes", 0, 3, at::kInt);
+    std::vector<int32_t> flat_buckets(t_buckets.numel());
+    std::memcpy(flat_buckets.data(), t_buckets.data_ptr<int32_t>(), flat_buckets.size() * sizeof(int32_t));
 
     auto dims = t_buckets.sizes();              // [D0, D1, D2]
 
@@ -384,15 +386,15 @@ TorchModel::TorchModel(std::string &path)
     auto d1 = dims[1];
     auto d2 = dims[2];
 
-    all_buckets = std::vector<std::vector<std::vector<int64_t>>>(
-        d0, std::vector<std::vector<int64_t>>(
-            d1, std::vector<int64_t>(d2)
+    all_buckets = std::vector<std::vector<std::vector<int32_t>>>(
+        d0, std::vector<std::vector<int32_t>>(
+            d1, std::vector<int32_t>(d2)
     ));
 
-    int64_t idx = 0;
-    for (int64_t i = 0; i < d0; ++i) {
-        for (int64_t j = 0; j < d1; ++j) {
-            for (int64_t k = 0; k < d2; ++k, ++idx) {
+    int32_t idx = 0;
+    for (int32_t i = 0; i < d0; ++i) {
+        for (int32_t j = 0; j < d1; ++j) {
+            for (int32_t k = 0; k < d2; ++k, ++idx) {
                 all_buckets[i][j][k] = flat_buckets[idx];
             }
         }
