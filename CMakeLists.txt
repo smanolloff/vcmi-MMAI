@@ -341,6 +341,14 @@ if(ENABLE_STATIC_LIBS)
 else()
   add_library(MMAI SHARED ${MMAI_FILES})
   install(TARGETS MMAI RUNTIME DESTINATION ${AI_LIB_DIR} LIBRARY DESTINATION ${AI_LIB_DIR})
+
+  # This is needed to allow MMAI to link against BattleAI
+  # For windows, this is handled at runtime instead via LoadLibraryExW(..., LOAD_WITH_ALTERED_SEARCH_PATH)
+  if(APPLE)
+    set_target_properties(MMAI PROPERTIES INSTALL_RPATH "@loader_path")
+  elseif(UNIX)
+    set_target_properties(MMAI PROPERTIES INSTALL_RPATH "$ORIGIN")
+  endif()
 endif()
 
 if (MMAI_LIBTORCH_PATH AND NOT (IOS OR ANDROID))
@@ -365,12 +373,6 @@ endif()
 
 message(STATUS "MMAI target_link_libraries: ${MMAI_LIBS}")
 target_link_libraries(MMAI PRIVATE ${MMAI_LIBS})
-
-if(MACOS)
-  set_target_properties(MMAI PROPERTIES INSTALL_RPATH "@loader_path")
-elseif(UNIX AND NOT IOS AND NOT ANDROID)
-  set_target_properties(MMAI PROPERTIES INSTALL_RPATH "$ORIGIN")
-endif()
 
 add_dependencies(MMAI BattleAI)
 target_link_libraries(MMAI PRIVATE BattleAI)  # for spell casting
