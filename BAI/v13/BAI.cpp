@@ -95,7 +95,11 @@ namespace MMAI::BAI::V13 {
             ASSERT(a == Schema::ACTION_RESET, "expected ACTION_RESET, got: " + std::to_string(EI(a)));
         }
 
-        info("MMAI stats after battle end: %d predictions, %d ms per prediction", getActionTotalCalls, getActionTotalMs / getActionTotalCalls);
+        if (getActionTotalCalls > 0) {
+            info("MMAI stats after battle end: %d predictions, %d ms per prediction", getActionTotalCalls, getActionTotalMs / getActionTotalCalls);
+        } else {
+            info("MMAI stats after battle end: 0 predictions");
+        }
 
         // BAI is destroyed after this call
         debug("Leaving battleEnd, embracing death");
