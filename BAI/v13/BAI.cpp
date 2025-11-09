@@ -140,7 +140,7 @@ namespace MMAI::BAI::V13 {
             vratio = 1 / vratio;
 
         logAi->debug("Attempting a BattleAI spellcast");
-        auto evaluator = BattleEvaluator(env, cb, astack, playerID, bid, battle->battleGetMySide(), vratio, 2);
+        auto evaluator = BattleEvaluator(env, cb, astack, *cb->getPlayerID(), bid, battle->battleGetMySide(), vratio, 2);
         return evaluator.attemptCastingSpell(astack);
     }
 
@@ -211,7 +211,7 @@ namespace MMAI::BAI::V13 {
         BattleStateInfoForRetreat bs;
 
         bs.canFlee = battle->battleCanFlee();
-        bs.canSurrender = battle->battleCanSurrender(playerID);
+        bs.canSurrender = battle->battleCanSurrender(*cb->getPlayerID());
         if(!bs.canFlee && !bs.canSurrender) {
             logAi->debug("Can't flee or surrender.");
             return std::nullopt;
