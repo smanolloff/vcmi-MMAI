@@ -41,6 +41,8 @@ namespace MMAI::BAI {
     static auto modelExt = ".pte";
     #elif defined(USING_LIBTORCH)
     static auto modelExt = ".ptl";
+    #elif defined(USING_ONNX)
+    static auto modelExt = ".pto";
     #endif
 
     static auto modelconfig = ConfigStorage();
@@ -120,7 +122,7 @@ namespace MMAI::BAI {
                 ASSERT(fullpath.has_value(), "could not obtain path for resource " + rpath.getName());
                 auto fullpathstr = fullpath.value().string();
 
-                logAi->info("Loading Torch %s model from %s", key, fullpathstr);
+                logAi->info("Loading MMAI %s model from %s", key, fullpathstr);
                 it = models.emplace(key, std::make_unique<TorchModel>(fullpathstr, temperature, seed)).first;
             } else {
                 logAi->debug("Using previously loaded %s", key);
@@ -128,7 +130,7 @@ namespace MMAI::BAI {
 
             return it->second.get();
         } catch (std::exception & e) {
-            logAi->error("Failed to load %s: %s", key, e.what());
+            logAi->error("Failed to load MMAI %s model: %s", key, e.what());
 
             #ifdef ENABLE_MMAI_STRICT_LOAD
             throw;

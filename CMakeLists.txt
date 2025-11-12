@@ -322,12 +322,19 @@ elseif(MMAI_LIBTORCH_PATH)
     endforeach()
   endfunction(install_torch_libs)
 else()
-  if(NOT ENABLE_ML)
-    message(FATAL_ERROR "Either MMAI_EXECUTORCH_PATH or MMAI_LIBTORCH_PATH is required unless ENABLE_ML is set")
-  endif()
+  # if(NOT ENABLE_ML)
+  #   message(FATAL_ERROR "Either MMAI_EXECUTORCH_PATH or MMAI_LIBTORCH_PATH is required unless ENABLE_ML is set")
+  # endif()
 
-  list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.h)
-  list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.cpp)
+  find_package(onnxruntime CONFIG REQUIRED)  # or link to onnx and protobuf manually
+  list(APPEND MMAI_LIBS onnx onnxruntime::onnxruntime)
+
+  # list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.h)
+  # list(APPEND MMAI_FILES BAI/model/TorchModel_dummy.cpp)
+
+  add_definitions(-DUSING_ONNX=1)
+  list(APPEND MMAI_FILES BAI/model/TorchModel_onnx.h)
+  list(APPEND MMAI_FILES BAI/model/TorchModel_onnx.cpp)
 endif()
 
 if(NOT ENABLE_STATIC_LIBS)
