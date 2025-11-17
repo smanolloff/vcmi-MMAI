@@ -642,12 +642,12 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
     auto t_hex2        = toTensor("predict_with_logits: t_hex2",         elems[9], 1, 1,         at::kInt);   // [1]
 
     auto sample = sample_triplet(
-        t_act0_logits,
-        t_hex1_logits,
-        t_hex2_logits,
-        t_mask_act0,
-        t_mask_hex1,
-        t_mask_hex2,
+        t_act0_logits,  // [1, 4]
+        t_hex1_logits,  // [1, 165]
+        t_hex2_logits,  // [1, 165]
+        t_mask_act0,    // [1, 4]
+        t_mask_hex1,    // [1, 4, 165]
+        t_mask_hex2,    // [1, 4, 165, 165]
         temperature,
         rng
     );
