@@ -625,8 +625,7 @@ int TorchModel::getAction(const MMAI::Schema::IState * s) {
         outputs[4], // [1, 4]               t_mask_act0
         outputs[5], // [1, 4, 165]          t_mask_hex1
         outputs[6], // [1, 4, 165, 165]     t_mask_hex2
-        // temperature,
-        2,
+        temperature,
         rng
     );
 
