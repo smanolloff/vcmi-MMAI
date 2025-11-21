@@ -34,6 +34,32 @@ namespace {
         throw std::runtime_error(f.str());
     }
 
+    inline std::basic_string<ORTCHAR_T> ToOrtPath(const std::string &utf8_path) {
+        // https://github.com/microsoft/onnxruntime/discussions/21915
+        #ifdef _WIN32
+            if (utf8_path.empty())
+                return std::basic_string<ORTCHAR_T>();
+
+            int size_needed = MultiByteToWideChar(
+                CP_UTF8, 0,
+                utf8_path.c_str(), static_cast<int>(utf8_path.size()),
+                nullptr, 0
+            );
+
+            std::wstring wpath(size_needed, L'\0');
+            MultiByteToWideChar(
+                CP_UTF8, 0,
+                utf8_path.c_str(), static_cast<int>(utf8_path.size()),
+                &wpath[0], size_needed
+            );
+
+            return wpath;  // ORTCHAR_T == wchar_t on Windows
+        #else
+            // On non-Windows, ORTCHAR_T == char, so no conversion needed.
+            return utf8_path;
+        #endif
+    }
+
     struct ScopedTimer {
         std::string name;
         std::chrono::steady_clock::time_point t0;
@@ -427,8 +453,7 @@ TorchModel::TorchModel(std::string &path, float temperature, uint64_t seed)
     opts.SetIntraOpNumThreads(4);
     opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_BASIC);
 
-    model = std::make_unique<Ort::Session>(ort_env(), path.c_str(), opts);
-
+    model = std::make_unique<Ort::Session>(ort_env(), ToOrtPath(path).c_str(), opts);
     auto md = model->GetModelMetadata();
 
     {
