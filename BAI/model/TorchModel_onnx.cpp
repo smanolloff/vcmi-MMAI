@@ -17,6 +17,7 @@
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
+#include "StdInc.h"
 #include "vstd/CLoggerBase.h"
 #include "json/JsonNode.h"
 #include "TorchModel_onnx.h"
