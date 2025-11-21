@@ -17,9 +17,7 @@
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
-// CI build fails without this
-#include "Global.h"
-
+#include "vstd/CLoggerBase.h"
 #include "json/JsonNode.h"
 #include "TorchModel_onnx.h"
 
