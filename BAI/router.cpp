@@ -42,7 +42,7 @@ namespace MMAI::BAI {
     #elif defined(USING_LIBTORCH)
     static auto modelExt = ".ptl";
     #elif defined(USING_ONNX)
-    static auto modelExt = ".pto";
+    static auto modelExt = ".onnx";
     #endif
 
     static auto modelconfig = ConfigStorage();
