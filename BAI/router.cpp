@@ -60,7 +60,14 @@ namespace MMAI::BAI {
             logAi->warn("MMAI config error: %s", std::move(problem));
         };
 
-        auto cfg = JsonUtils::assembleFromFiles("MMAI/CONFIG/mmai-settings.json").Struct();
+        auto rawcfg = JsonUtils::assembleFromFiles("MMAI/CONFIG/mmai-settings.json");
+
+        if (!rawcfg.isStruct()) {
+            logAi->error("Could not load MMAI config. Is MMAI mod enabled?");
+            return;
+        }
+
+        auto cfg = rawcfg.Struct();
 
         if (cfg["temperature"].isNumber()) {
             if (cfg["temperature"].Float() < 0) {
@@ -137,16 +144,19 @@ namespace MMAI::BAI {
             #endif
 
             // TODO: how to log a message in user interface?
-
             auto it2 = modelconfig.find("fallback");
+            std::string fb;
+
             if (it2 == modelconfig.end() || it2->second.empty()) {
-                logAi->error("Fallback model not configured, throwing...");
-                throw;
+                logAi->warn("Fallback model not configured, defaulting to BattleAI");
+                fb = "BattleAI";
+            } else {
+                fb = it2->second;
             }
 
             auto lock = std::lock_guard(modelmutex);
             if (!fallbackModel)
-                fallbackModel = std::make_unique<ScriptedModel>(it2->second);
+                fallbackModel = std::make_unique<ScriptedModel>(fb);
 
             logAi->info("Will use fallback model: %s", fallbackModel->getName());
             return fallbackModel.get();
