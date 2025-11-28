@@ -17,6 +17,7 @@
 #include "StdInc.h"
 #include "callback/CBattleCallback.h"
 #include "callback/CDynLibHandler.h"
+#include "callback/IGameInfoCallback.h"
 #include "filesystem/Filesystem.h"
 #include "json/JsonUtils.h"
 #include "VCMIDirs.h"
@@ -29,6 +30,7 @@
 #include "BAI/router.h"
 
 #include "common.h"
+#include "gameState/CGameState.h"
 #include "schema/schema.h"
 
 #include <utility>
@@ -89,19 +91,32 @@ namespace MMAI::BAI {
             warncfg("seed: not an integer");
         }
 
-        for (const auto &key : {"attacker", "defender", "fallback"}) {
-            if(cfg[key].isString()) {
-                std::string value = cfg[key].String();
-                if (std::string(key) != "fallback") {
+        if (cfg["models"].getType() != JsonNode::JsonType::DATA_STRUCT) {
+            warncfg("seed: not a struct");
+        } else {
+            for (const auto &key : {"attacker", "defender"}) {
+                if(cfg["models"][key].isString()) {
+                    std::string value = cfg["models"][key].String();
                     value = "MMAI/models/" + value;
                     if (!boost::algorithm::ends_with(value, modelExt)) {
                         value += modelExt;
                     }
-                }
 
-                modelconfig.insert({key, value});
+                    modelconfig.insert({key, value});
+                } else {
+                    warncfg(std::string(key) + ": not a string");
+                }
+            }
+        }
+
+        if (cfg["fallback"].getType() != JsonNode::JsonType::DATA_STRING) {
+            warncfg("fallback: not a string");
+        } else {
+            auto fallback = cfg["fallback"].String();
+            if (fallback != "StupidAI" && fallback != "BattleAI") {
+                warncfg("fallback: expected StupidAI or BattleAI, got: " + fallback);
             } else {
-                warncfg(std::string(key) + ": not a string");
+                modelconfig.insert({"fallback", fallback});
             }
         }
     }
