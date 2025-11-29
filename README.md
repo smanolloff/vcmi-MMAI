@@ -1,5 +1,9 @@
 # Overview
 
+> [!IMPORTANT]
+> MMAI is no longer a separate repository as is has become part
+> of VCMI's main source tree.
+
 A [VCMI](https://github.com/vcmi/vcmi) AI library which uses pre-trained
 models for commanding a hero's army in battle.
 
